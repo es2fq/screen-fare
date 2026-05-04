@@ -13,6 +13,8 @@ struct OnboardingAppSelectionView: View {
     @Binding var selectedApps: FamilyActivitySelection
     @State private var showingPicker = false
     @State private var pickerSelection: FamilyActivitySelection = FamilyActivitySelection()
+    @State private var orderedAppTokens: [ApplicationToken] = []
+    @State private var orderedCategoryTokens: [ActivityCategoryToken] = []
     let onContinue: () -> Void
 
     private var hasSelectedApps: Bool {
@@ -21,6 +23,31 @@ struct OnboardingAppSelectionView: View {
 
     private var appCount: Int {
         selectedApps.applicationTokens.count + selectedApps.categoryTokens.count
+    }
+
+    private func updateOrderedSelections() {
+        let newAppTokens = Set(pickerSelection.applicationTokens)
+        let newCategoryTokens = Set(pickerSelection.categoryTokens)
+
+        // Remove deselected tokens
+        orderedAppTokens.removeAll { !newAppTokens.contains($0) }
+        orderedCategoryTokens.removeAll { !newCategoryTokens.contains($0) }
+
+        // Add newly selected tokens to the end
+        let existingAppTokens = Set(orderedAppTokens)
+        let existingCategoryTokens = Set(orderedCategoryTokens)
+
+        for token in newAppTokens {
+            if !existingAppTokens.contains(token) {
+                orderedAppTokens.append(token)
+            }
+        }
+
+        for token in newCategoryTokens {
+            if !existingCategoryTokens.contains(token) {
+                orderedCategoryTokens.append(token)
+            }
+        }
     }
 
     var body: some View {
@@ -52,7 +79,11 @@ struct OnboardingAppSelectionView: View {
                 // Facepile Card
                 Group {
                     if hasSelectedApps {
-                        AppFacepile(selectedApps: selectedApps)
+                        AppFacepile(
+                            orderedAppTokens: orderedAppTokens,
+                            orderedCategoryTokens: orderedCategoryTokens,
+                            totalCount: appCount
+                        )
                     } else {
                         Text("No apps selected yet")
                             .font(.inter(13))
@@ -130,7 +161,8 @@ struct OnboardingAppSelectionView: View {
                 // When opening picker, sync from binding
                 pickerSelection = selectedApps
             } else {
-                // When closing picker, sync to binding
+                // When closing picker, update ordered arrays and sync to binding
+                updateOrderedSelections()
                 selectedApps = pickerSelection
             }
         }
@@ -138,20 +170,19 @@ struct OnboardingAppSelectionView: View {
 }
 
 struct AppFacepile: View {
-    let selectedApps: FamilyActivitySelection
+    let orderedAppTokens: [ApplicationToken]
+    let orderedCategoryTokens: [ActivityCategoryToken]
+    let totalCount: Int
 
     var body: some View {
         HStack {
             Spacer()
 
             HStack(spacing: 10) {
-                let appTokens = Array(selectedApps.applicationTokens).sorted(by: { $0.hashValue < $1.hashValue })
-                let categoryTokens = Array(selectedApps.categoryTokens).sorted(by: { $0.hashValue < $1.hashValue })
-                let totalCount = appTokens.count + categoryTokens.count
                 let remainingCount = max(0, totalCount - 5)
 
                 // Show individual app icons (up to 5)
-                ForEach(Array(appTokens.prefix(min(5, appTokens.count)).enumerated()), id: \.element) { index, token in
+                ForEach(Array(orderedAppTokens.prefix(min(5, orderedAppTokens.count)).enumerated()), id: \.element) { index, token in
                     Label(token)
                         .labelStyle(.iconOnly)
                         .scaleEffect(2.0)
@@ -161,9 +192,9 @@ struct AppFacepile: View {
                 }
 
                 // Show category icons (only if we have room left after apps)
-                if appTokens.count < 5 {
-                    let categoryLimit = 5 - appTokens.count
-                    ForEach(Array(categoryTokens.prefix(categoryLimit).enumerated()), id: \.element) { index, token in
+                if orderedAppTokens.count < 5 {
+                    let categoryLimit = 5 - orderedAppTokens.count
+                    ForEach(Array(orderedCategoryTokens.prefix(categoryLimit).enumerated()), id: \.element) { index, token in
                         Label(token)
                             .labelStyle(.iconOnly)
                             .scaleEffect(2.0)

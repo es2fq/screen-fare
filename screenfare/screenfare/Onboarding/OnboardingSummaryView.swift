@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FamilyControls
+import ManagedSettings
 
 struct OnboardingSummaryView: View {
     let selectedApps: FamilyActivitySelection
@@ -86,7 +87,11 @@ struct OnboardingSummaryView: View {
                                 label: "Apps blocked",
                                 value: AnyView(
                                     HStack(spacing: 8) {
-                                        AppFacepile(selectedApps: selectedApps)
+                                        AppFacepile(
+                                            orderedAppTokens: Array(selectedApps.applicationTokens).sorted(by: { $0.hashValue < $1.hashValue }),
+                                            orderedCategoryTokens: Array(selectedApps.categoryTokens).sorted(by: { $0.hashValue < $1.hashValue }),
+                                            totalCount: appCount
+                                        )
                                         Text("\(appCount)")
                                             .font(.inter(13))
                                             .foregroundColor(.focusMuted)
