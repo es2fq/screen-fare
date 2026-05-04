@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FamilyControls
+import ManagedSettings
 
 struct OnboardingAppSelectionView: View {
     @Binding var selectedApps: FamilyActivitySelection
@@ -142,37 +143,35 @@ struct AppFacepile: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            let appTokens = Array(selectedApps.applicationTokens)
-            let categoryTokens = Array(selectedApps.categoryTokens)
+            let appTokens = Array(selectedApps.applicationTokens).sorted(by: { $0.hashValue < $1.hashValue })
+            let categoryTokens = Array(selectedApps.categoryTokens).sorted(by: { $0.hashValue < $1.hashValue })
             let totalCount = appTokens.count + categoryTokens.count
-            let displayCount = min(5, totalCount)
-            let remainingCount = totalCount - displayCount
+            let remainingCount = max(0, totalCount - 5)
 
-            // Show app icons first (up to 5 total between apps and categories)
-            ForEach(0..<displayCount, id: \.self) { index in
-                if index < appTokens.count {
-                    // Show individual app icon
-                    Label(appTokens[index])
+            // Show individual app icons (up to 5)
+            ForEach(appTokens.prefix(min(5, appTokens.count)), id: \.self) { token in
+                Label(token)
+                    .labelStyle(.iconOnly)
+                    .scaleEffect(2.0)
+                    .frame(width: 40, height: 40)
+                    .background(Color.focusCard)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
+            // Show category icons (only if we have room left after apps)
+            if appTokens.count < 5 {
+                let categoryLimit = 5 - appTokens.count
+                ForEach(categoryTokens.prefix(categoryLimit), id: \.self) { token in
+                    Label(token)
                         .labelStyle(.iconOnly)
                         .scaleEffect(2.0)
                         .frame(width: 40, height: 40)
                         .background(Color.focusCard)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
-                } else {
-                    // Show category icon
-                    let categoryIndex = index - appTokens.count
-                    if categoryIndex < categoryTokens.count {
-                        Label(categoryTokens[categoryIndex])
-                            .labelStyle(.iconOnly)
-                            .scaleEffect(2.0)
-                            .frame(width: 40, height: 40)
-                            .background(Color.focusCard)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
                 }
             }
 
-            // Show +N box if there are more than 5 items
+            // Show +N box if there are more than 5 items total
             if remainingCount > 0 {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
