@@ -59,58 +59,46 @@ struct OnboardingContainerView: View {
     }
 
     private func nextPage() {
-        print("🚀 [Container] nextPage called - currentPage: \(currentPage) -> \(currentPage + 1)")
         withAnimation {
             currentPage += 1
         }
-        print("🚀 [Container] nextPage completed - currentPage is now: \(currentPage)")
     }
 
     private func nextPageFromWelcome() {
-        print("🚀 [Container] nextPageFromWelcome called - checking permission statuses")
-
         // First, explicitly check Screen Time authorization status
         blockingManager.checkAuthorizationStatus()
 
         // Check both permissions asynchronously
         UNUserNotificationCenter.current().getNotificationSettings { notificationSettings in
             let notificationsAuthorized = notificationSettings.authorizationStatus == .authorized
-            print("🚀 [Container] Notifications authorized: \(notificationsAuthorized)")
 
             // Get Screen Time authorization status on main thread
             DispatchQueue.main.async {
                 let screenTimeAuthorized = self.blockingManager.isAuthorized
-                print("🚀 [Container] Screen Time authorized: \(screenTimeAuthorized)")
 
                 let targetPage: Int
 
                 if !screenTimeAuthorized {
                     // Need Screen Time permission
                     targetPage = 1
-                    print("🚀 [Container] Jumping to Screen Time (page 1)")
                 } else if !notificationsAuthorized {
                     // Screen Time OK, need Notifications
                     targetPage = 2
-                    print("🚀 [Container] Jumping to Notifications (page 2)")
                 } else {
                     // Both authorized, skip to App Selection
                     targetPage = 3
-                    print("🚀 [Container] Both authorized - jumping to App Selection (page 3)")
                 }
 
                 // Only animate if going to adjacent screen, otherwise instant jump
                 let isAdjacentScreen = (targetPage - self.currentPage) == 1
 
                 if isAdjacentScreen {
-                    print("🚀 [Container] Adjacent screen - animating transition")
                     withAnimation {
                         self.currentPage = targetPage
                     }
                 } else {
-                    print("🚀 [Container] Skipping screen(s) - instant jump")
                     self.currentPage = targetPage
                 }
-                print("🚀 [Container] Navigation complete - currentPage is now: \(self.currentPage)")
             }
         }
     }

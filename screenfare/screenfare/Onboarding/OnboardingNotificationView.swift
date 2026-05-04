@@ -68,16 +68,13 @@ struct OnboardingNotificationView: View {
             }
         }
         .onAppear {
-            print("🔔 [Notifications] onAppear - isVisible: \(isVisible), hasAdvanced: \(hasAdvanced)")
             isVisible = true
             checkPermissionStatus()
         }
         .onDisappear {
-            print("🔔 [Notifications] onDisappear")
             isVisible = false
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            print("🔔 [Notifications] App became active - checking permission status")
             // Re-check when returning from Settings
             if isVisible {
                 checkPermissionStatus()
@@ -86,17 +83,13 @@ struct OnboardingNotificationView: View {
     }
 
     private func requestNotificationPermission() {
-        print("🔔 [Notifications] Button tapped - requesting permission")
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            print("🔔 [Notifications] Authorization callback - granted: \(granted), error: \(String(describing: error))")
-
             // Check status after request completes
             DispatchQueue.main.async {
                 self.checkPermissionStatus()
 
                 // Only advance if granted and we haven't already advanced
                 if granted && !self.hasAdvanced {
-                    print("🔔 [Notifications] ✅ Permission granted - advancing to next screen")
                     self.hasAdvanced = true
                     self.onContinue()
                 }
@@ -108,14 +101,12 @@ struct OnboardingNotificationView: View {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 let status = settings.authorizationStatus
-                print("🔔 [Notifications] Permission status: \(status.rawValue) (0=notDetermined, 1=denied, 2=authorized)")
 
                 // Update isDenied state
                 self.isDenied = (status == .denied)
 
                 // If authorized, advance automatically
                 if status == .authorized && !self.hasAdvanced && self.isVisible {
-                    print("🔔 [Notifications] ✅ Already authorized - advancing to next screen")
                     self.hasAdvanced = true
                     self.onContinue()
                 }
@@ -124,7 +115,6 @@ struct OnboardingNotificationView: View {
     }
 
     private func openSettings() {
-        print("🔔 [Notifications] Opening Settings")
         if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(settingsUrl)
         }
