@@ -11,6 +11,7 @@ import FamilyControls
 struct OnboardingAppSelectionView: View {
     @Binding var selectedApps: FamilyActivitySelection
     @State private var showingPicker = false
+    @State private var pickerSelection: FamilyActivitySelection = FamilyActivitySelection()
     let onContinue: () -> Void
 
     private var hasSelectedApps: Bool {
@@ -40,7 +41,7 @@ struct OnboardingAppSelectionView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 // Description: fontSize: 14.5
-                Text("Choose up to 5 apps Focus will gently restrict.")
+                Text("Choose apps and categories Focus will gently restrict.")
                     .font(.inter(14.5))
                     .foregroundColor(.focusMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -58,15 +59,9 @@ struct OnboardingAppSelectionView: View {
                     }
 
                     Spacer()
-
-                    Text("\(appCount)/5")
-                        .font(.inter(13))
-                        .foregroundColor(.focusMuted)
-                        .monospacedDigit()
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, minHeight: 60)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
                         .stroke(Color.focusLine, lineWidth: 1)
@@ -129,7 +124,16 @@ struct OnboardingAppSelectionView: View {
                     .padding(.top, 14)
             }
         }
-        .familyActivityPicker(isPresented: $showingPicker, selection: $selectedApps)
+        .familyActivityPicker(isPresented: $showingPicker, selection: $pickerSelection)
+        .onChange(of: showingPicker) { _, isShowing in
+            if isShowing {
+                // When opening picker, sync from binding
+                pickerSelection = selectedApps
+            } else {
+                // When closing picker, sync to binding
+                selectedApps = pickerSelection
+            }
+        }
     }
 }
 
@@ -137,24 +141,48 @@ struct AppFacepile: View {
     let selectedApps: FamilyActivitySelection
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Show up to 5 app icons - 2x scale (64x64 base)
-            ForEach(Array(selectedApps.applicationTokens.prefix(5)).indices, id: \.self) { index in
-                let tokens = Array(selectedApps.applicationTokens.prefix(5))
-                let token = tokens[index]
+        HStack(spacing: 8) {
+            let appTokens = Array(selectedApps.applicationTokens)
+            let categoryTokens = Array(selectedApps.categoryTokens)
+            let totalCount = appTokens.count + categoryTokens.count
+            let displayCount = min(5, totalCount)
+            let remainingCount = totalCount - displayCount
 
-                Label(token)
-                    .labelStyle(.iconOnly)
-                    .scaleEffect(2.0)
-                    .frame(width: 80, height: 80)
-                    .background(Color.focusCard)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.focusCard, lineWidth: 3)
-                    )
-                    .padding(.leading, index == 0 ? 0 : -20)
-                    .zIndex(Double(tokens.count - index))
+            // Show app icons first (up to 5 total between apps and categories)
+            ForEach(0..<displayCount, id: \.self) { index in
+                if index < appTokens.count {
+                    // Show individual app icon
+                    Label(appTokens[index])
+                        .labelStyle(.iconOnly)
+                        .scaleEffect(2.0)
+                        .frame(width: 40, height: 40)
+                        .background(Color.focusCard)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                } else {
+                    // Show category icon
+                    let categoryIndex = index - appTokens.count
+                    if categoryIndex < categoryTokens.count {
+                        Label(categoryTokens[categoryIndex])
+                            .labelStyle(.iconOnly)
+                            .scaleEffect(2.0)
+                            .frame(width: 40, height: 40)
+                            .background(Color.focusCard)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+
+            // Show +N box if there are more than 5 items
+            if remainingCount > 0 {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.focusInk.opacity(0.06))
+                        .frame(width: 40, height: 40)
+
+                    Text("+\(remainingCount)")
+                        .font(.inter(12, weight: .semibold))
+                        .foregroundColor(.focusInk)
+                }
             }
         }
     }
