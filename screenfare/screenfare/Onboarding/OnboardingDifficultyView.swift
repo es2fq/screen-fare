@@ -168,7 +168,7 @@ struct CustomDifficultySlider: View {
                 step: 1
             )
             .tint(Color.focusInk)
-            .onChange(of: sliderValue) { newValue in
+            .onChange(of: sliderValue) { _, newValue in
                 selectedDifficulty = difficulties[Int(newValue)]
                 onChange()
             }

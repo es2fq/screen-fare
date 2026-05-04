@@ -42,7 +42,7 @@ struct AppScreen<Content: View>: View {
                         .padding(.bottom, 24)
                 }
             }
-            .padding(.top, 60) // paddingTop: 60px
+            .safeAreaPadding(.top) // Use actual safe area for status bar
             .padding(.bottom, 90) // paddingBottom: 90px (with tab bar)
         }
     }

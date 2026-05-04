@@ -204,7 +204,6 @@ struct OnboardingScreen<Content: View>: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea(edges: .top)
         }
     }
 }

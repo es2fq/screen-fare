@@ -72,7 +72,6 @@ struct CustomTabBar: View {
             }
         }
         .padding(.top, 8) // paddingTop: 8px
-        .padding(.bottom, 28) // paddingBottom: 28px
         .background(
             // background: rgba(245,242,237,0.92) with blur
             Color.focusBg.opacity(0.92)
@@ -84,8 +83,8 @@ struct CustomTabBar: View {
                         .frame(height: 1),
                     alignment: .top
                 )
+                .ignoresSafeArea(edges: .bottom)
         )
-        .ignoresSafeArea(edges: .bottom)
     }
 }
 

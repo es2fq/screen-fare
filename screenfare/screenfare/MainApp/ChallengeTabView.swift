@@ -86,7 +86,7 @@ struct ChallengeTabView: View {
                                 step: 1
                             )
                             .tint(Color.focusInk)
-                            .onChange(of: settings.challengeDifficulty) { _ in
+                            .onChange(of: settings.challengeDifficulty) { _, _ in
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     previewChallenge = MathChallenge(difficulty: settings.challengeDifficulty)
                                 }

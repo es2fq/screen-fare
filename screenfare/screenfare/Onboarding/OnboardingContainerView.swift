@@ -49,6 +49,7 @@ struct OnboardingContainerView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .interactiveDismissDisabled()
+        .ignoresSafeArea()
         .onAppear {
             UIScrollView.appearance().isScrollEnabled = false
         }

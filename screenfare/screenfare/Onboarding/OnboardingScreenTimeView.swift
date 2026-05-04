@@ -67,7 +67,7 @@ struct OnboardingScreenTimeView: View {
                 .padding(.bottom, 34)
             }
         }
-        .onChange(of: blockingManager.isAuthorized) { isAuthorized in
+        .onChange(of: blockingManager.isAuthorized) { _, isAuthorized in
             if isAuthorized && !hasAdvanced && isVisible {
                 hasAdvanced = true
                 onContinue()

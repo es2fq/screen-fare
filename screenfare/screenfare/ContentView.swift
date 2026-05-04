@@ -20,7 +20,7 @@ struct ContentView: View {
                     .sheet(isPresented: $showingChallenge) {
                         ChallengeView()
                     }
-                    .onChange(of: notificationManager.shouldShowChallenge) { shouldShow in
+                    .onChange(of: notificationManager.shouldShowChallenge) { _, shouldShow in
                         if shouldShow {
                             showingChallenge = true
                             notificationManager.shouldShowChallenge = false
