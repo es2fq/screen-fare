@@ -50,18 +50,17 @@ struct OnboardingAppSelectionView: View {
                     .padding(.top, 8)
 
                 // Facepile Card
-                HStack(spacing: 10) {
+                Group {
                     if hasSelectedApps {
                         AppFacepile(selectedApps: selectedApps)
                     } else {
                         Text("No apps selected yet")
                             .font(.inter(13))
                             .foregroundColor(.focusMuted)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
                     }
-
-                    Spacer()
                 }
-                .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity, minHeight: 60)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
@@ -142,26 +141,17 @@ struct AppFacepile: View {
     let selectedApps: FamilyActivitySelection
 
     var body: some View {
-        HStack(spacing: 8) {
-            let appTokens = Array(selectedApps.applicationTokens).sorted(by: { $0.hashValue < $1.hashValue })
-            let categoryTokens = Array(selectedApps.categoryTokens).sorted(by: { $0.hashValue < $1.hashValue })
-            let totalCount = appTokens.count + categoryTokens.count
-            let remainingCount = max(0, totalCount - 5)
+        HStack {
+            Spacer()
 
-            // Show individual app icons (up to 5)
-            ForEach(appTokens.prefix(min(5, appTokens.count)), id: \.self) { token in
-                Label(token)
-                    .labelStyle(.iconOnly)
-                    .scaleEffect(2.0)
-                    .frame(width: 40, height: 40)
-                    .background(Color.focusCard)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
+            HStack(spacing: 10) {
+                let appTokens = Array(selectedApps.applicationTokens).sorted(by: { $0.hashValue < $1.hashValue })
+                let categoryTokens = Array(selectedApps.categoryTokens).sorted(by: { $0.hashValue < $1.hashValue })
+                let totalCount = appTokens.count + categoryTokens.count
+                let remainingCount = max(0, totalCount - 5)
 
-            // Show category icons (only if we have room left after apps)
-            if appTokens.count < 5 {
-                let categoryLimit = 5 - appTokens.count
-                ForEach(categoryTokens.prefix(categoryLimit), id: \.self) { token in
+                // Show individual app icons (up to 5)
+                ForEach(Array(appTokens.prefix(min(5, appTokens.count)).enumerated()), id: \.element) { index, token in
                     Label(token)
                         .labelStyle(.iconOnly)
                         .scaleEffect(2.0)
@@ -169,21 +159,37 @@ struct AppFacepile: View {
                         .background(Color.focusCard)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
-            }
 
-            // Show +N box if there are more than 5 items total
-            if remainingCount > 0 {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.focusInk.opacity(0.06))
-                        .frame(width: 40, height: 40)
-
-                    Text("+\(remainingCount)")
-                        .font(.inter(12, weight: .semibold))
-                        .foregroundColor(.focusInk)
+                // Show category icons (only if we have room left after apps)
+                if appTokens.count < 5 {
+                    let categoryLimit = 5 - appTokens.count
+                    ForEach(Array(categoryTokens.prefix(categoryLimit).enumerated()), id: \.element) { index, token in
+                        Label(token)
+                            .labelStyle(.iconOnly)
+                            .scaleEffect(2.0)
+                            .frame(width: 40, height: 40)
+                            .background(Color.focusCard)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
                 }
-            }
+
+                // Show +N box if there are more than 5 items total
+                if remainingCount > 0 {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.focusInk.opacity(0.06))
+                            .frame(width: 40, height: 40)
+
+                        Text("+\(remainingCount)")
+                            .font(.inter(12, weight: .semibold))
+                            .foregroundColor(.focusInk)
+                    }
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+
+            Spacer()
         }
+        .padding(.horizontal, 16)
     }
 }
 

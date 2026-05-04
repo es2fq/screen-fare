@@ -34,6 +34,7 @@ struct OnboardingContainerView: View {
                 .tag(3)
 
             OnboardingDifficultyView(selectedDifficulty: $selectedDifficulty, onContinue: nextPage)
+                .id("difficulty-view") // Maintain view identity to prevent recreation
                 .tag(4)
 
             OnboardingTimeWindowView(selectedDuration: $selectedDuration, onContinue: nextPage)

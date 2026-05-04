@@ -16,9 +16,11 @@ struct OnboardingDifficultyView: View {
         self._selectedDifficulty = selectedDifficulty
         self.onContinue = onContinue
         self._previewChallenge = State(initialValue: MathChallenge(difficulty: selectedDifficulty.wrappedValue))
+        print("🎚️ [DifficultyView] init - selectedDifficulty: \(selectedDifficulty.wrappedValue)")
     }
 
     var body: some View {
+        let _ = print("🎚️ [DifficultyView] body rendering - selectedDifficulty: \(selectedDifficulty), previewChallenge: \(previewChallenge.questionText)")
         OnboardingScreen {
             VStack(spacing: 0) {
                 ScreenHeader(currentStep: 4, onBack: {})
@@ -106,9 +108,10 @@ struct OnboardingDifficultyView: View {
 
                     // Custom slider
                     CustomDifficultySlider(selectedDifficulty: $selectedDifficulty) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            previewChallenge = MathChallenge(difficulty: selectedDifficulty)
-                        }
+                        print("🎚️ [DifficultyView] Slider onChange callback - difficulty: \(selectedDifficulty)")
+                        print("🎚️ [DifficultyView] Creating new preview challenge")
+                        previewChallenge = MathChallenge(difficulty: selectedDifficulty)
+                        print("🎚️ [DifficultyView] Preview challenge updated: \(previewChallenge.questionText)")
                     }
                 }
                 .padding(.horizontal, 18)
@@ -151,15 +154,19 @@ struct CustomDifficultySlider: View {
     @State private var sliderValue: Double = 2 // Start at medium (index 2)
 
     private let difficulties = ChallengeDifficulty.allCases
+    private static var hasConfiguredAppearance = false
 
     init(selectedDifficulty: Binding<ChallengeDifficulty>, onChange: @escaping () -> Void) {
         self._selectedDifficulty = selectedDifficulty
         self.onChange = onChange
         let index = ChallengeDifficulty.allCases.firstIndex(of: selectedDifficulty.wrappedValue) ?? 2
         self._sliderValue = State(initialValue: Double(index))
+
+        print("🎚️ [Slider] init - selectedDifficulty: \(selectedDifficulty.wrappedValue), index: \(index), sliderValue: \(index)")
     }
 
     var body: some View {
+        let _ = print("🎚️ [Slider] body rendering - sliderValue: \(sliderValue), selectedDifficulty: \(selectedDifficulty)")
         VStack(spacing: 10) {
             // Slider
             Slider(
@@ -168,9 +175,27 @@ struct CustomDifficultySlider: View {
                 step: 1
             )
             .tint(Color.focusInk)
-            .onChange(of: sliderValue) { _, newValue in
-                selectedDifficulty = difficulties[Int(newValue)]
+            .onChange(of: sliderValue) { oldValue, newValue in
+                print("🎚️ [Slider] onChange - oldValue: \(oldValue), newValue: \(newValue)")
+                let newDifficulty = difficulties[Int(newValue)]
+                print("🎚️ [Slider] Setting selectedDifficulty from \(selectedDifficulty) to \(newDifficulty)")
+                selectedDifficulty = newDifficulty
+                print("🎚️ [Slider] Calling onChange callback")
                 onChange()
+                print("🎚️ [Slider] onChange callback completed")
+            }
+            .onAppear {
+                // Configure slider appearance only once globally
+                if !Self.hasConfiguredAppearance {
+                    print("🎚️ [Slider] Configuring slider appearance for the first time")
+                    let thumbImage = Self.createCircularThumb(radius: 14)
+                    let appearance = UISlider.appearance()
+                    appearance.setThumbImage(thumbImage, for: .normal)
+                    appearance.setThumbImage(thumbImage, for: .highlighted)
+                    Self.hasConfiguredAppearance = true
+                } else {
+                    print("🎚️ [Slider] Slider appearance already configured, skipping")
+                }
             }
 
             // Tick marks
@@ -193,6 +218,21 @@ struct CustomDifficultySlider: View {
                     .font(.inter(11))
                     .foregroundColor(.focusMuted)
             }
+        }
+    }
+
+    private static func createCircularThumb(radius: CGFloat) -> UIImage {
+        let size = CGSize(width: radius * 2, height: radius * 2)
+        return UIGraphicsImageRenderer(size: size).image { context in
+            // Draw white circle
+            UIColor.white.setFill()
+            let rect = CGRect(origin: .zero, size: size)
+            context.cgContext.fillEllipse(in: rect)
+
+            // Draw subtle border
+            UIColor(white: 0.9, alpha: 1.0).setStroke()
+            context.cgContext.setLineWidth(0.5)
+            context.cgContext.strokeEllipse(in: rect.insetBy(dx: 0.25, dy: 0.25))
         }
     }
 }
