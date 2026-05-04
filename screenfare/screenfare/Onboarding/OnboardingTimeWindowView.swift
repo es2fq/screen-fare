@@ -35,46 +35,38 @@ struct OnboardingTimeWindowView: View {
                 Spacer()
                     .frame(height: 24)
 
-                // Title
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("How long should")
-                            .font(.instrumentSerif(32))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
+                // Title: fontSize: 32, lineHeight: 1.05
+                (Text("How long should\nthe door ")
+                    .font(.instrumentSerif(32))
+                 + Text("stay open?")
+                    .font(.instrumentSerif(32, italic: true)))
+                    .foregroundColor(.focusInk)
+                    .lineSpacing(32 * 0.05) // lineHeight 1.05 = 5% extra spacing
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HStack {
-                        Text("the door ")
-                            .font(.instrumentSerif(32))
-                            .foregroundColor(.focusInk)
-                        + Text("stay open?")
-                            .font(.instrumentSerif(32, italic: true))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
-                }
-
-                // Description
+                // Description: fontSize: 14.5
                 Text("After you solve the problem, the app unlocks for this much time before re-locking.")
                     .font(.inter(14.5))
                     .foregroundColor(.focusMuted)
-                    .lineSpacing(7)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
 
                 Spacer()
                     .frame(height: 18)
 
-                // Big duration display card
+                // Big duration display card: borderRadius: 18, padding: 36px 22px 28px
                 VStack(spacing: 28) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        // Duration number: fontSize: 88, lineHeight: 1
                         Text(durationDisplay.value)
                             .font(.instrumentSerif(88))
                             .foregroundColor(.focusInk)
+                            .lineSpacing(0) // lineHeight 1 = no extra spacing
                             .monospacedDigit()
 
+                        // Unit: fontSize: 22, italic
                         Text(durationDisplay.unit)
                             .font(.instrumentSerif(22, italic: true))
                             .foregroundColor(.focusMuted)

@@ -29,31 +29,23 @@ struct OnboardingAppSelectionView: View {
                 Spacer()
                     .frame(height: 24)
 
-                // Title
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("What pulls you")
-                            .font(.instrumentSerif(32))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
+                // Title: fontSize: 32, lineHeight: 1.05, margin: 0 0 8px
+                (Text("What pulls you\n")
+                    .font(.instrumentSerif(32))
+                 + Text("away?")
+                    .font(.instrumentSerif(32, italic: true)))
+                    .foregroundColor(.focusInk)
+                    .lineSpacing(32 * 0.05) // lineHeight 1.05 = 5% extra spacing
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HStack {
-                        Text("away?")
-                            .font(.instrumentSerif(32, italic: true))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
-                }
-
-                // Description
+                // Description: fontSize: 14.5
                 Text("Choose up to 5 apps Focus will gently restrict.")
                     .font(.inter(14.5))
                     .foregroundColor(.focusMuted)
-                    .lineSpacing(7)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
 
                 // Facepile Card
                 HStack(spacing: 10) {

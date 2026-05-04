@@ -22,6 +22,10 @@ class AppBlockingManager: ObservableObject {
     @Published var blockedApps: FamilyActivitySelection?
     @Published var unlockExpiryTime: Date?
 
+    var isBlocking: Bool {
+        blockedApps != nil && !isCurrentlyUnlocked()
+    }
+
     private init() {
         // Check authorization status on init
         checkAuthorizationStatus()

@@ -57,31 +57,23 @@ struct OnboardingSummaryView: View {
                 Spacer()
                     .frame(height: 28)
 
-                // Title
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Ready when")
-                            .font(.instrumentSerif(36))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
+                // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 10px
+                (Text("Ready when\n")
+                    .font(.instrumentSerif(36))
+                 + Text("you are.")
+                    .font(.instrumentSerif(36, italic: true)))
+                    .foregroundColor(.focusInk)
+                    .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HStack {
-                        Text("you are.")
-                            .font(.instrumentSerif(36, italic: true))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
-                }
-
-                // Description
+                // Description: fontSize: 15, margin: 0 0 22px
                 Text("Review your setup. Nothing changes until you tap activate.")
                     .font(.inter(15))
                     .foregroundColor(.focusMuted)
-                    .lineSpacing(7)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 10)
 
                 Spacer()
                     .frame(height: 22)
@@ -141,12 +133,12 @@ struct OnboardingSummaryView: View {
                                 )
                         )
 
-                        // How it works card
+                        // How it works card: borderRadius: 18, padding: 20px 20px 22px
                         VStack(alignment: .leading, spacing: 12) {
                             Text("HOW IT WORKS")
                                 .font(.inter(11, weight: .medium))
                                 .foregroundColor(.white.opacity(0.5))
-                                .tracking(1)
+                                .tracking(11 * 0.12) // letterSpacing: 0.12em
 
                             VStack(spacing: 10) {
                                 HowItWorksStep(number: 1, text: "Tap a blocked app → iOS shows the block screen")

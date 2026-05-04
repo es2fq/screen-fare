@@ -26,30 +26,24 @@ struct OnboardingNotificationView: View {
                 // Icon
                 PermissionIcon(kind: .notification)
 
-                // Title
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack {
-                        Text("Enable")
-                            .font(.instrumentSerif(36))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
+                // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
+                (Text("Enable\n")
+                    .font(.instrumentSerif(36))
+                 + Text("notifications.")
+                    .font(.instrumentSerif(36, italic: true)))
+                    .foregroundColor(.focusInk)
+                    .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 28)
 
-                    HStack {
-                        Text("notifications.")
-                            .font(.instrumentSerif(36, italic: true))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
-                }
-                .padding(.top, 28)
-
-                // Description
+                // Description: fontSize: 15.5, lineHeight: 1.5, margin: 0 0 28px
                 Text("When you tap a blocked app, iOS shows its block screen. Focus sends a notification you can tap to come back here and complete a challenge.")
                     .font(.inter(15.5))
                     .foregroundColor(.focusMuted)
-                    .lineSpacing(7)
+                    .lineSpacing(15.5 * 0.5) // lineHeight 1.5 = 50% extra spacing
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 14)
 
                 // Bullets

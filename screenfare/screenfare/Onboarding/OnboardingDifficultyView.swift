@@ -26,49 +26,42 @@ struct OnboardingDifficultyView: View {
                 Spacer()
                     .frame(height: 24)
 
-                // Title
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("The ")
-                            .font(.instrumentSerif(32))
-                            .foregroundColor(.focusInk)
-                        + Text("pause")
-                            .font(.instrumentSerif(32, italic: true))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
+                // Title: fontSize: 32, lineHeight: 1.05
+                (Text("The ")
+                    .font(.instrumentSerif(32))
+                 + Text("pause")
+                    .font(.instrumentSerif(32, italic: true))
+                 + Text("\nbefore you scroll.")
+                    .font(.instrumentSerif(32)))
+                    .foregroundColor(.focusInk)
+                    .lineSpacing(32 * 0.05) // lineHeight 1.05 = 5% extra spacing
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HStack {
-                        Text("before you scroll.")
-                            .font(.instrumentSerif(32))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
-                }
-
-                // Description
+                // Description: fontSize: 14.5
                 Text("Solve a math problem to unlock a blocked app. Pick a difficulty.")
                     .font(.inter(14.5))
                     .foregroundColor(.focusMuted)
-                    .lineSpacing(7)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
 
                 Spacer()
                     .frame(height: 22)
 
-                // Preview card (dark)
+                // Preview card (dark): borderRadius: 18, padding: 24px 22px, gap: 18px
                 VStack(spacing: 18) {
+                    // Preview label: fontSize: 11, opacity: 0.5, letterSpacing: 0.12em
                     Text("PREVIEW")
                         .font(.inter(11, weight: .medium))
                         .foregroundColor(.white.opacity(0.5))
-                        .tracking(1.2)
+                        .tracking(11 * 0.12) // letterSpacing: 0.12em = 1.32px at 11px
 
+                    // Math question: fontSize: 44, lineHeight: 1
                     Text(previewChallenge.questionText)
                         .font(.instrumentSerif(44))
                         .foregroundColor(.white)
-                        .lineSpacing(-2)
+                        .lineSpacing(0) // lineHeight 1 = no extra spacing
                         .monospacedDigit()
 
                     // Mock input field

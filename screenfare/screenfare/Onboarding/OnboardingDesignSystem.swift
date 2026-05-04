@@ -152,7 +152,7 @@ struct ScreenHeader: View {
     }
 }
 
-// MARK: - Helper Extension
+// MARK: - Helper Extensions
 
 extension Color {
     init(hex: String) {
@@ -295,7 +295,7 @@ struct PermissionBullet: View {
             Text(text)
                 .font(.inter(14.5))
                 .foregroundColor(.focusInk)
-                .lineSpacing(6)
+                .lineSpacing(14.5 * 0.45) // lineHeight 1.45 = 45% extra spacing
                 .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 0)

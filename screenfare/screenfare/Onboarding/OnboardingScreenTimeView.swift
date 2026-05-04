@@ -25,30 +25,24 @@ struct OnboardingScreenTimeView: View {
                 // Icon
                 PermissionIcon(kind: .time)
 
-                // Title
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack {
-                        Text("Allow Screen")
-                            .font(.instrumentSerif(36))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
+                // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
+                (Text("Allow Screen\n")
+                    .font(.instrumentSerif(36))
+                 + Text("Time access.")
+                    .font(.instrumentSerif(36, italic: true)))
+                    .foregroundColor(.focusInk)
+                    .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 28)
 
-                    HStack {
-                        Text("Time access.")
-                            .font(.instrumentSerif(36, italic: true))
-                            .foregroundColor(.focusInk)
-                        Spacer()
-                    }
-                }
-                .padding(.top, 28)
-
-                // Description
+                // Description: fontSize: 15.5, lineHeight: 1.5, margin: 0 0 28px
                 Text("Focus needs Screen Time to monitor and gently restrict your selected apps.")
                     .font(.inter(15.5))
                     .foregroundColor(.focusMuted)
-                    .lineSpacing(7)
+                    .lineSpacing(15.5 * 0.5) // lineHeight 1.5 = 50% extra spacing
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 14)
 
                 // Bullets
