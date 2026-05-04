@@ -9,8 +9,6 @@ import SwiftUI
 import UserNotifications
 
 struct OnboardingNotificationView: View {
-    @State private var isAuthorized = false
-    @State private var isDenied = false
     @State private var hasAdvanced = false
     @State private var isVisible = false
     let onContinue: () -> Void
@@ -23,8 +21,9 @@ struct OnboardingNotificationView: View {
                 Spacer()
                     .frame(height: 36)
 
-                // Icon
+                // Icon - left aligned
                 PermissionIcon(kind: .notification)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
                 (Text("Enable\n")
@@ -63,52 +62,28 @@ struct OnboardingNotificationView: View {
                 .padding(.bottom, 34)
             }
         }
-        .onChange(of: isAuthorized) { authorized in
-            if authorized && !hasAdvanced && isVisible {
-                hasAdvanced = true
-                onContinue()
-            }
-        }
         .onAppear {
+            print("🔔 [Notifications] onAppear - isVisible: \(isVisible), hasAdvanced: \(hasAdvanced)")
             isVisible = true
-            checkNotificationStatus(skipIfAuthorized: true)
         }
         .onDisappear {
+            print("🔔 [Notifications] onDisappear")
             isVisible = false
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            // Re-check notification status when returning from Settings (only if this view is visible)
-            if isVisible && !hasAdvanced {
-                checkNotificationStatus(skipIfAuthorized: false)
-            }
         }
     }
 
     private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-            DispatchQueue.main.async {
-                if granted {
-                    isAuthorized = true
-                    isDenied = false
-                } else {
-                    checkNotificationStatus(skipIfAuthorized: false)
-                }
-            }
-        }
-    }
+        print("🔔 [Notifications] Button tapped - requesting permission")
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            print("🔔 [Notifications] Authorization callback - granted: \(granted), error: \(String(describing: error))")
 
-    private func checkNotificationStatus(skipIfAuthorized: Bool = false) {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async {
-                isAuthorized = settings.authorizationStatus == .authorized
-                isDenied = settings.authorizationStatus == .denied
-
-                // Skip this screen if already authorized (when first appearing)
-                if skipIfAuthorized && isAuthorized && !hasAdvanced {
-                    hasAdvanced = true
-                    onContinue()
+            // Only advance if granted and we haven't already advanced
+            if granted && !self.hasAdvanced {
+                DispatchQueue.main.async {
+                    print("🔔 [Notifications] ✅ Permission granted - advancing to next screen")
+                    self.hasAdvanced = true
+                    self.onContinue()
                 }
-                // onChange will handle calling onContinue() in other cases
             }
         }
     }

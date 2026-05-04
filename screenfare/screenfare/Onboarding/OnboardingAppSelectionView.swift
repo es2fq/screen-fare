@@ -138,21 +138,22 @@ struct AppFacepile: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Show up to 5 app icons
+            // Show up to 5 app icons - 2x scale (64x64 base)
             ForEach(Array(selectedApps.applicationTokens.prefix(5)).indices, id: \.self) { index in
                 let tokens = Array(selectedApps.applicationTokens.prefix(5))
                 let token = tokens[index]
 
                 Label(token)
                     .labelStyle(.iconOnly)
-                    .frame(width: 32, height: 32)
+                    .scaleEffect(2.0)
+                    .frame(width: 80, height: 80)
                     .background(Color.focusCard)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.focusCard, lineWidth: 2)
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.focusCard, lineWidth: 3)
                     )
-                    .padding(.leading, index == 0 ? 0 : -8)
+                    .padding(.leading, index == 0 ? 0 : -20)
                     .zIndex(Double(tokens.count - index))
             }
         }

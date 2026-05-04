@@ -17,8 +17,9 @@ struct OnboardingWelcomeView: View {
                 Spacer()
                     .frame(height: 80)
 
-                // Brand mark: 64x64, borderRadius: 17.92 (64 * 0.28)
+                // Brand mark: 64x64, borderRadius: 17.92 (64 * 0.28), left aligned
                 BrandMark(size: 64)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 // Title: fontSize: 44, lineHeight: 1.02, margin: 32px 0 16px
                 VStack(alignment: .leading, spacing: 0) {
@@ -36,14 +37,18 @@ struct OnboardingWelcomeView: View {
                 .padding(.top, 32)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Description: fontSize: 16, lineHeight: 1.5, maxWidth: 300
-                Text("Block the apps that pull you in. Open them only after a brief, intentional pause.")
-                    .font(.inter(16))
-                    .foregroundColor(.focusMuted)
-                    .lineSpacing(16 * 0.5) // lineHeight 1.5 = 50% extra spacing
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 16)
-                    .frame(maxWidth: 300, alignment: .leading)
+                // Description: fontSize: 16, lineHeight: 1.5, maxWidth: 300, left aligned
+                HStack {
+                    Text("Block the apps that pull you in. Open them only after a brief, intentional pause.")
+                        .font(.inter(16))
+                        .foregroundColor(.focusMuted)
+                        .lineSpacing(16 * 0.5) // lineHeight 1.5 = 50% extra spacing
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 300, alignment: .leading)
+
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 16)
 
                 Spacer()
 

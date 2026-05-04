@@ -147,8 +147,6 @@ struct ScreenHeader: View {
             Color.clear
                 .frame(width: 36, height: 36)
         }
-        .padding(.horizontal, 28)
-        .padding(.top, 60)
     }
 }
 
@@ -206,6 +204,7 @@ struct OnboardingScreen<Content: View>: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea(edges: .top)
         }
     }
 }
@@ -230,47 +229,10 @@ struct PermissionIcon: View {
                 )
                 .frame(width: 76, height: 76)
 
-            if kind == .time {
-                ZStack {
-                    Circle()
-                        .stroke(Color.focusInk, lineWidth: 1.6)
-                        .frame(width: 28, height: 28)
-
-                    Path { path in
-                        path.move(to: CGPoint(x: 0, y: -8))
-                        path.addLine(to: CGPoint(x: 0, y: 0))
-                        path.addLine(to: CGPoint(x: 5, y: 3))
-                    }
-                    .stroke(Color.focusInk, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-                }
-            } else {
-                // Bell icon
-                ZStack {
-                    Path { path in
-                        // Bell body
-                        path.move(to: CGPoint(x: -8, y: 8))
-                        path.addLine(to: CGPoint(x: -8, y: -2))
-                        path.addQuadCurve(to: CGPoint(x: 0, y: -10), control: CGPoint(x: -8, y: -10))
-                        path.addQuadCurve(to: CGPoint(x: 8, y: -2), control: CGPoint(x: 8, y: -10))
-                        path.addLine(to: CGPoint(x: 8, y: 8))
-                    }
-                    .stroke(Color.focusInk, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
-
-                    // Bell bottom
-                    Path { path in
-                        path.move(to: CGPoint(x: -11, y: 8))
-                        path.addLine(to: CGPoint(x: 11, y: 8))
-                    }
-                    .stroke(Color.focusInk, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
-
-                    // Bell clapper
-                    Path { path in
-                        path.move(to: CGPoint(x: -3, y: 12))
-                        path.addQuadCurve(to: CGPoint(x: 3, y: 12), control: CGPoint(x: 0, y: 14))
-                    }
-                    .stroke(Color.focusInk, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
-                }
-            }
+            // Use SF Symbols instead of manual drawing
+            Image(systemName: kind == .time ? "clock" : "bell")
+                .font(.system(size: 32, weight: .regular))
+                .foregroundColor(.focusInk)
         }
     }
 }

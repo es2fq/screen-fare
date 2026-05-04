@@ -22,13 +22,14 @@ struct OnboardingScreenTimeView: View {
                 Spacer()
                     .frame(height: 36)
 
-                // Icon
+                // Icon - left aligned
                 PermissionIcon(kind: .time)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
-                (Text("Allow Screen\n")
+                (Text("Allow\n")
                     .font(.instrumentSerif(36))
-                 + Text("Time access.")
+                 + Text("Screen Time.")
                     .font(.instrumentSerif(36, italic: true)))
                     .foregroundColor(.focusInk)
                     .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
@@ -59,6 +60,8 @@ struct OnboardingScreenTimeView: View {
                 PrimaryButton(title: "Allow access") {
                     Task {
                         try? await blockingManager.requestAuthorization()
+                        // Check authorization status after request completes
+                        blockingManager.checkAuthorizationStatus()
                     }
                 }
                 .padding(.bottom, 34)
@@ -72,21 +75,9 @@ struct OnboardingScreenTimeView: View {
         }
         .onAppear {
             isVisible = true
-            // Skip this screen if already authorized
-            if blockingManager.isAuthorized && !hasAdvanced {
-                hasAdvanced = true
-                onContinue()
-            }
         }
         .onDisappear {
             isVisible = false
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            // Re-check authorization when returning from Settings (only if this view is visible)
-            if isVisible && blockingManager.isAuthorized && !hasAdvanced {
-                hasAdvanced = true
-                onContinue()
-            }
         }
     }
 }
