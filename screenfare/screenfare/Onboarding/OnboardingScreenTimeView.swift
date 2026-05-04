@@ -10,35 +10,34 @@ import FamilyControls
 
 struct OnboardingScreenTimeView: View {
     @StateObject private var blockingManager = AppBlockingManager.shared
+    @State private var hasAdvanced = false
+    @State private var isVisible = false
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 40) {
             Spacer()
 
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 Image(systemName: "hourglass")
-                    .font(.system(size: 70))
+                    .font(.system(size: 80))
                     .foregroundColor(.blue)
+                    .symbolRenderingMode(.hierarchical)
 
-                Text("Screen Time Permission")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
+                Text("Screen Time Access")
+                    .font(.system(size: 34, weight: .bold))
 
-                Text("ScreenFare needs access to Screen Time to block and manage your apps")
+                Text("Required to block and manage apps")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }
 
-            Spacer()
-
-            VStack(alignment: .leading, spacing: 16) {
-                PermissionReasonRow(icon: "shield.fill", text: "Block distracting apps when you need to focus")
-                PermissionReasonRow(icon: "lock.fill", text: "Require challenges before apps can be opened")
-                PermissionReasonRow(icon: "checkmark.shield.fill", text: "Your data stays private and secure on your device")
+            VStack(spacing: 12) {
+                PermissionReason(icon: "shield.fill", text: "Block apps when you need focus")
+                PermissionReason(icon: "lock.fill", text: "Require challenges before opening")
+                PermissionReason(icon: "hand.raised.fill", text: "Your data stays on your device")
             }
             .padding(.horizontal, 40)
 
@@ -49,40 +48,58 @@ struct OnboardingScreenTimeView: View {
                     try? await blockingManager.requestAuthorization()
                 }
             } label: {
-                Text(blockingManager.isAuthorized ? "Permission Granted ✓" : "Enable Screen Time Permission")
+                Text("Enable Screen Time Access")
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(blockingManager.isAuthorized ? Color.green : Color.blue)
+                    .background(Color.blue)
                     .cornerRadius(12)
             }
-            .disabled(blockingManager.isAuthorized)
             .padding(.horizontal, 32)
             .padding(.bottom, 16)
         }
         .onChange(of: blockingManager.isAuthorized) { isAuthorized in
-            if isAuthorized {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    onContinue()
-                }
+            if isAuthorized && !hasAdvanced && isVisible {
+                hasAdvanced = true
+                onContinue()
+            }
+        }
+        .onAppear {
+            isVisible = true
+            // Skip this screen if already authorized
+            if blockingManager.isAuthorized && !hasAdvanced {
+                hasAdvanced = true
+                onContinue()
+            }
+        }
+        .onDisappear {
+            isVisible = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // Re-check authorization when returning from Settings (only if this view is visible)
+            if isVisible && blockingManager.isAuthorized && !hasAdvanced {
+                hasAdvanced = true
+                onContinue()
             }
         }
     }
 }
 
-struct PermissionReasonRow: View {
+struct PermissionReason: View {
     let icon: String
     let text: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(spacing: 12) {
             Image(systemName: icon)
+                .font(.system(size: 20))
                 .foregroundColor(.blue)
                 .frame(width: 24)
             Text(text)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+            Spacer()
         }
     }
 }

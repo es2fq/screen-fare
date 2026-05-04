@@ -19,46 +19,37 @@ struct OnboardingTimeWindowView: View {
     }
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 40) {
             Spacer()
 
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 Image(systemName: "clock.fill")
-                    .font(.system(size: 70))
+                    .font(.system(size: 80))
                     .foregroundColor(.blue)
+                    .symbolRenderingMode(.hierarchical)
 
-                Text("Set Unlock Duration")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
+                Text("Unlock Duration")
+                    .font(.system(size: 34, weight: .bold))
 
-                Text("Choose how long apps stay unlocked after completing a challenge")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                // Duration display
+                VStack(spacing: 8) {
+                    Text("\(selectedMinutes)")
+                        .font(.system(size: 72, weight: .bold, design: .rounded))
+                        .foregroundColor(.blue)
+
+                    Text("minutes")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 20)
+                .frame(maxWidth: .infinity)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(16)
+                .padding(.horizontal, 32)
             }
-
-            Spacer()
-
-            // Duration display
-            VStack(spacing: 12) {
-                Text("\(selectedMinutes)")
-                    .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .foregroundColor(.blue)
-
-                Text("minutes")
-                    .font(.title2)
-                    .foregroundColor(.secondary)
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(16)
-            .padding(.horizontal, 32)
 
             // Slider
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Slider(
                     value: $selectedDuration,
                     in: 300...3600,
@@ -68,23 +59,16 @@ struct OnboardingTimeWindowView: View {
                 .padding(.horizontal, 32)
 
                 HStack {
-                    Text("5 min")
+                    Text("5")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("60 min")
+                    Text("60")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 .padding(.horizontal, 40)
             }
-
-            // Helpful hint
-            Text(durationHint(for: selectedMinutes))
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
 
             Spacer()
 
@@ -104,18 +88,6 @@ struct OnboardingTimeWindowView: View {
         }
     }
 
-    private func durationHint(for minutes: Int) -> String {
-        switch minutes {
-        case 5...10:
-            return "Perfect for quick tasks"
-        case 15...25:
-            return "Good for short sessions"
-        case 30...40:
-            return "Ideal for focused work"
-        default:
-            return "Great for deep focus sessions"
-        }
-    }
 }
 
 #Preview {

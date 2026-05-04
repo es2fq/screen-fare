@@ -23,98 +23,83 @@ struct OnboardingSummaryView: View {
     }
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 40) {
             Spacer()
 
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 70))
+                    .font(.system(size: 80))
                     .foregroundColor(.green)
+                    .symbolRenderingMode(.hierarchical)
 
-                Text("You're All Set!")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
+                Text("All Set!")
+                    .font(.system(size: 34, weight: .bold))
 
-                Text("Review your settings below and tap Start to begin")
+                Text("Review your settings")
                     .font(.body)
                     .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
             }
 
-            Spacer()
-
             // Summary cards
-            VStack(spacing: 16) {
-                SummaryCard(
+            VStack(spacing: 12) {
+                SummaryRow(
                     icon: "app.badge",
-                    title: "Blocked Apps",
-                    value: "\(appCount) app\(appCount == 1 ? "" : "s")"
+                    title: "Apps",
+                    value: "\(appCount)"
                 )
 
-                SummaryCard(
+                SummaryRow(
                     icon: "brain.head.profile",
-                    title: "Challenge Difficulty",
+                    title: "Difficulty",
                     value: difficulty.rawValue
                 )
 
-                SummaryCard(
+                SummaryRow(
                     icon: "clock.fill",
-                    title: "Unlock Duration",
-                    value: "\(durationMinutes) minutes"
+                    title: "Duration",
+                    value: "\(durationMinutes) min"
                 )
             }
             .padding(.horizontal, 32)
 
             Spacer()
 
-            VStack(spacing: 8) {
-                Text("These settings can be changed anytime in the Settings tab")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-
-                Button {
-                    onComplete()
-                } label: {
-                    Text("Start Blocking")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 16)
+            Button {
+                onComplete()
+            } label: {
+                Text("Start Blocking")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green)
+                    .cornerRadius(12)
             }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 16)
         }
     }
 }
 
-struct SummaryCard: View {
+struct SummaryRow: View {
     let icon: String
     let title: String
     let value: String
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack {
             Image(systemName: icon)
-                .font(.system(size: 28))
+                .font(.system(size: 20))
                 .foregroundColor(.blue)
-                .frame(width: 44)
+                .frame(width: 28)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Text(value)
-                    .font(.headline)
-            }
+            Text(title)
+                .foregroundColor(.secondary)
 
             Spacer()
+
+            Text(value)
+                .fontWeight(.semibold)
         }
         .padding()
         .background(Color.blue.opacity(0.1))
