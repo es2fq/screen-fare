@@ -15,49 +15,60 @@ struct OnboardingScreenTimeView: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        OnboardingScreen {
+            VStack(spacing: 0) {
+                ScreenHeader(currentStep: 1, onBack: {})
 
-            VStack(spacing: 16) {
-                Image(systemName: "hourglass")
-                    .font(.system(size: 80))
-                    .foregroundColor(.blue)
-                    .symbolRenderingMode(.hierarchical)
+                Spacer()
+                    .frame(height: 36)
 
-                Text("Screen Time Access")
-                    .font(.system(size: 34, weight: .bold))
+                // Icon
+                PermissionIcon(kind: .time)
 
-                Text("Required to block and manage apps")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
+                // Title
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Text("Allow Screen")
+                            .font(.instrumentSerif(36))
+                            .foregroundColor(.focusInk)
+                        Spacer()
+                    }
 
-            VStack(spacing: 12) {
-                PermissionReason(icon: "shield.fill", text: "Block apps when you need focus")
-                PermissionReason(icon: "lock.fill", text: "Require challenges before opening")
-                PermissionReason(icon: "hand.raised.fill", text: "Your data stays on your device")
-            }
-            .padding(.horizontal, 40)
-
-            Spacer()
-
-            Button {
-                Task {
-                    try? await blockingManager.requestAuthorization()
+                    HStack {
+                        Text("Time access.")
+                            .font(.instrumentSerif(36, italic: true))
+                            .foregroundColor(.focusInk)
+                        Spacer()
+                    }
                 }
-            } label: {
-                Text("Enable Screen Time Access")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(12)
+                .padding(.top, 28)
+
+                // Description
+                Text("Focus needs Screen Time to monitor and gently restrict your selected apps.")
+                    .font(.inter(15.5))
+                    .foregroundColor(.focusMuted)
+                    .lineSpacing(7)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 14)
+
+                // Bullets
+                VStack(spacing: 14) {
+                    PermissionBullet(text: "Track time spent across apps")
+                    PermissionBullet(text: "Apply blocks without leaving Focus")
+                    PermissionBullet(text: "Your data never leaves your device")
+                }
+                .padding(.top, 28)
+
+                Spacer()
+
+                // Primary button
+                PrimaryButton(title: "Allow access") {
+                    Task {
+                        try? await blockingManager.requestAuthorization()
+                    }
+                }
+                .padding(.bottom, 34)
             }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 16)
         }
         .onChange(of: blockingManager.isAuthorized) { isAuthorized in
             if isAuthorized && !hasAdvanced && isVisible {
@@ -82,24 +93,6 @@ struct OnboardingScreenTimeView: View {
                 hasAdvanced = true
                 onContinue()
             }
-        }
-    }
-}
-
-struct PermissionReason: View {
-    let icon: String
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.blue)
-                .frame(width: 24)
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            Spacer()
         }
     }
 }

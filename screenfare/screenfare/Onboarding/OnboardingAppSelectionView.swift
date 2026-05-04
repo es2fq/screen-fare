@@ -22,65 +22,120 @@ struct OnboardingAppSelectionView: View {
     }
 
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        OnboardingScreen {
+            VStack(spacing: 0) {
+                ScreenHeader(currentStep: 3, onBack: {})
 
-            VStack(spacing: 16) {
-                Image(systemName: "app.badge.checkmark")
-                    .font(.system(size: 80))
-                    .foregroundColor(.blue)
-                    .symbolRenderingMode(.hierarchical)
+                Spacer()
+                    .frame(height: 24)
 
-                Text("Choose Apps")
-                    .font(.system(size: 34, weight: .bold))
-
-                if hasSelectedApps {
-                    AppFacepile(selectedApps: selectedApps)
-                        .padding(.top, 8)
-
-                    Text("\(appCount) app\(appCount == 1 ? "" : "s") selected")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                } else {
-                    Text("Select apps to block")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 8)
-                }
-            }
-
-            Spacer()
-
-            VStack(spacing: 12) {
-                Button {
-                    showingPicker = true
-                } label: {
-                    Label(hasSelectedApps ? "Edit Selection" : "Select Apps", systemImage: "plus.app")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 32)
-
-                if hasSelectedApps {
-                    Button {
-                        onContinue()
-                    } label: {
-                        Text("Continue")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .cornerRadius(12)
+                // Title
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("What pulls you")
+                            .font(.instrumentSerif(32))
+                            .foregroundColor(.focusInk)
+                        Spacer()
                     }
-                    .padding(.horizontal, 32)
+
+                    HStack {
+                        Text("away?")
+                            .font(.instrumentSerif(32, italic: true))
+                            .foregroundColor(.focusInk)
+                        Spacer()
+                    }
                 }
+
+                // Description
+                Text("Choose up to 5 apps Focus will gently restrict.")
+                    .font(.inter(14.5))
+                    .foregroundColor(.focusMuted)
+                    .lineSpacing(7)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Facepile Card
+                HStack(spacing: 10) {
+                    if hasSelectedApps {
+                        AppFacepile(selectedApps: selectedApps)
+                    } else {
+                        Text("No apps selected yet")
+                            .font(.inter(13))
+                            .foregroundColor(.focusMuted)
+                    }
+
+                    Spacer()
+
+                    Text("\(appCount)/5")
+                        .font(.inter(13))
+                        .foregroundColor(.focusMuted)
+                        .monospacedDigit()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.focusLine, lineWidth: 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.focusCard)
+                        )
+                )
+                .padding(.top, 16)
+
+                Spacer()
+                    .frame(height: 24)
+
+                // Select apps button
+                Button(action: { showingPicker = true }) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.focusInk.opacity(0.06))
+                                .frame(width: 32, height: 32)
+
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.focusInk)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(hasSelectedApps ? "Manage apps" : "Add apps")
+                                .font(.inter(14.5, weight: .semibold))
+                                .foregroundColor(.focusInk)
+
+                            Text(hasSelectedApps ? "\(appCount) selected · tap to manage" : "Browse all apps via Screen Time")
+                                .font(.inter(12))
+                                .foregroundColor(.focusMuted)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.focusMuted)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.focusLine, lineWidth: 1)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color.focusCard)
+                            )
+                    )
+                }
+
+                Spacer()
+
+                // Primary button
+                PrimaryButton(title: "Continue", action: onContinue, disabled: !hasSelectedApps)
+                    .padding(.bottom, 34)
+                    .padding(.top, 14)
             }
-            .padding(.bottom, 16)
         }
         .familyActivityPicker(isPresented: $showingPicker, selection: $selectedApps)
     }
@@ -89,41 +144,24 @@ struct OnboardingAppSelectionView: View {
 struct AppFacepile: View {
     let selectedApps: FamilyActivitySelection
 
-    private var totalCount: Int {
-        selectedApps.applicationTokens.count + selectedApps.categoryTokens.count
-    }
-
     var body: some View {
-        HStack(spacing: -12) {
+        HStack(spacing: 0) {
             // Show up to 5 app icons
-            ForEach(Array(selectedApps.applicationTokens.prefix(5)), id: \.self) { token in
+            ForEach(Array(selectedApps.applicationTokens.prefix(5)).indices, id: \.self) { index in
+                let tokens = Array(selectedApps.applicationTokens.prefix(5))
+                let token = tokens[index]
+
                 Label(token)
                     .labelStyle(.iconOnly)
-                    .frame(width: 50, height: 50)
-                    .background(Circle().fill(Color(UIColor.systemBackground)))
-                    .clipShape(Circle())
+                    .frame(width: 32, height: 32)
+                    .background(Color.focusCard)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
-                        Circle()
-                            .stroke(Color(UIColor.systemBackground), lineWidth: 2)
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.focusCard, lineWidth: 2)
                     )
-            }
-
-            // Show overflow count if more than 5
-            if totalCount > 5 {
-                ZStack {
-                    Circle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 50, height: 50)
-
-                    Text("+\(totalCount - 5)")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.gray)
-                }
-                .overlay(
-                    Circle()
-                        .stroke(Color(UIColor.systemBackground), lineWidth: 2)
-                )
+                    .padding(.leading, index == 0 ? 0 : -8)
+                    .zIndex(Double(tokens.count - index))
             }
         }
     }

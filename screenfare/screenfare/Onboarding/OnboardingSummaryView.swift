@@ -22,88 +22,215 @@ struct OnboardingSummaryView: View {
         Int(duration / 60)
     }
 
+    private var durationFormatted: String {
+        if durationMinutes < 60 {
+            return "\(durationMinutes) minutes"
+        } else if durationMinutes == 60 {
+            return "1 hour"
+        } else {
+            let hours = durationMinutes / 60
+            let mins = durationMinutes % 60
+            return mins > 0 ? "\(hours)h \(mins)m" : "\(hours) hours"
+        }
+    }
+
+    private var difficultyLabel: String {
+        switch difficulty {
+        case .veryEasy: return "Very easy"
+        case .easy: return "Easy"
+        case .medium: return "Medium"
+        case .hard: return "Hard"
+        case .veryHard: return "Very hard"
+        }
+    }
+
+    private var sampleProblem: String {
+        let challenge = MathChallenge(difficulty: difficulty)
+        return challenge.questionText
+    }
+
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        OnboardingScreen {
+            VStack(spacing: 0) {
+                ScreenHeader(currentStep: 6, onBack: {})
 
-            VStack(spacing: 16) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.green)
-                    .symbolRenderingMode(.hierarchical)
+                Spacer()
+                    .frame(height: 28)
 
-                Text("All Set!")
-                    .font(.system(size: 34, weight: .bold))
+                // Title
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Ready when")
+                            .font(.instrumentSerif(36))
+                            .foregroundColor(.focusInk)
+                        Spacer()
+                    }
 
-                Text("Review your settings")
-                    .font(.body)
-                    .foregroundColor(.secondary)
+                    HStack {
+                        Text("you are.")
+                            .font(.instrumentSerif(36, italic: true))
+                            .foregroundColor(.focusInk)
+                        Spacer()
+                    }
+                }
+
+                // Description
+                Text("Review your setup. Nothing changes until you tap activate.")
+                    .font(.inter(15))
+                    .foregroundColor(.focusMuted)
+                    .lineSpacing(7)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer()
+                    .frame(height: 22)
+
+                ScrollView {
+                    VStack(spacing: 14) {
+                        // Summary card
+                        VStack(spacing: 0) {
+                            SummaryRow(
+                                label: "Apps blocked",
+                                value: AnyView(
+                                    HStack(spacing: 8) {
+                                        AppFacepile(selectedApps: selectedApps)
+                                        Text("\(appCount)")
+                                            .font(.inter(13))
+                                            .foregroundColor(.focusMuted)
+                                    }
+                                )
+                            )
+
+                            SummaryRow(
+                                label: "Challenge",
+                                value: AnyView(
+                                    Text("Math · \(difficultyLabel)")
+                                        .font(.inter(15, weight: .medium))
+                                        .foregroundColor(.focusInk)
+                                )
+                            )
+
+                            SummaryRow(
+                                label: "Sample",
+                                value: AnyView(
+                                    Text(sampleProblem)
+                                        .font(.instrumentSerif(17, italic: true))
+                                        .foregroundColor(.focusInk)
+                                )
+                            )
+
+                            SummaryRow(
+                                label: "Access window",
+                                value: AnyView(
+                                    Text(durationFormatted)
+                                        .font(.inter(15, weight: .medium))
+                                        .foregroundColor(.focusInk)
+                                ),
+                                isLast: true
+                            )
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18)
+                                .stroke(Color.focusLine, lineWidth: 1)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 18)
+                                        .fill(Color.focusCard)
+                                )
+                        )
+
+                        // How it works card
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("HOW IT WORKS")
+                                .font(.inter(11, weight: .medium))
+                                .foregroundColor(.white.opacity(0.5))
+                                .tracking(1)
+
+                            VStack(spacing: 10) {
+                                HowItWorksStep(number: 1, text: "Tap a blocked app → iOS shows the block screen")
+                                HowItWorksStep(number: 2, text: "Focus sends a notification → tap it")
+                                HowItWorksStep(number: 3, text: "Solve a \(difficultyLabel.lowercased()) math problem")
+                                HowItWorksStep(number: 4, text: "App unlocks for \(durationFormatted)")
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 22)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(Color.focusInk)
+                        )
+                    }
+                }
+
+                Spacer()
+                    .frame(height: 14)
+
+                // Primary button
+                PrimaryButton(title: "Activate Focus", action: onComplete)
+                    .padding(.bottom, 34)
             }
-
-            // Summary cards
-            VStack(spacing: 12) {
-                SummaryRow(
-                    icon: "app.badge",
-                    title: "Apps",
-                    value: "\(appCount)"
-                )
-
-                SummaryRow(
-                    icon: "brain.head.profile",
-                    title: "Difficulty",
-                    value: difficulty.rawValue
-                )
-
-                SummaryRow(
-                    icon: "clock.fill",
-                    title: "Duration",
-                    value: "\(durationMinutes) min"
-                )
-            }
-            .padding(.horizontal, 32)
-
-            Spacer()
-
-            Button {
-                onComplete()
-            } label: {
-                Text("Start Blocking")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 16)
         }
     }
 }
 
 struct SummaryRow: View {
-    let icon: String
-    let title: String
-    let value: String
+    let label: String
+    let value: AnyView
+    var isLast: Bool = false
 
     var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.blue)
-                .frame(width: 28)
-
-            Text(title)
-                .foregroundColor(.secondary)
+        HStack(alignment: .top, spacing: 16) {
+            Text(label)
+                .font(.inter(13))
+                .foregroundColor(.focusMuted)
+                .padding(.top, 2)
+                .frame(maxWidth: 100, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
 
             Spacer()
 
-            Text(value)
-                .fontWeight(.semibold)
+            value
+                .frame(maxWidth: 200, alignment: .trailing)
+                .multilineTextAlignment(.trailing)
         }
-        .padding()
-        .background(Color.blue.opacity(0.1))
-        .cornerRadius(12)
+        .padding(.vertical, 16)
+        .overlay(
+            Rectangle()
+                .fill(isLast ? Color.clear : Color.focusLine)
+                .frame(height: 1),
+            alignment: .bottom
+        )
+    }
+}
+
+struct HowItWorksStep: View {
+    let number: Int
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 18, height: 18)
+
+                Text("\(number)")
+                    .font(.inter(11, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            .padding(.top, 1)
+
+            Text(text)
+                .font(.inter(13.5))
+                .foregroundColor(.white.opacity(0.9))
+                .lineSpacing(6)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -111,7 +238,7 @@ struct SummaryRow: View {
     OnboardingSummaryView(
         selectedApps: FamilyActivitySelection(),
         difficulty: .medium,
-        duration: 1800,
+        duration: 300,
         onComplete: {}
     )
 }

@@ -19,69 +19,134 @@ struct OnboardingDifficultyView: View {
     }
 
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        OnboardingScreen {
+            VStack(spacing: 0) {
+                ScreenHeader(currentStep: 4, onBack: {})
 
-            VStack(spacing: 16) {
-                Image(systemName: "brain.head.profile")
-                    .font(.system(size: 80))
-                    .foregroundColor(.blue)
-                    .symbolRenderingMode(.hierarchical)
+                Spacer()
+                    .frame(height: 24)
 
-                Text("Challenge Difficulty")
-                    .font(.system(size: 34, weight: .bold))
+                // Title
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("The ")
+                            .font(.instrumentSerif(32))
+                            .foregroundColor(.focusInk)
+                        + Text("pause")
+                            .font(.instrumentSerif(32, italic: true))
+                            .foregroundColor(.focusInk)
+                        Spacer()
+                    }
 
-                Text("Live preview:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Text(previewChallenge.questionText)
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(16)
-                    .padding(.horizontal, 32)
-            }
-
-            // Difficulty slider
-            VStack(spacing: 16) {
-                CustomDifficultySlider(selectedDifficulty: $selectedDifficulty) {
-                    previewChallenge = MathChallenge(difficulty: selectedDifficulty)
+                    HStack {
+                        Text("before you scroll.")
+                            .font(.instrumentSerif(32))
+                            .foregroundColor(.focusInk)
+                        Spacer()
+                    }
                 }
-                .padding(.horizontal, 32)
 
-                Text(difficultyDescription(for: selectedDifficulty))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                // Description
+                Text("Solve a math problem to unlock a blocked app. Pick a difficulty.")
+                    .font(.inter(14.5))
+                    .foregroundColor(.focusMuted)
+                    .lineSpacing(7)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer()
+                    .frame(height: 22)
+
+                // Preview card (dark)
+                VStack(spacing: 18) {
+                    Text("PREVIEW")
+                        .font(.inter(11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                        .tracking(1.2)
+
+                    Text(previewChallenge.questionText)
+                        .font(.instrumentSerif(44))
+                        .foregroundColor(.white)
+                        .lineSpacing(-2)
+                        .monospacedDigit()
+
+                    // Mock input field
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                        .frame(height: 52)
+                        .overlay(
+                            HStack(spacing: 4) {
+                                ForEach(0..<3) { _ in
+                                    Circle()
+                                        .fill(Color.white.opacity(0.4))
+                                        .frame(width: 4, height: 4)
+                                }
+                            }
+                        )
+                }
+                .padding(.horizontal, 22)
+                .padding(.vertical, 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(Color.focusInk)
+                )
+
+                Spacer()
+                    .frame(height: 22)
+
+                // Difficulty slider card
+                VStack(spacing: 14) {
+                    HStack {
+                        Text("Difficulty")
+                            .font(.inter(13))
+                            .foregroundColor(.focusMuted)
+                        Spacer()
+                        Text(difficultyLabel(for: selectedDifficulty))
+                            .font(.inter(15, weight: .semibold))
+                            .foregroundColor(.focusInk)
+                    }
+
+                    // Custom slider
+                    CustomDifficultySlider(selectedDifficulty: $selectedDifficulty) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            previewChallenge = MathChallenge(difficulty: selectedDifficulty)
+                        }
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.focusLine, lineWidth: 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.focusCard)
+                        )
+                )
+
+                Spacer()
+
+                // Primary button
+                PrimaryButton(title: "Continue", action: onContinue)
+                    .padding(.top, 14)
+                    .padding(.bottom, 34)
             }
-
-            Spacer()
-
-            Button {
-                onContinue()
-            } label: {
-                Text("Continue")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 16)
         }
     }
 
-    private func difficultyDescription(for difficulty: ChallengeDifficulty) -> String {
+    private func difficultyLabel(for difficulty: ChallengeDifficulty) -> String {
         switch difficulty {
-        case .veryEasy: return "1-10, addition & subtraction"
-        case .easy: return "1-20, addition & subtraction"
-        case .medium: return "10-50, all operations"
-        case .hard: return "20-100, all operations"
-        case .veryHard: return "50-200, all operations"
+        case .veryEasy: return "Very easy"
+        case .easy: return "Easy"
+        case .medium: return "Medium"
+        case .hard: return "Hard"
+        case .veryHard: return "Very hard"
         }
     }
 }
@@ -102,70 +167,39 @@ struct CustomDifficultySlider: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
-            ZStack(alignment: .leading) {
-                // Background track
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 8)
-
-                // Filled track
-                GeometryReader { geometry in
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.blue)
-                        .frame(width: geometry.size.width * CGFloat(sliderValue / 4), height: 8)
-                }
-                .frame(height: 8)
-
-                // Slider thumb
-                GeometryReader { geometry in
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 28, height: 28)
-                        .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.blue, lineWidth: 3)
-                        )
-                        .offset(x: geometry.size.width * CGFloat(sliderValue / 4) - 14)
-                }
-                .frame(height: 28)
-            }
-            .frame(height: 28)
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        let percent = value.location.x / UIScreen.main.bounds.width * 1.3 // Adjust for padding
-                        let newValue = max(0, min(4, percent * 4))
-                        let snappedValue = round(newValue)
-                        if snappedValue != sliderValue {
-                            sliderValue = snappedValue
-                            selectedDifficulty = difficulties[Int(snappedValue)]
-                            onChange()
-                        }
-                    }
+        VStack(spacing: 10) {
+            // Slider
+            Slider(
+                value: $sliderValue,
+                in: 0...4,
+                step: 1
             )
+            .tint(Color.focusInk)
+            .onChange(of: sliderValue) { newValue in
+                selectedDifficulty = difficulties[Int(newValue)]
+                onChange()
+            }
 
-            // Labels
+            // Tick marks
             HStack {
-                ForEach(Array(difficulties.enumerated()), id: \.offset) { index, difficulty in
-                    Text(shortName(for: difficulty))
-                        .font(.caption)
-                        .foregroundColor(Int(sliderValue) == index ? .blue : .secondary)
-                        .fontWeight(Int(sliderValue) == index ? .semibold : .regular)
+                ForEach(0..<5) { index in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(index <= Int(sliderValue) ? Color.focusInk : Color.focusInk.opacity(0.2))
+                        .frame(width: 4, height: 4)
                         .frame(maxWidth: .infinity)
                 }
             }
-        }
-    }
 
-    private func shortName(for difficulty: ChallengeDifficulty) -> String {
-        switch difficulty {
-        case .veryEasy: return "Very Easy"
-        case .easy: return "Easy"
-        case .medium: return "Medium"
-        case .hard: return "Hard"
-        case .veryHard: return "Very Hard"
+            // Labels
+            HStack {
+                Text("Very easy")
+                    .font(.inter(11))
+                    .foregroundColor(.focusMuted)
+                Spacer()
+                Text("Very hard")
+                    .font(.inter(11))
+                    .foregroundColor(.focusMuted)
+            }
         }
     }
 }

@@ -10,9 +10,22 @@
 		986783A52FA82DC20091CF6D /* screenfare.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = screenfare.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		987EF8192FA86B7B00F8DEDF /* Exceptions for "screenfare" folder in "screenfare" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 986783A42FA82DC20091CF6D /* screenfare */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		986783A72FA82DC20091CF6D /* screenfare */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				987EF8192FA86B7B00F8DEDF /* Exceptions for "screenfare" folder in "screenfare" target */,
+			);
 			path = screenfare;
 			sourceTree = "<group>";
 		};
@@ -32,8 +45,8 @@
 		9867839C2FA82DC20091CF6D = {
 			isa = PBXGroup;
 			children = (
-				986783A72FA82DC20091CF6D /* screenfare */,
 				986783A62FA82DC20091CF6D /* Products */,
+				986783A72FA82DC20091CF6D /* screenfare */,
 			);
 			sourceTree = "<group>";
 		};
@@ -258,6 +271,7 @@
 				DEVELOPMENT_TEAM = 63JWSH47RD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = screenfare/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -294,6 +308,7 @@
 				DEVELOPMENT_TEAM = 63JWSH47RD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = screenfare/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

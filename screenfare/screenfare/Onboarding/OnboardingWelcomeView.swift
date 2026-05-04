@@ -11,66 +11,49 @@ struct OnboardingWelcomeView: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        OnboardingScreen {
+            VStack(spacing: 0) {
+                Spacer()
+                    .frame(height: 80)
 
-            VStack(spacing: 24) {
-                Image(systemName: "shield.lefthalf.filled")
-                    .font(.system(size: 100))
-                    .foregroundColor(.blue)
-                    .symbolRenderingMode(.hierarchical)
+                // Brand mark
+                BrandMark(size: 64)
 
-                Text("Welcome to\nScreenFare")
-                    .font(.system(size: 38, weight: .bold))
-                    .multilineTextAlignment(.center)
+                // Title
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Text("Focus, by")
+                            .font(.instrumentSerif(44))
+                            .foregroundColor(.focusInk)
+                            .lineSpacing(-2)
+                        Spacer()
+                    }
 
-                Text("Stay focused by blocking distracting apps")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                    HStack {
+                        Text("design.")
+                            .font(.instrumentSerif(44, italic: true))
+                            .foregroundColor(.focusInk)
+                            .lineSpacing(-2)
+                        Spacer()
+                    }
+                }
+                .padding(.top, 32)
+
+                // Description
+                Text("Block the apps that pull you in. Open them only after a brief, intentional pause.")
+                    .font(.inter(16))
+                    .foregroundColor(.focusMuted)
+                    .lineSpacing(8)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 16)
+                    .frame(maxWidth: 300, alignment: .leading)
+
+                Spacer()
+
+                // Primary button
+                PrimaryButton(title: "Begin setup", action: onContinue)
+                    .padding(.bottom, 34)
             }
-
-            VStack(spacing: 16) {
-                FeatureRow(icon: "app.badge", text: "Block distracting apps")
-                FeatureRow(icon: "brain", text: "Solve challenges to unlock")
-                FeatureRow(icon: "clock", text: "Temporary access")
-            }
-            .padding(.horizontal, 40)
-
-            Spacer()
-
-            Button {
-                onContinue()
-            } label: {
-                Text("Get Started")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.blue)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 32)
-        }
-    }
-}
-
-struct FeatureRow: View {
-    let icon: String
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.blue)
-                .frame(width: 24)
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            Spacer()
         }
     }
 }

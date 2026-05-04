@@ -16,82 +16,58 @@ struct OnboardingNotificationView: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        OnboardingScreen {
+            VStack(spacing: 0) {
+                ScreenHeader(currentStep: 2, onBack: {})
 
-            VStack(spacing: 16) {
-                Image(systemName: "bell.badge.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.blue)
-                    .symbolRenderingMode(.hierarchical)
+                Spacer()
+                    .frame(height: 36)
 
-                Text("Enable Notifications")
-                    .font(.system(size: 34, weight: .bold))
+                // Icon
+                PermissionIcon(kind: .notification)
 
-                Text("Get notified when you need to complete a challenge")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-
-            VStack(spacing: 12) {
-                NotificationStep(icon: "hand.tap.fill", text: "Tap unlock on blocked app")
-                NotificationStep(icon: "bell.fill", text: "Receive notification")
-                NotificationStep(icon: "brain.head.profile", text: "Complete challenge")
-            }
-            .padding(.horizontal, 40)
-
-            Spacer()
-
-            if isDenied {
-                VStack(spacing: 12) {
-                    Text("Permission Denied")
-                        .font(.headline)
-                        .foregroundColor(.orange)
-
-                    Text("To enable notifications, go to Settings → ScreenFare → Notifications")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-
-                    Button {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
-                        }
-                    } label: {
-                        Text("Open Settings")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange)
-                            .cornerRadius(12)
+                // Title
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Text("Enable")
+                            .font(.instrumentSerif(36))
+                            .foregroundColor(.focusInk)
+                        Spacer()
                     }
-                    .padding(.horizontal, 32)
+
+                    HStack {
+                        Text("notifications.")
+                            .font(.instrumentSerif(36, italic: true))
+                            .foregroundColor(.focusInk)
+                        Spacer()
+                    }
                 }
-                .padding()
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(16)
-                .padding(.horizontal, 32)
-            }
+                .padding(.top, 28)
 
-            Spacer()
+                // Description
+                Text("When you tap a blocked app, iOS shows its block screen. Focus sends a notification you can tap to come back here and complete a challenge.")
+                    .font(.inter(15.5))
+                    .foregroundColor(.focusMuted)
+                    .lineSpacing(7)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 14)
 
-            Button {
-                requestNotificationPermission()
-            } label: {
-                Text("Enable Notifications")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(12)
+                // Bullets
+                VStack(spacing: 14) {
+                    PermissionBullet(text: "A bridge from the iOS block screen back to Focus")
+                    PermissionBullet(text: "Tap the notification → complete challenge → unlock")
+                    PermissionBullet(text: "No marketing pings, ever")
+                }
+                .padding(.top, 28)
+
+                Spacer()
+
+                // Primary button
+                PrimaryButton(title: "Allow access") {
+                    requestNotificationPermission()
+                }
+                .padding(.bottom, 34)
             }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 16)
         }
         .onChange(of: isAuthorized) { authorized in
             if authorized && !hasAdvanced && isVisible {
@@ -140,24 +116,6 @@ struct OnboardingNotificationView: View {
                 }
                 // onChange will handle calling onContinue() in other cases
             }
-        }
-    }
-}
-
-struct NotificationStep: View {
-    let icon: String
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.blue)
-                .frame(width: 24)
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            Spacer()
         }
     }
 }
