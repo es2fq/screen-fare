@@ -17,8 +17,6 @@ struct OnboardingNotificationView: View {
     var body: some View {
         OnboardingScreen {
             VStack(spacing: 0) {
-                ScreenHeader(currentStep: 2, onBack: {})
-
                 Spacer()
                     .frame(height: 36)
 
@@ -61,7 +59,8 @@ struct OnboardingNotificationView: View {
                     if isDenied {
                         openSettings()
                     } else {
-                        requestNotificationPermission()
+                        // Check if already authorized before requesting
+                        checkPermissionStatusAndProceed()
                     }
                 }
                 .padding(.bottom, 34)
@@ -78,6 +77,23 @@ struct OnboardingNotificationView: View {
             // Re-check when returning from Settings
             if isVisible {
                 checkPermissionStatus()
+            }
+        }
+    }
+
+    private func checkPermissionStatusAndProceed() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                if settings.authorizationStatus == .authorized {
+                    // Already authorized, proceed immediately
+                    if !self.hasAdvanced {
+                        self.hasAdvanced = true
+                        self.onContinue()
+                    }
+                } else {
+                    // Not authorized, request permission
+                    self.requestNotificationPermission()
+                }
             }
         }
     }

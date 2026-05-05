@@ -17,8 +17,6 @@ struct OnboardingScreenTimeView: View {
     var body: some View {
         OnboardingScreen {
             VStack(spacing: 0) {
-                ScreenHeader(currentStep: 1, onBack: {})
-
                 Spacer()
                     .frame(height: 36)
 
@@ -58,10 +56,22 @@ struct OnboardingScreenTimeView: View {
 
                 // Primary button
                 PrimaryButton(title: "Allow access") {
-                    Task {
-                        try? await blockingManager.requestAuthorization()
-                        // Check authorization status after request completes
-                        blockingManager.checkAuthorizationStatus()
+                    // Check if already authorized before requesting
+                    blockingManager.checkAuthorizationStatus()
+
+                    if blockingManager.isAuthorized {
+                        // Already authorized, proceed immediately
+                        if !hasAdvanced {
+                            hasAdvanced = true
+                            onContinue()
+                        }
+                    } else {
+                        // Not authorized, request permission
+                        Task {
+                            try? await blockingManager.requestAuthorization()
+                            // Check authorization status after request completes
+                            blockingManager.checkAuthorizationStatus()
+                        }
                     }
                 }
                 .padding(.bottom, 34)

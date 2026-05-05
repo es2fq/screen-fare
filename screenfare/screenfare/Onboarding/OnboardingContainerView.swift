@@ -20,37 +20,51 @@ struct OnboardingContainerView: View {
     let onComplete: () -> Void
 
     var body: some View {
-        TabView(selection: $currentPage) {
-            OnboardingWelcomeView(onContinue: nextPageFromWelcome)
-                .tag(0)
+        ZStack {
+            Color.focusBg
+                .ignoresSafeArea()
 
-            OnboardingScreenTimeView(onContinue: nextPage)
-                .tag(1)
+            VStack(spacing: 0) {
+                // Fixed header that doesn't animate with page transitions
+                if currentPage > 0 {
+                    ScreenHeader(currentStep: currentPage, onBack: previousPage, hideBackButton: currentPage < 4)
+                        .padding(.horizontal, 28)
+                        .transition(.opacity)
+                }
 
-            OnboardingNotificationView(onContinue: nextPage)
-                .tag(2)
+                // Content area with page transitions
+                TabView(selection: $currentPage) {
+                    OnboardingWelcomeView(onContinue: nextPageFromWelcome)
+                        .tag(0)
 
-            OnboardingAppSelectionView(selectedApps: $selectedApps, onContinue: nextPage)
-                .tag(3)
+                    OnboardingScreenTimeView(onContinue: nextPage)
+                        .tag(1)
 
-            OnboardingDifficultyView(selectedDifficulty: $selectedDifficulty, onContinue: nextPage)
-                .id("difficulty-view") // Maintain view identity to prevent recreation
-                .tag(4)
+                    OnboardingNotificationView(onContinue: nextPage)
+                        .tag(2)
 
-            OnboardingTimeWindowView(selectedDuration: $selectedDuration, onContinue: nextPage)
-                .tag(5)
+                    OnboardingAppSelectionView(selectedApps: $selectedApps, onContinue: nextPage)
+                        .tag(3)
 
-            OnboardingSummaryView(
-                selectedApps: selectedApps,
-                difficulty: selectedDifficulty,
-                duration: selectedDuration,
-                onComplete: applySettingsAndComplete
-            )
-            .tag(6)
+                    OnboardingDifficultyView(selectedDifficulty: $selectedDifficulty, onContinue: nextPage)
+                        .id("difficulty-view") // Maintain view identity to prevent recreation
+                        .tag(4)
+
+                    OnboardingTimeWindowView(selectedDuration: $selectedDuration, onContinue: nextPage)
+                        .tag(5)
+
+                    OnboardingSummaryView(
+                        selectedApps: selectedApps,
+                        difficulty: selectedDifficulty,
+                        duration: selectedDuration,
+                        onComplete: applySettingsAndComplete
+                    )
+                    .tag(6)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .interactiveDismissDisabled()
+            }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .interactiveDismissDisabled()
-        .ignoresSafeArea()
         .onAppear {
             UIScrollView.appearance().isScrollEnabled = false
         }
@@ -62,6 +76,15 @@ struct OnboardingContainerView: View {
     private func nextPage() {
         withAnimation {
             currentPage += 1
+        }
+    }
+
+    private func previousPage() {
+        // Don't allow going back before the difficulty screen (page 4)
+        guard currentPage >= 4 else { return }
+
+        withAnimation {
+            currentPage -= 1
         }
     }
 

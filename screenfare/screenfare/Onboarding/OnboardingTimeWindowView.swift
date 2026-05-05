@@ -30,8 +30,6 @@ struct OnboardingTimeWindowView: View {
     var body: some View {
         OnboardingScreen {
             VStack(spacing: 0) {
-                ScreenHeader(currentStep: 5, onBack: {})
-
                 Spacer()
                     .frame(height: 24)
 

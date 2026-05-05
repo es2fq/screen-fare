@@ -16,15 +16,11 @@ struct OnboardingDifficultyView: View {
         self._selectedDifficulty = selectedDifficulty
         self.onContinue = onContinue
         self._previewChallenge = State(initialValue: MathChallenge(difficulty: selectedDifficulty.wrappedValue))
-        print("🎚️ [DifficultyView] init - selectedDifficulty: \(selectedDifficulty.wrappedValue)")
     }
 
     var body: some View {
-        let _ = print("🎚️ [DifficultyView] body rendering - selectedDifficulty: \(selectedDifficulty), previewChallenge: \(previewChallenge.questionText)")
         OnboardingScreen {
             VStack(spacing: 0) {
-                ScreenHeader(currentStep: 4, onBack: {})
-
                 Spacer()
                     .frame(height: 24)
 
@@ -108,10 +104,7 @@ struct OnboardingDifficultyView: View {
 
                     // Custom slider
                     CustomDifficultySlider(selectedDifficulty: $selectedDifficulty) {
-                        print("🎚️ [DifficultyView] Slider onChange callback - difficulty: \(selectedDifficulty)")
-                        print("🎚️ [DifficultyView] Creating new preview challenge")
                         previewChallenge = MathChallenge(difficulty: selectedDifficulty)
-                        print("🎚️ [DifficultyView] Preview challenge updated: \(previewChallenge.questionText)")
                     }
                 }
                 .padding(.horizontal, 18)
@@ -161,12 +154,9 @@ struct CustomDifficultySlider: View {
         self.onChange = onChange
         let index = ChallengeDifficulty.allCases.firstIndex(of: selectedDifficulty.wrappedValue) ?? 2
         self._sliderValue = State(initialValue: Double(index))
-
-        print("🎚️ [Slider] init - selectedDifficulty: \(selectedDifficulty.wrappedValue), index: \(index), sliderValue: \(index)")
     }
 
     var body: some View {
-        let _ = print("🎚️ [Slider] body rendering - sliderValue: \(sliderValue), selectedDifficulty: \(selectedDifficulty)")
         VStack(spacing: 10) {
             // Slider
             Slider(
@@ -176,25 +166,22 @@ struct CustomDifficultySlider: View {
             )
             .tint(Color.focusInk)
             .onChange(of: sliderValue) { oldValue, newValue in
-                print("🎚️ [Slider] onChange - oldValue: \(oldValue), newValue: \(newValue)")
                 let newDifficulty = difficulties[Int(newValue)]
-                print("🎚️ [Slider] Setting selectedDifficulty from \(selectedDifficulty) to \(newDifficulty)")
-                selectedDifficulty = newDifficulty
-                print("🎚️ [Slider] Calling onChange callback")
-                onChange()
-                print("🎚️ [Slider] onChange callback completed")
+
+                // Only update if difficulty actually changed to avoid unnecessary view recreation
+                if newDifficulty != selectedDifficulty {
+                    selectedDifficulty = newDifficulty
+                    onChange()
+                }
             }
             .onAppear {
                 // Configure slider appearance only once globally
                 if !Self.hasConfiguredAppearance {
-                    print("🎚️ [Slider] Configuring slider appearance for the first time")
                     let thumbImage = Self.createCircularThumb(radius: 14)
                     let appearance = UISlider.appearance()
                     appearance.setThumbImage(thumbImage, for: .normal)
                     appearance.setThumbImage(thumbImage, for: .highlighted)
                     Self.hasConfiguredAppearance = true
-                } else {
-                    print("🎚️ [Slider] Slider appearance already configured, skipping")
                 }
             }
 

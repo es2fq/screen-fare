@@ -53,8 +53,6 @@ struct OnboardingAppSelectionView: View {
     var body: some View {
         OnboardingScreen {
             VStack(spacing: 0) {
-                ScreenHeader(currentStep: 3, onBack: {})
-
                 Spacer()
                     .frame(height: 24)
 
@@ -67,6 +65,8 @@ struct OnboardingAppSelectionView: View {
                     .lineSpacing(32 * 0.05) // lineHeight 1.05 = 5% extra spacing
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Spacer().frame(height: 8)
 
                 // Description: fontSize: 14.5
                 Text("Choose apps and categories Focus will gently restrict.")
@@ -75,6 +75,8 @@ struct OnboardingAppSelectionView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 8)
+                
+                Spacer().frame(height: 8)
 
                 // Facepile Card
                 Group {

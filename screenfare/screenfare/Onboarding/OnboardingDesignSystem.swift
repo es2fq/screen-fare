@@ -120,6 +120,7 @@ struct BackButton: View {
         if hidden {
             Color.clear
                 .frame(width: 36, height: 36)
+                .allowsHitTesting(false)
         } else {
             Button(action: action) {
                 Image(systemName: "chevron.left")
@@ -137,10 +138,11 @@ struct BackButton: View {
 struct ScreenHeader: View {
     let currentStep: Int
     let onBack: () -> Void
+    var hideBackButton: Bool = false
 
     var body: some View {
         HStack {
-            BackButton(action: onBack)
+            BackButton(action: onBack, hidden: hideBackButton)
             Spacer()
             ProgressDots(currentStep: currentStep)
             Spacer()

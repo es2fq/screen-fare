@@ -53,8 +53,6 @@ struct OnboardingSummaryView: View {
     var body: some View {
         OnboardingScreen {
             VStack(spacing: 0) {
-                ScreenHeader(currentStep: 6, onBack: {})
-
                 Spacer()
                     .frame(height: 28)
 
