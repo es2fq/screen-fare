@@ -96,7 +96,7 @@ struct OnboardingDifficultyView: View {
 
                 // Difficulty slider card
                 VStack(spacing: 14) {
-                    HStack {
+                    HStack(alignment: .center) {
                         Text("Difficulty")
                             .font(.inter(13))
                             .foregroundColor(.focusMuted)
@@ -198,26 +198,19 @@ struct CustomDifficultySlider: View {
                 }
             }
 
-            // Tick marks
-            HStack {
+            // Tick marks - space-between layout
+            HStack(spacing: 0) {
                 ForEach(0..<5) { index in
+                    if index > 0 {
+                        Spacer()
+                    }
                     RoundedRectangle(cornerRadius: 2)
                         .fill(index <= Int(sliderValue) ? Color.focusInk : Color.focusInk.opacity(0.2))
                         .frame(width: 4, height: 4)
-                        .frame(maxWidth: .infinity)
                 }
             }
+            .padding(.horizontal, 12) // Account for slider thumb radius (14px)
 
-            // Labels
-            HStack {
-                Text("Very easy")
-                    .font(.inter(11))
-                    .foregroundColor(.focusMuted)
-                Spacer()
-                Text("Very hard")
-                    .font(.inter(11))
-                    .foregroundColor(.focusMuted)
-            }
         }
     }
 
