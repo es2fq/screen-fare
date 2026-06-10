@@ -14,6 +14,11 @@ class SettingsManager: ObservableObject {
     @Published var unlockDuration: TimeInterval {
         didSet {
             UserDefaults.standard.set(unlockDuration, forKey: "unlockDuration")
+            // Also save to App Group for shield extensions
+            if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") {
+                sharedDefaults.set(unlockDuration, forKey: "unlockDuration")
+                sharedDefaults.synchronize()
+            }
         }
     }
 
@@ -42,6 +47,12 @@ class SettingsManager: ObservableObject {
         }
 
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
+        // Initial sync to App Group
+        if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") {
+            sharedDefaults.set(unlockDuration, forKey: "unlockDuration")
+            sharedDefaults.synchronize()
+        }
     }
 
     var unlockDurationText: String {
