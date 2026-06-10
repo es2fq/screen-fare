@@ -13,35 +13,15 @@ enum ChallengeDifficulty: String, CaseIterable {
     case medium = "Medium"
     case hard = "Hard"
     case veryHard = "Very Hard"
-
-    var range: ClosedRange<Int> {
-        switch self {
-        case .veryEasy: return 1...10
-        case .easy: return 1...20
-        case .medium: return 10...50
-        case .hard: return 20...100
-        case .veryHard: return 50...200
-        }
-    }
-
-    var allowsMultiplication: Bool {
-        switch self {
-        case .veryEasy: return false
-        case .easy: return false
-        case .medium, .hard, .veryHard: return true
-        }
-    }
 }
 
 enum MathOperation: String, CaseIterable {
     case addition = "+"
-    case subtraction = "−"
     case multiplication = "×"
 
     func calculate(_ a: Int, _ b: Int) -> Int {
         switch self {
         case .addition: return a + b
-        case .subtraction: return a - b
         case .multiplication: return a * b
         }
     }
@@ -50,45 +30,75 @@ enum MathOperation: String, CaseIterable {
 struct MathChallenge {
     let firstNumber: Int
     let secondNumber: Int
+    let thirdNumber: Int?
     let operation: MathOperation
+    let secondOperation: MathOperation?
     let correctAnswer: Int
 
     var questionText: String {
-        "\(firstNumber) \(operation.rawValue) \(secondNumber) = ?"
+        // Medium: three number addition
+        if let third = thirdNumber, secondOperation != nil {
+            return "\(firstNumber) \(operation.rawValue) \(secondNumber) \(secondOperation!.rawValue) \(third) = ?"
+        }
+        // Hard/Very Hard: compound operation with parentheses
+        else if let secondOp = secondOperation {
+            return "(\(firstNumber) \(operation.rawValue) \(secondNumber)) \(secondOp.rawValue) \(thirdNumber ?? 0) = ?"
+        }
+        // Very Easy/Easy: simple two number addition
+        else {
+            return "\(firstNumber) \(operation.rawValue) \(secondNumber) = ?"
+        }
     }
 
     init(difficulty: ChallengeDifficulty = .medium) {
-        let range = difficulty.range
+        switch difficulty {
+        case .veryEasy:
+            // Single digit addition (1-9)
+            firstNumber = Int.random(in: 1...9)
+            secondNumber = Int.random(in: 1...9)
+            thirdNumber = nil
+            operation = .addition
+            secondOperation = nil
+            correctAnswer = firstNumber + secondNumber
 
-        // Filter operations based on difficulty
-        let availableOperations: [MathOperation]
-        if difficulty.allowsMultiplication {
-            availableOperations = MathOperation.allCases
-        } else {
-            availableOperations = [.addition, .subtraction]
+        case .easy:
+            // Double digit addition (10-99)
+            firstNumber = Int.random(in: 10...99)
+            secondNumber = Int.random(in: 10...99)
+            thirdNumber = nil
+            operation = .addition
+            secondOperation = nil
+            correctAnswer = firstNumber + secondNumber
+
+        case .medium:
+            // Three double digit addition (10-99 + 10-99 + 10-99)
+            firstNumber = Int.random(in: 10...99)
+            secondNumber = Int.random(in: 10...99)
+            thirdNumber = Int.random(in: 10...99)
+            operation = .addition
+            secondOperation = .addition
+            correctAnswer = firstNumber + secondNumber + thirdNumber!
+
+        case .hard:
+            // (single digit × double digit) + double digit
+            firstNumber = Int.random(in: 1...9)
+            secondNumber = Int.random(in: 10...99)
+            thirdNumber = Int.random(in: 10...99)
+            operation = .multiplication
+            secondOperation = .addition
+            let multiplicationResult = firstNumber * secondNumber
+            correctAnswer = multiplicationResult + thirdNumber!
+
+        case .veryHard:
+            // (double digit × double digit) + triple digit
+            firstNumber = Int.random(in: 10...99)
+            secondNumber = Int.random(in: 10...99)
+            thirdNumber = Int.random(in: 100...999)
+            operation = .multiplication
+            secondOperation = .addition
+            let multiplicationResult = firstNumber * secondNumber
+            correctAnswer = multiplicationResult + thirdNumber!
         }
-
-        let operation = availableOperations.randomElement()!
-
-        switch operation {
-        case .addition:
-            firstNumber = Int.random(in: range)
-            secondNumber = Int.random(in: range)
-        case .subtraction:
-            // Ensure positive result
-            let a = Int.random(in: range)
-            let b = Int.random(in: range.lowerBound...a)
-            firstNumber = a
-            secondNumber = b
-        case .multiplication:
-            // Use smaller numbers for multiplication
-            let smallerRange = range.lowerBound...(range.upperBound / 3)
-            firstNumber = Int.random(in: smallerRange)
-            secondNumber = Int.random(in: 2...10)
-        }
-
-        self.operation = operation
-        self.correctAnswer = operation.calculate(firstNumber, secondNumber)
     }
 
     func isCorrect(_ answer: Int) -> Bool {
