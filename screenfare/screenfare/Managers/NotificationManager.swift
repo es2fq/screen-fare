@@ -55,7 +55,16 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .sound])
+        // If it's an unlock challenge notification, trigger the challenge immediately
+        if notification.request.content.categoryIdentifier == "UNLOCK_CHALLENGE" {
+            DispatchQueue.main.async {
+                self.shouldShowChallenge = true
+            }
+            // Don't show the notification banner since we're opening the challenge directly
+            completionHandler([])
+        } else {
+            completionHandler([.banner, .sound])
+        }
     }
 
     // Handle notification tap
