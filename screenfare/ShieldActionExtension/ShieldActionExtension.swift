@@ -17,7 +17,7 @@ class ShieldActionExtension: ShieldActionDelegate {
     override func handle(action: ShieldAction, for application: ApplicationToken, completionHandler: @escaping (ShieldActionResponse) -> Void) {
         switch action {
         case .primaryButtonPressed:
-            markUnlockRequested()
+            markUnlockRequested(for: application)
             sendUnlockNotification()
             // Keep shield open - user must complete challenge in main app
             completionHandler(.defer)
@@ -30,11 +30,20 @@ class ShieldActionExtension: ShieldActionDelegate {
         }
     }
 
-    private func markUnlockRequested() {
+    private func markUnlockRequested(for application: ApplicationToken) {
         guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
             return
         }
+
+        // Store that an unlock was requested
         sharedDefaults.set(true, forKey: "com.screenfare.unlockRequested")
+
+        // Try to store the ApplicationToken data for matching
+        // ApplicationToken conforms to Codable, so we can encode it
+        if let data = try? JSONEncoder().encode(application) {
+            sharedDefaults.set(data, forKey: "com.screenfare.requestedAppToken")
+        }
+
         sharedDefaults.synchronize()
     }
 

@@ -9,54 +9,70 @@ import SwiftUI
 
 struct ChallengeTabView: View {
     @StateObject private var settings = SettingsManager.shared
-    @State private var previewChallenge: MathChallenge
+    @State private var previewChallenges: [ChallengeDifficulty: MathChallenge]
+    @State private var currentChallenge: MathChallenge
 
     init() {
         let settings = SettingsManager.shared
-        _previewChallenge = State(initialValue: MathChallenge(difficulty: settings.challengeDifficulty))
+
+        // Pre-generate one challenge for each difficulty level
+        var challenges: [ChallengeDifficulty: MathChallenge] = [:]
+        for difficulty in ChallengeDifficulty.allCases {
+            challenges[difficulty] = MathChallenge(difficulty: difficulty)
+        }
+        self._previewChallenges = State(initialValue: challenges)
+        self._currentChallenge = State(initialValue: challenges[settings.challengeDifficulty] ?? MathChallenge(difficulty: settings.challengeDifficulty))
     }
 
     var body: some View {
         AppScreen(title: "Challenge") {
             VStack(spacing: 18) {
-                // Preview card
-                AppCard(padding: EdgeInsets(top: 24, leading: 22, bottom: 24, trailing: 22)) {
-                    VStack(spacing: 18) {
-                        Text("PREVIEW")
-                            .font(.inter(11, weight: .medium))
-                            .foregroundColor(.white.opacity(0.5))
-                            .tracking(11 * 0.12)
+                // Preview card (dark): borderRadius: 18, padding: 24px 22px, gap: 18px
+                VStack(spacing: 18) {
+                    // Preview label: fontSize: 11, opacity: 0.5, letterSpacing: 0.12em
+                    Text("PREVIEW")
+                        .font(.inter(11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                        .tracking(11 * 0.12) // letterSpacing: 0.12em = 1.32px at 11px
 
-                        Text(previewChallenge.questionText)
-                            .font(.instrumentSerif(44))
-                            .foregroundColor(.white)
-                            .lineSpacing(0)
-                            .monospacedDigit()
+                    // Math question: fontSize: 44, lineHeight: 1
+                    Text(currentChallenge.questionText)
+                        .font(.instrumentSerif(44))
+                        .foregroundColor(.white)
+                        .lineSpacing(0) // lineHeight 1 = no extra spacing
+                        .monospacedDigit()
 
-                        // Mock input field
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.white.opacity(0.08))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                            )
-                            .frame(height: 52)
-                            .overlay(
-                                HStack(spacing: 4) {
-                                    ForEach(0..<3) { _ in
-                                        Circle()
-                                            .fill(Color.white.opacity(0.4))
-                                            .frame(width: 4, height: 4)
-                                    }
+                    // Mock input field
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                        .frame(height: 52)
+                        .overlay(
+                            HStack(spacing: 4) {
+                                ForEach(0..<3) { _ in
+                                    Circle()
+                                        .fill(Color.white.opacity(0.4))
+                                        .frame(width: 4, height: 4)
                                 }
-                            )
-                    }
-                    .frame(maxWidth: .infinity)
+                            }
+                        )
                 }
+                .padding(.horizontal, 22)
+                .padding(.vertical, 24)
                 .background(
                     RoundedRectangle(cornerRadius: 18)
                         .fill(Color.focusInk)
                 )
+                .onChange(of: settings.challengeDifficulty) { _, newDifficulty in
+                    // Update the current challenge when difficulty changes
+                    if let challenge = previewChallenges[newDifficulty] {
+                        currentChallenge = challenge
+                        print("DEBUG: Difficulty changed to \(newDifficulty), question: \(challenge.questionText)")
+                    }
+                }
 
                 // Difficulty section
                 SectionTitle(text: "Difficulty")
@@ -76,44 +92,15 @@ struct ChallengeTabView: View {
                         }
 
                         // Difficulty slider
-                        VStack(spacing: 10) {
-                            Slider(
-                                value: Binding(
-                                    get: { Double(ChallengeDifficulty.allCases.firstIndex(of: settings.challengeDifficulty) ?? 2) },
-                                    set: { settings.challengeDifficulty = ChallengeDifficulty.allCases[Int($0)] }
-                                ),
-                                in: 0...4,
-                                step: 1
-                            )
-                            .tint(Color.focusInk)
-                            .onChange(of: settings.challengeDifficulty) { _, _ in
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    previewChallenge = MathChallenge(difficulty: settings.challengeDifficulty)
-                                }
-                            }
-
-                            // Tick marks
-                            HStack {
-                                ForEach(0..<5) { index in
-                                    let currentIndex = ChallengeDifficulty.allCases.firstIndex(of: settings.challengeDifficulty) ?? 2
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(index <= currentIndex ? Color.focusInk : Color.focusInk.opacity(0.2))
-                                        .frame(width: 4, height: 4)
-                                        .frame(maxWidth: .infinity)
-                                }
-                            }
-
-                            // Labels
-                            HStack {
-                                Text("Very easy")
-                                    .font(.inter(11))
-                                    .foregroundColor(.focusMuted)
-                                Spacer()
-                                Text("Very hard")
-                                    .font(.inter(11))
-                                    .foregroundColor(.focusMuted)
-                            }
-                        }
+                        Slider(
+                            value: Binding(
+                                get: { Double(ChallengeDifficulty.allCases.firstIndex(of: settings.challengeDifficulty) ?? 2) },
+                                set: { settings.challengeDifficulty = ChallengeDifficulty.allCases[Int($0)] }
+                            ),
+                            in: 0...4,
+                            step: 1
+                        )
+                        .tint(Color.focusInk)
                     }
                 }
 
