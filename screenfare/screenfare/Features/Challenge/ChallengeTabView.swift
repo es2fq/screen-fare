@@ -33,7 +33,7 @@ struct ChallengeTabView: View {
             challenges[difficulty] = MathChallenge(difficulty: difficulty)
         }
         self._previewChallenges = State(initialValue: challenges)
-        self._typingChallenge = State(initialValue: TypingChallenge())
+        self._typingChallenge = State(initialValue: TypingChallenge(difficulty: settings.typingDifficulty))
         self._memoryChallenge = State(initialValue: MemoryChallenge())
         self._selectedType = State(initialValue: settings.challengeType)
     }
@@ -273,7 +273,7 @@ struct ChallengeTabView: View {
         case .math:
             return difficultyLabel(for: settings.challengeDifficulty)
         case .typing:
-            return "8 words"
+            return typingDifficultyLabel(for: settings.typingDifficulty)
         case .memory:
             return "4 tiles"
         }
@@ -286,6 +286,16 @@ struct ChallengeTabView: View {
         case .medium: return "Medium"
         case .hard: return "Hard"
         case .veryHard: return "Very hard"
+        }
+    }
+
+    private func typingDifficultyLabel(for difficulty: TypingDifficulty) -> String {
+        switch difficulty {
+        case .shortest: return "Shortest"
+        case .short: return "Short"
+        case .medium: return "Medium"
+        case .long: return "Long"
+        case .longest: return "Longest"
         }
     }
 }
@@ -404,25 +414,36 @@ struct ConfigCard: View {
                     .font(.inter(13))
                     .foregroundColor(.focusMuted)
                 Spacer()
-                Text("8 words")
+                Text(typingDifficultyLabel)
                     .font(.inter(15, weight: .semibold))
                     .foregroundColor(.focusInk)
             }
 
-            CustomSlider(value: .constant(8), range: 5...16, step: 1)
+            CustomSlider(
+                value: Binding(
+                    get: { Double(TypingDifficulty.allCases.firstIndex(of: settings.typingDifficulty) ?? 2) },
+                    set: {
+                        settings.typingDifficulty = TypingDifficulty.allCases[Int($0)]
+                        // Regenerate typing challenge with new difficulty
+                        typingChallenge = TypingChallenge(difficulty: settings.typingDifficulty)
+                    }
+                ),
+                range: 0...4,
+                step: 1
+            )
 
             HStack {
-                Text("5 words")
+                Text("Shortest")
                     .font(.inter(11))
                     .foregroundColor(.focusMuted)
                 Spacer()
-                Text("16 words")
+                Text("Longest")
                     .font(.inter(11))
                     .foregroundColor(.focusMuted)
             }
             .padding(.top, 4)
 
-            TypingTester(words: 8, isAnyFieldFocused: $isAnyFieldFocused)
+            TypingTester(difficulty: settings.typingDifficulty, isAnyFieldFocused: $isAnyFieldFocused)
         }
     }
 
@@ -462,6 +483,16 @@ struct ConfigCard: View {
         case .medium: return "Medium"
         case .hard: return "Hard"
         case .veryHard: return "Very hard"
+        }
+    }
+
+    private var typingDifficultyLabel: String {
+        switch settings.typingDifficulty {
+        case .shortest: return "Shortest"
+        case .short: return "Short"
+        case .medium: return "Medium"
+        case .long: return "Long"
+        case .longest: return "Longest"
         }
     }
 }
@@ -665,28 +696,21 @@ struct MathTester: View {
 }
 
 struct TypingTester: View {
-    let words: Int
+    let difficulty: TypingDifficulty
     @FocusState.Binding var isAnyFieldFocused: Bool
     @State private var typedText = ""
     @State private var shakeCount = 0
     @State private var wrongChar: String? = nil
+    @State private var challenge: TypingChallenge
 
-    private let targetPhrases = [
-        "Be here on purpose.",
-        "I choose how this moment is spent.",
-        "A few minutes here is a deliberate choice.",
-        "I will use this app with intention and not by reflex.",
-        "I am opening this on purpose, fully aware of how my time gets spent."
-    ]
+    init(difficulty: TypingDifficulty, isAnyFieldFocused: FocusState<Bool>.Binding) {
+        self.difficulty = difficulty
+        self._isAnyFieldFocused = isAnyFieldFocused
+        self._challenge = State(initialValue: TypingChallenge(difficulty: difficulty))
+    }
 
     private var targetPhrase: String {
-        // Find phrase closest to target word count
-        let sorted = targetPhrases.sorted { phrase1, phrase2 in
-            let diff1 = abs(phrase1.split(separator: " ").count - words)
-            let diff2 = abs(phrase2.split(separator: " ").count - words)
-            return diff1 < diff2
-        }
-        return sorted.first ?? targetPhrases[0]
+        challenge.targetText
     }
 
     private var isComplete: Bool {
@@ -780,6 +804,12 @@ struct TypingTester: View {
                         .foregroundColor(Color(red: 0.55, green: 0.65, blue: 0.4))
                 }
             }
+        }
+        .onChange(of: difficulty) { _, newDifficulty in
+            // Reset typing state and generate new challenge when difficulty changes
+            challenge = TypingChallenge(difficulty: newDifficulty)
+            typedText = ""
+            wrongChar = nil
         }
     }
 

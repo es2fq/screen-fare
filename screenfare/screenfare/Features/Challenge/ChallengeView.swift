@@ -60,7 +60,7 @@ struct ChallengeView: View {
         case .math:
             _mathChallenge = State(initialValue: MathChallenge(difficulty: settings.challengeDifficulty))
         case .typing:
-            _typingChallenge = State(initialValue: TypingChallenge())
+            _typingChallenge = State(initialValue: TypingChallenge(difficulty: settings.typingDifficulty))
         case .memory:
             _memoryChallenge = State(initialValue: MemoryChallenge())
         }
@@ -480,8 +480,7 @@ struct ChallengeView: View {
             unlockApp(eventType: .mathChallenge) // Using mathChallenge as placeholder
         } else {
             handleIncorrectAnswer {
-                typingChallenge = TypingChallenge()
-                typedText = ""
+                regenerateTypingChallenge()
             }
         }
     }
@@ -529,6 +528,11 @@ struct ChallengeView: View {
             reset()
             showingResult = false
         }
+    }
+
+    private func regenerateTypingChallenge() {
+        typingChallenge = TypingChallenge(difficulty: settings.typingDifficulty)
+        typedText = ""
     }
 
     private func startMemoryCountdown() {

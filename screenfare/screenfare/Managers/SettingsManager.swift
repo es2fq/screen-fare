@@ -28,6 +28,12 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var typingDifficulty: TypingDifficulty {
+        didSet {
+            UserDefaults.standard.set(typingDifficulty.rawValue, forKey: "typingDifficulty")
+        }
+    }
+
     @Published var challengeType: ChallengeType {
         didSet {
             UserDefaults.standard.set(challengeType.rawValue, forKey: "challengeType")
@@ -50,6 +56,13 @@ class SettingsManager: ObservableObject {
             self.challengeDifficulty = difficulty
         } else {
             self.challengeDifficulty = .medium
+        }
+
+        if let savedTypingDifficulty = UserDefaults.standard.string(forKey: "typingDifficulty"),
+           let difficulty = TypingDifficulty(rawValue: savedTypingDifficulty) {
+            self.typingDifficulty = difficulty
+        } else {
+            self.typingDifficulty = .medium
         }
 
         if let savedType = UserDefaults.standard.string(forKey: "challengeType"),
