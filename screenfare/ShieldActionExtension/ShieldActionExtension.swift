@@ -15,6 +15,10 @@ import Foundation
 class ShieldActionExtension: ShieldActionDelegate {
 
     override func handle(action: ShieldAction, for application: ApplicationToken, completionHandler: @escaping (ShieldActionResponse) -> Void) {
+        // Record block attempt (user saw the shield)
+        recordBlockAttempt()
+
+
         switch action {
         case .primaryButtonPressed:
             markUnlockRequested(for: application)
@@ -74,5 +78,54 @@ class ShieldActionExtension: ShieldActionDelegate {
 
             unCenter.add(request) { _ in }
         }
+    }
+
+    private func recordBlockAttempt() {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
+            return
+        }
+
+        let storageKey = "com.screenfare.dailyStats"
+        let today = todayDateString()
+        var stats: DailyStats
+
+        // Read existing stats
+        if let data = sharedDefaults.data(forKey: storageKey),
+           let decoded = try? JSONDecoder().decode(DailyStats.self, from: data),
+           decoded.date == today {
+            stats = decoded
+        } else {
+            stats = DailyStats(date: today)
+        }
+
+        // Increment blocks counter
+        stats.blocksToday += 1
+
+        // Save back to UserDefaults
+        if let encoded = try? JSONEncoder().encode(stats) {
+            sharedDefaults.set(encoded, forKey: storageKey)
+            sharedDefaults.synchronize()
+        }
+    }
+
+    private func todayDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
+    }
+}
+
+// Local copy of DailyStats for the extension
+private struct DailyStats: Codable {
+    var date: String
+    var blocksToday: Int
+    var faresPaid: Int
+    var timeSpentSeconds: Int
+
+    init(date: String) {
+        self.date = date
+        self.blocksToday = 0
+        self.faresPaid = 0
+        self.timeSpentSeconds = 0
     }
 }

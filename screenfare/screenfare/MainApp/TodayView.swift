@@ -102,9 +102,9 @@ struct TodayView: View {
 
                         // Stats row
                         HStack(spacing: 0) {
-                            StatPill(value: statsManager.blocksToday, label: "Blocks today", textColor: blockingManager.isBlocking ? .white : .focusInk)
-                            StatPill(value: statsManager.challengesSolved, label: "Solved", textColor: blockingManager.isBlocking ? .white : .focusInk)
-                            StatPill(value: statsManager.timeSaved, label: "Time saved", textColor: blockingManager.isBlocking ? .white : .focusInk)
+                            StatPill(value: statsManager.blocksToday, label: "Blocks", textColor: blockingManager.isBlocking ? .white : .focusInk)
+                            StatPill(value: statsManager.faresPaid, label: "Fares paid", textColor: blockingManager.isBlocking ? .white : .focusInk)
+                            StatPill(value: statsManager.timeSpent, label: "On blocked apps", textColor: blockingManager.isBlocking ? .white : .focusInk)
                         }
                         .padding(.top, 22)
                         .overlay(

@@ -99,6 +99,14 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         super.eventDidReachThreshold(event, activity: activity)
+        print("[DeviceMonitor] eventDidReachThreshold: \(event.rawValue) for activity: \(activity.rawValue)")
+
+        // Check if this is a usage tracking event
+        if event.rawValue.starts(with: "usage.") {
+            // User spent 1 minute using the app - record it
+            recordTimeSpent(seconds: 60)
+            print("[DeviceMonitor] ⏱️ Recorded 1 minute of app usage")
+        }
     }
 
     override func intervalWillStartWarning(for activity: DeviceActivityName) {
@@ -147,5 +155,52 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
     override func eventWillReachThresholdWarning(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         super.eventWillReachThresholdWarning(event, activity: activity)
+    }
+
+    private func recordTimeSpent(seconds: TimeInterval) {
+        let storageKey = "com.screenfare.dailyStats"
+        let today = todayDateString()
+
+        var stats: DailyStats
+
+        // Read existing stats
+        if let data = sharedDefaults?.data(forKey: storageKey),
+           let decoded = try? JSONDecoder().decode(DailyStats.self, from: data),
+           decoded.date == today {
+            stats = decoded
+        } else {
+            stats = DailyStats(date: today)
+        }
+
+        // Add time spent
+        stats.timeSpentSeconds += Int(seconds)
+
+        // Save back to UserDefaults
+        if let encoded = try? JSONEncoder().encode(stats) {
+            sharedDefaults?.set(encoded, forKey: storageKey)
+            sharedDefaults?.synchronize()
+            print("[DeviceMonitor] 📊 Time spent recorded: \(stats.timeSpentSeconds)s total")
+        }
+    }
+
+    private func todayDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
+    }
+}
+
+// Local copy of DailyStats for the extension
+private struct DailyStats: Codable {
+    var date: String
+    var blocksToday: Int
+    var faresPaid: Int
+    var timeSpentSeconds: Int
+
+    init(date: String) {
+        self.date = date
+        self.blocksToday = 0
+        self.faresPaid = 0
+        self.timeSpentSeconds = 0
     }
 }

@@ -64,12 +64,10 @@ class UnlockHistoryManager: ObservableObject {
 
         saveHistory()
 
-        // Record stats based on unlock method
-        switch unlockMethod {
-        case .mathChallenge:
-            StatsManager.shared.recordChallengeSolved(unlockDuration: duration)
-        case .dismissed:
-            StatsManager.shared.recordTimeSaved(duration: duration)
+        // Record stats - only count fares paid for math challenges
+        // Time spent will be tracked when the unlock expires or is manually ended
+        if unlockMethod == .mathChallenge {
+            StatsManager.shared.recordChallengeSolved()
         }
     }
 
