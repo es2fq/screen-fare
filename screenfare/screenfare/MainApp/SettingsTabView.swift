@@ -94,9 +94,7 @@ struct SettingsTabView: View {
 
                             Spacer()
 
-                            Toggle("", isOn: .constant(true))
-                                .labelsHidden()
-                                .tint(Color.focusAccent)
+                            CustomToggle(isOn: .constant(true), trackColorOn: .focusAccent)
                         }
 
                         Divider().background(Color.focusLine)
@@ -114,9 +112,7 @@ struct SettingsTabView: View {
 
                             Spacer()
 
-                            Toggle("", isOn: .constant(true))
-                                .labelsHidden()
-                                .tint(Color.focusAccent)
+                            CustomToggle(isOn: .constant(true), trackColorOn: .focusAccent)
                         }
                     }
                 }

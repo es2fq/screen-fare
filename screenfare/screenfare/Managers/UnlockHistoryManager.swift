@@ -63,6 +63,14 @@ class UnlockHistoryManager: ObservableObject {
         }
 
         saveHistory()
+
+        // Record stats based on unlock method
+        switch unlockMethod {
+        case .mathChallenge:
+            StatsManager.shared.recordChallengeSolved(unlockDuration: duration)
+        case .dismissed:
+            StatsManager.shared.recordTimeSaved(duration: duration)
+        }
     }
 
     private func saveHistory() {

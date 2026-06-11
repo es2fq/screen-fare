@@ -15,6 +15,7 @@ struct TodayView: View {
     @StateObject private var blockingManager = AppBlockingManager.shared
     @StateObject private var settings = SettingsManager.shared
     @StateObject private var historyManager = UnlockHistoryManager.shared
+    @StateObject private var statsManager = StatsManager.shared
     @State private var currentTime = Date()
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -81,28 +82,29 @@ struct TodayView: View {
 
                             Spacer()
 
-                            // Toggle switch
-                            Toggle("", isOn: Binding(
-                                get: { blockingManager.isBlocking },
-                                set: { newValue in
+                            // Custom toggle switch
+                            CustomToggleWithColors(
+                                isOn: Binding(
+                                    get: { blockingManager.isBlocking },
+                                    set: { _ in }
+                                ),
+                                onToggle: { newValue in
                                     if newValue {
                                         blockingManager.applyBlocking()
                                     } else {
                                         blockingManager.removeBlocking()
                                     }
-                                }
-                            ))
-                            .labelsHidden()
-                            .tint(blockingManager.isBlocking ? Color.white.opacity(0.3) : .focusInk)
-                            .scaleEffect(1.1) // Make it slightly larger when off for better visibility
-                            .animation(.easeInOut(duration: 0.2), value: blockingManager.isBlocking)
+                                },
+                                trackColorOn: Color.white.opacity(0.3),
+                                trackColorOff: .focusInk
+                            )
                         }
 
                         // Stats row
                         HStack(spacing: 0) {
-                            StatPill(value: "12", label: "Blocks today", textColor: blockingManager.isBlocking ? .white : .focusInk)
-                            StatPill(value: "8", label: "Solved", textColor: blockingManager.isBlocking ? .white : .focusInk)
-                            StatPill(value: "47m", label: "Time saved", textColor: blockingManager.isBlocking ? .white : .focusInk)
+                            StatPill(value: statsManager.blocksToday, label: "Blocks today", textColor: blockingManager.isBlocking ? .white : .focusInk)
+                            StatPill(value: statsManager.challengesSolved, label: "Solved", textColor: blockingManager.isBlocking ? .white : .focusInk)
+                            StatPill(value: statsManager.timeSaved, label: "Time saved", textColor: blockingManager.isBlocking ? .white : .focusInk)
                         }
                         .padding(.top, 22)
                         .overlay(
@@ -167,7 +169,7 @@ struct TodayView: View {
                 SectionHeader(title: "Recent")
                     .padding(.top, 22)
 
-                AppCard {
+                AppCard(padding: EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)) {
                     if historyManager.recentEvents.isEmpty {
                         // Empty state
                         VStack(spacing: 8) {
@@ -181,20 +183,20 @@ struct TodayView: View {
                     } else {
                         VStack(spacing: 0) {
                             ForEach(Array(historyManager.recentEvents.prefix(3).enumerated()), id: \.element.id) { index, event in
-                                if index > 0 {
-                                    Divider()
-                                        .background(Color.focusLine)
-                                        .padding(.vertical, 14)
-                                }
+                                VStack(spacing: 0) {
+                                    RecentActivityRow(
+                                        app: try? JSONDecoder().decode(ApplicationToken.self, from: event.appTokenData),
+                                        action: event.unlockMethod.rawValue,
+                                        time: formatTime(event.timestamp)
+                                    )
 
-                                RecentActivityRow(
-                                    app: try? JSONDecoder().decode(ApplicationToken.self, from: event.appTokenData),
-                                    action: event.unlockMethod.rawValue,
-                                    time: formatTime(event.timestamp)
-                                )
+                                    if index < historyManager.recentEvents.prefix(3).count - 1 {
+                                        Divider()
+                                            .background(Color.focusLine)
+                                    }
+                                }
                             }
                         }
-                        .padding(.vertical, 4)
                     }
                 }
 
@@ -294,42 +296,34 @@ struct RecentActivityRow: View {
     let time: String
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .center, spacing: 14) {
+            // App icon only
             if let app = app {
                 Label(app)
                     .labelStyle(.iconOnly)
-                    .frame(width: 32, height: 32)
-                    .clipShape(RoundedRectangle(cornerRadius: 9))
+                    .frame(width: 40, height: 40)
+                    .scaleEffect(1.5)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
             } else {
-                RoundedRectangle(cornerRadius: 9)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(Color.focusInk.opacity(0.06))
-                    .frame(width: 32, height: 32)
+                    .frame(width: 40, height: 40)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                if let app = app {
-                    Label(app)
-                        .labelStyle(.titleOnly)
-                        .font(.inter(15, weight: .medium))
-                        .foregroundColor(.focusInk)
-                } else {
-                    Text("App")
-                        .font(.inter(15, weight: .medium))
-                        .foregroundColor(.focusInk)
-                }
+            // Action text (what happened)
+            Text(action)
+                .font(.inter(15, weight: .medium))
+                .foregroundColor(.focusInk)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(action)
-                    .font(.inter(12.5))
-                    .foregroundColor(.focusMuted)
-            }
-
-            Spacer()
-
+            // Time
             Text(time)
                 .font(.inter(12))
                 .foregroundColor(.focusMuted)
                 .monospacedDigit()
         }
+        .padding(.vertical, 14)
     }
 }
 
@@ -340,29 +334,27 @@ struct TemporaryUnlockRow: View {
     let currentTime: Date
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .center, spacing: 14) {
+            // App icon only
             Label(app)
                 .labelStyle(.iconOnly)
-                .frame(width: 32, height: 32)
-                .clipShape(RoundedRectangle(cornerRadius: 9))
+                .frame(width: 40, height: 40)
+                .scaleEffect(1.5)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Label(app)
-                    .labelStyle(.titleOnly)
-                    .font(.inter(15, weight: .medium))
-                    .foregroundColor(.focusInk)
+            // Countdown text
+            Text(formatCountdown(expiryTime: expiryTime, currentTime: currentTime))
+                .font(.inter(15, weight: .medium))
+                .foregroundColor(.focusInk)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(formatCountdown(expiryTime: expiryTime, currentTime: currentTime))
-                    .font(.inter(12.5))
-                    .foregroundColor(.focusMuted)
-            }
-
-            Spacer()
-
+            // Remaining time
             Text(formatRemainingTime(expiryTime: expiryTime, currentTime: currentTime))
                 .font(.system(size: 15, weight: .semibold, design: .monospaced))
                 .foregroundColor(.focusAccent)
         }
+        .padding(.vertical, 14)
     }
 
     private func formatCountdown(expiryTime: Date, currentTime: Date) -> String {
@@ -439,10 +431,11 @@ struct UnlockedNowSection: View {
             VStack(spacing: 10) {
                 ForEach(sortedUnlocks, id: \.key) { unlock in
                     if let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: unlock.key) {
+                        let duration = AppBlockingManager.shared.unlockDurations[unlock.key] ?? 300
                         UnlockedSessionCard(
                             app: appToken,
                             expiryTime: unlock.value,
-                            totalDuration: 300, // 5 minutes default - could be tracked per unlock
+                            totalDuration: duration,
                             currentTime: currentTime,
                             onLock: { onLock(unlock.key) }
                         )
@@ -634,6 +627,45 @@ struct AnyViewModifier: ViewModifier {
 struct EmptyModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
+    }
+}
+
+/// Custom toggle with configurable colors for the Today screen
+struct CustomToggleWithColors: View {
+    @Binding var isOn: Bool
+    let onToggle: (Bool) -> Void
+    let trackColorOn: Color
+    let trackColorOff: Color
+    var thumbColor: Color = .white
+
+    init(isOn: Binding<Bool>, onToggle: @escaping (Bool) -> Void, trackColorOn: Color, trackColorOff: Color, thumbColor: Color = .white) {
+        self._isOn = isOn
+        self.onToggle = onToggle
+        self.trackColorOn = trackColorOn
+        self.trackColorOff = trackColorOff
+        self.thumbColor = thumbColor
+    }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            // Track
+            RoundedRectangle(cornerRadius: 13)
+                .fill(isOn ? trackColorOn : trackColorOff)
+                .frame(width: 44, height: 26)
+
+            // Thumb
+            Circle()
+                .fill(thumbColor)
+                .frame(width: 22, height: 22)
+                .shadow(color: Color.black.opacity(0.18), radius: 1.5, y: 1)
+                .offset(x: isOn ? 20 : 2)
+                .animation(.timingCurve(0.4, 0, 0.2, 1, duration: 0.2), value: isOn)
+        }
+        .frame(width: 44, height: 26)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onToggle(!isOn)
+        }
     }
 }
 

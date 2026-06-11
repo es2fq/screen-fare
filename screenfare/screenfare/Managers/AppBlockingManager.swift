@@ -10,6 +10,8 @@ import Combine
 import FamilyControls
 import ManagedSettings
 import DeviceActivity
+import UserNotifications
+import BackgroundTasks
 
 @MainActor
 class AppBlockingManager: ObservableObject {
@@ -20,6 +22,7 @@ class AppBlockingManager: ObservableObject {
     private let activityCenter = DeviceActivityCenter()
     private let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
     private let temporaryUnlocksKey = "com.screenfare.temporaryUnlocks"
+    private let unlockDurationsKey = "com.screenfare.unlockDurations"
     private var activeMonitors: [Data: DeviceActivityName] = [:] // Track active device activity monitors
 
     @Published var isAuthorized = false
@@ -27,6 +30,7 @@ class AppBlockingManager: ObservableObject {
     @Published var blockedApps: FamilyActivitySelection?
     @Published var unlockExpiryTime: Date?
     @Published var temporaryUnlocks: [Data: Date] = [:] // App token data -> expiry time
+    @Published var unlockDurations: [Data: TimeInterval] = [:] // App token data -> original duration
 
     var isBlocking: Bool {
         blockedApps != nil
@@ -85,6 +89,10 @@ class AppBlockingManager: ObservableObject {
     private func saveTemporaryUnlocks() {
         guard let encoded = try? JSONEncoder().encode(temporaryUnlocks) else { return }
         sharedDefaults?.set(encoded, forKey: temporaryUnlocksKey)
+
+        guard let encodedDurations = try? JSONEncoder().encode(unlockDurations) else { return }
+        sharedDefaults?.set(encodedDurations, forKey: unlockDurationsKey)
+
         sharedDefaults?.synchronize()
     }
 
@@ -94,6 +102,12 @@ class AppBlockingManager: ObservableObject {
             return
         }
         temporaryUnlocks = decoded
+
+        // Load durations
+        if let durationsData = sharedDefaults?.data(forKey: unlockDurationsKey),
+           let decodedDurations = try? JSONDecoder().decode([Data: TimeInterval].self, from: durationsData) {
+            unlockDurations = decodedDurations
+        }
     }
 
     func restartExpiredTimers() {
@@ -162,17 +176,29 @@ class AppBlockingManager: ObservableObject {
         // Clean up expired unlocks first
         cleanupExpiredUnlocks()
 
-        // Apply shields to currently blocked apps (excluding temporary unlocks)
-        // This removes unlocked apps from the shield store so they can be accessed
+        // REMOVE unlocked apps from shield store (genuine unblock)
+        // When timer expires, DeviceActivity Monitor will re-add them
         store.shield.applications = currentlyBlockedApps
         store.shield.applicationCategories = .specific(selectedApps.categoryTokens)
         store.shield.webDomains = selectedApps.webDomainTokens
+
+        print("[AppBlockingManager] Shields applied to \(currentlyBlockedApps.count) apps (\(temporaryUnlocks.count) removed/unlocked)")
     }
 
     func cleanupExpiredUnlocks() {
         let now = Date()
         let originalCount = temporaryUnlocks.count
+
+        // Get expired app tokens
+        let expiredTokens = temporaryUnlocks.filter { $0.value <= now }.map { $0.key }
+
+        // Remove expired unlocks
         temporaryUnlocks = temporaryUnlocks.filter { $0.value > now }
+
+        // Also remove durations for expired unlocks
+        for token in expiredTokens {
+            unlockDurations.removeValue(forKey: token)
+        }
 
         if temporaryUnlocks.count != originalCount {
             saveTemporaryUnlocks()
@@ -196,6 +222,7 @@ class AppBlockingManager: ObservableObject {
 
         // Clear all temporary unlocks (user manually turned off Focus)
         temporaryUnlocks.removeAll()
+        unlockDurations.removeAll()
         saveTemporaryUnlocks()
 
         // selectedApps is preserved so when Focus turns back on, the list is intact
@@ -208,59 +235,33 @@ class AppBlockingManager: ObservableObject {
 
         // Calculate start and end times
         let startTime = Date()
-        let endTime = startTime.addingTimeInterval(duration)
+        let _ = startTime.addingTimeInterval(duration) // endTime unused
 
         // Create unique activity name for this unlock
         let activityName = DeviceActivityName("unlock.\(UUID().uuidString)")
 
         // Store app token data in shared storage for the monitor extension
         sharedDefaults?.set(appTokenData, forKey: "deviceActivity.\(activityName.rawValue).appToken")
+
+        // Store expiry timestamp and unlock flag for Shield Extension
+        let expiryTime = Date().addingTimeInterval(duration)
+        sharedDefaults?.set(expiryTime.timeIntervalSince1970, forKey: "quotaEndTimestamp")
+        sharedDefaults?.set(true, forKey: "isCurrentlyUnlocked")
         sharedDefaults?.synchronize()
 
         // Track this monitor
         activeMonitors[appTokenData] = activityName
 
-        // Update temporary unlocks for UI tracking and Shield extension
-        let expiryTime = Date().addingTimeInterval(duration)
+        // Update temporary unlocks for UI tracking
         temporaryUnlocks[appTokenData] = expiryTime
+        unlockDurations[appTokenData] = duration
         saveTemporaryUnlocks()
 
-        // Create schedule from now until expiry
-        let calendar = Calendar.current
-        let schedule = DeviceActivitySchedule(
-            intervalStart: DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: startTime),
-                minute: calendar.component(.minute, from: startTime),
-                second: calendar.component(.second, from: startTime)
-            ),
-            intervalEnd: DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: endTime),
-                minute: calendar.component(.minute, from: endTime),
-                second: calendar.component(.second, from: endTime)
-            ),
-            repeats: false
-        )
+        // Schedule chaining for reliable re-locking (especially for short timers)
+        scheduleReblockChain(appTokenData: appTokenData, activityName: activityName, expiryTime: expiryTime)
 
-        // Start monitoring - iOS will call intervalDidStart and intervalDidEnd
-        do {
-            try activityCenter.startMonitoring(activityName, during: schedule)
-            print("[AppBlockingManager] Started DeviceActivity monitoring for \(activityName.rawValue)")
-        } catch {
-            print("[AppBlockingManager] Failed to start device activity monitoring: \(error)")
-        }
-
-        // IMMEDIATELY update shields to remove this app (don't wait for intervalDidStart)
+        // IMMEDIATELY update shields to remove this app
         recalculateShields()
-
-        // Keep Task timer as backup for when app is running (provides immediate feedback)
-        Task {
-            try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
-            await MainActor.run {
-                self.removeTemporaryUnlock(appTokenData: appTokenData)
-            }
-        }
     }
 
     private func removeTemporaryUnlock(appTokenData: Data) {
@@ -271,6 +272,7 @@ class AppBlockingManager: ObservableObject {
         }
 
         temporaryUnlocks.removeValue(forKey: appTokenData)
+        unlockDurations.removeValue(forKey: appTokenData)
         saveTemporaryUnlocks()
         recalculateShields()
     }
@@ -278,6 +280,87 @@ class AppBlockingManager: ObservableObject {
     /// Re-lock an app by immediately removing its temporary unlock
     func relockApp(appData: Data) {
         removeTemporaryUnlock(appTokenData: appData)
+    }
+
+    /// Schedule DeviceActivity monitor to re-lock at expiry time
+    /// For short timers (<15 min), uses warningTime trick
+    /// For long timers (≥15 min), uses direct intervalDidEnd
+    private func scheduleReblockChain(appTokenData: Data, activityName: DeviceActivityName, expiryTime: Date) {
+        let duration = expiryTime.timeIntervalSinceNow
+
+        guard duration > 0 else {
+            print("[AppBlockingManager] ⚠️ Expiry time already passed")
+            return
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+
+        // THE TRICK: For short unlocks, set interval to 15 min but use warningTime
+        // to fire at the actual expiry time
+        if duration < 15 * 60 {
+            // Short timer: Use warningTime trick (like Opal/Jomo)
+            let intervalEnd = now.addingTimeInterval(15 * 60) // Always 15 min (minimum)
+            let warningMinutes = Int((15 * 60 - duration) / 60) // Fire warning at actual expiry
+
+            let start = DateComponents(
+                calendar: calendar,
+                hour: calendar.component(.hour, from: now),
+                minute: calendar.component(.minute, from: now),
+                second: calendar.component(.second, from: now)
+            )
+
+            let end = DateComponents(
+                calendar: calendar,
+                hour: calendar.component(.hour, from: intervalEnd),
+                minute: calendar.component(.minute, from: intervalEnd),
+                second: calendar.component(.second, from: intervalEnd)
+            )
+
+            let schedule = DeviceActivitySchedule(
+                intervalStart: start,
+                intervalEnd: end,
+                repeats: false,
+                warningTime: DateComponents(minute: warningMinutes) // Fires at actual expiry
+            )
+
+            do {
+                try activityCenter.startMonitoring(activityName, during: schedule)
+                print("[AppBlockingManager] ✓ Short timer: interval=15min, warningTime=\(warningMinutes)min (fires in \(Int(duration))s)")
+            } catch {
+                print("[AppBlockingManager] ⚠️ Failed to schedule: \(error)")
+            }
+        } else {
+            // Long timer: Use direct intervalDidEnd
+            let intervalEnd = expiryTime
+
+            let start = DateComponents(
+                calendar: calendar,
+                hour: calendar.component(.hour, from: now),
+                minute: calendar.component(.minute, from: now),
+                second: calendar.component(.second, from: now)
+            )
+
+            let end = DateComponents(
+                calendar: calendar,
+                hour: calendar.component(.hour, from: intervalEnd),
+                minute: calendar.component(.minute, from: intervalEnd),
+                second: calendar.component(.second, from: intervalEnd)
+            )
+
+            let schedule = DeviceActivitySchedule(
+                intervalStart: start,
+                intervalEnd: end,
+                repeats: false
+            )
+
+            do {
+                try activityCenter.startMonitoring(activityName, during: schedule)
+                print("[AppBlockingManager] ✓ Long timer: interval ends in \(Int(duration))s")
+            } catch {
+                print("[AppBlockingManager] ⚠️ Failed to schedule: \(error)")
+            }
+        }
     }
 
     func remainingUnlockTime(for appToken: ApplicationToken) -> TimeInterval? {

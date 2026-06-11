@@ -37,14 +37,14 @@ class NotificationManager: NSObject, ObservableObject {
             options: [.foreground]
         )
 
-        let category = UNNotificationCategory(
+        let unlockCategory = UNNotificationCategory(
             identifier: "UNLOCK_CHALLENGE",
             actions: [unlockAction],
             intentIdentifiers: [],
             options: []
         )
 
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+        UNUserNotificationCenter.current().setNotificationCategories([unlockCategory])
     }
 }
 
@@ -55,8 +55,10 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        let content = notification.request.content
+
         // If it's an unlock challenge notification, trigger the challenge immediately
-        if notification.request.content.categoryIdentifier == "UNLOCK_CHALLENGE" {
+        if content.categoryIdentifier == "UNLOCK_CHALLENGE" {
             DispatchQueue.main.async {
                 self.shouldShowChallenge = true
             }
@@ -67,13 +69,15 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         }
     }
 
-    // Handle notification tap
+    // Handle notification tap (or when app is not running)
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        if response.notification.request.content.categoryIdentifier == "UNLOCK_CHALLENGE" {
+        let content = response.notification.request.content
+
+        if content.categoryIdentifier == "UNLOCK_CHALLENGE" {
             DispatchQueue.main.async {
                 self.shouldShowChallenge = true
             }

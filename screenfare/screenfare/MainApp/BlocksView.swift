@@ -110,9 +110,7 @@ struct BlocksView: View {
 
                             Spacer()
 
-                            Toggle("", isOn: .constant(true))
-                                .labelsHidden()
-                                .tint(Color.focusAccent)
+                            CustomToggle(isOn: .constant(true), trackColorOn: .focusAccent)
                         }
 
                         Divider().background(Color.focusLine)
@@ -131,29 +129,6 @@ struct BlocksView: View {
 
                             Spacer()
                         }
-                    }
-                }
-
-                // Strict mode section
-                SectionTitle(text: "Strict mode")
-
-                AppCard {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Challenge required")
-                                .font(.inter(15, weight: .medium))
-                                .foregroundColor(.focusInk)
-
-                            Text("Solve math problems to unlock")
-                                .font(.inter(13))
-                                .foregroundColor(.focusMuted)
-                        }
-
-                        Spacer()
-
-                        Toggle("", isOn: .constant(true))
-                            .labelsHidden()
-                            .tint(Color.focusAccent)
                     }
                 }
             }
