@@ -275,6 +275,11 @@ class AppBlockingManager: ObservableObject {
         recalculateShields()
     }
 
+    /// Re-lock an app by immediately removing its temporary unlock
+    func relockApp(appData: Data) {
+        removeTemporaryUnlock(appTokenData: appData)
+    }
+
     func remainingUnlockTime(for appToken: ApplicationToken) -> TimeInterval? {
         guard let appTokenData = try? JSONEncoder().encode(appToken),
               let expiryTime = temporaryUnlocks[appTokenData],

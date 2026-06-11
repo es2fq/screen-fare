@@ -151,31 +151,16 @@ struct TodayView: View {
                     .padding(.vertical, 14)
                 }
 
-                // Temporary access section - show unlocked apps with countdown
+                // Unlocked now section - show unlocked apps with countdown
                 if !blockingManager.temporaryUnlocks.isEmpty {
-                    SectionHeader(title: "Temporary access")
-                        .padding(.top, 22)
-
-                    AppCard {
-                        VStack(spacing: 0) {
-                            ForEach(Array(blockingManager.temporaryUnlocks.sorted(by: { $0.value < $1.value }).enumerated()), id: \.element.key) { index, unlock in
-                                if index > 0 {
-                                    Divider()
-                                        .background(Color.focusLine)
-                                        .padding(.vertical, 14)
-                                }
-
-                                if let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: unlock.key) {
-                                    TemporaryUnlockRow(
-                                        app: appToken,
-                                        expiryTime: unlock.value,
-                                        currentTime: currentTime
-                                    )
-                                }
-                            }
+                    UnlockedNowSection(
+                        temporaryUnlocks: blockingManager.temporaryUnlocks,
+                        currentTime: currentTime,
+                        onLock: { appData in
+                            blockingManager.relockApp(appData: appData)
                         }
-                        .padding(.vertical, 4)
-                    }
+                    )
+                    .padding(.top, 22)
                 }
 
                 // Recent activity section
@@ -395,6 +380,260 @@ struct TemporaryUnlockRow: View {
         let minutes = Int(remaining) / 60
         let seconds = Int(remaining) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+/// Unlocked Now Section - displays live session timers
+/// Design specs: unlocked.jsx → UnlockedNow (lines 140-161)
+struct UnlockedNowSection: View {
+    let temporaryUnlocks: [Data: Date]
+    let currentTime: Date
+    let onLock: (Data) -> Void
+
+    private var sortedUnlocks: [(key: Data, value: Date)] {
+        temporaryUnlocks.sorted(by: { $0.value < $1.value })
+    }
+
+    private var hasWarning: Bool {
+        sortedUnlocks.contains { unlock in
+            let remaining = max(0, unlock.value.timeIntervalSince(currentTime))
+            return remaining <= 60
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Section header with live dot
+            HStack(spacing: 8) {
+                // Live pulsing dot
+                ZStack {
+                    Circle()
+                        .fill(hasWarning ? Color.focusWarn : Color.focusAccent)
+                        .frame(width: 7, height: 7)
+
+                    Circle()
+                        .stroke(hasWarning ? Color.focusWarn : Color.focusAccent, lineWidth: 1.5)
+                        .frame(width: 15, height: 15)
+                        .opacity(0.7)
+                        .scaleEffect(1.0)
+                        .modifier(PulseAnimation())
+                }
+
+                Text("Unlocked now")
+                    .font(.inter(11, weight: .semibold))
+                    .foregroundColor(.focusMuted)
+                    .tracking(0.6)
+                    .textCase(.uppercase)
+
+                Spacer()
+
+                Text("\(sortedUnlocks.count) \(sortedUnlocks.count == 1 ? "app" : "apps")")
+                    .font(.inter(11.5))
+                    .foregroundColor(.focusMuted)
+                    .monospacedDigit()
+            }
+            .padding(.horizontal, 4)
+            .padding(.bottom, 11)
+
+            // Unlocked session cards
+            VStack(spacing: 10) {
+                ForEach(sortedUnlocks, id: \.key) { unlock in
+                    if let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: unlock.key) {
+                        UnlockedSessionCard(
+                            app: appToken,
+                            expiryTime: unlock.value,
+                            totalDuration: 300, // 5 minutes default - could be tracked per unlock
+                            currentTime: currentTime,
+                            onLock: { onLock(unlock.key) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Individual unlocked session card
+/// Design specs: unlocked.jsx → UnlockedSession (lines 91-137)
+struct UnlockedSessionCard: View {
+    let app: ApplicationToken
+    let expiryTime: Date
+    let totalDuration: TimeInterval
+    let currentTime: Date
+    let onLock: () -> Void
+
+    private var remainingSeconds: Int {
+        max(0, Int(expiryTime.timeIntervalSince(currentTime)))
+    }
+
+    private var isWarning: Bool {
+        remainingSeconds <= 60
+    }
+
+    private var progress: Double {
+        let total = totalDuration
+        let remaining = expiryTime.timeIntervalSince(currentTime)
+        return max(0, min(1, remaining / total))
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // App info row
+            HStack(spacing: 12) {
+                Label(app)
+                    .labelStyle(.iconOnly)
+                    .frame(width: 38, height: 38)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Label(app)
+                        .labelStyle(.titleOnly)
+                        .font(.inter(15, weight: .semibold))
+                        .foregroundColor(.focusInk)
+                        .lineLimit(1)
+
+                    Text(isWarning ? "Locking soon" : "Open now")
+                        .font(.inter(12.5, weight: isWarning ? .medium : .regular))
+                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusMuted)
+                }
+
+                Spacer(minLength: 0)
+
+                // Lock now button
+                Button(action: onLock) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                        Text("Lock now")
+                            .font(.inter(12.5, weight: .semibold))
+                    }
+                    .foregroundColor(isWarning ? .white : .focusInk)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 7)
+                    .background(isWarning ? Color.focusInk : Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isWarning ? Color.clear : Color.focusLine, lineWidth: 1)
+                    )
+                    .cornerRadius(16)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+
+            // Timer and window info
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                // Time remaining in serif
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(formatTimeRemaining())
+                        .font(.instrumentSerif(31))
+                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusInk)
+                        .monospacedDigit()
+                        .modifier(isWarning ? AnyViewModifier(WarningPulseModifier()) : AnyViewModifier(EmptyModifier()))
+
+                    Text(" left")
+                        .font(.instrumentSerif(15, italic: true))
+                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusMuted)
+                        .padding(.leading, 7)
+                }
+
+                Spacer()
+
+                // Window duration
+                Text("\(Int(totalDuration / 60)) min window")
+                    .font(.inter(10.5))
+                    .foregroundColor(.focusMuted)
+                    .tracking(0.9)
+                    .textCase(.uppercase)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 15)
+
+            // Progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.focusInk.opacity(0.08))
+                        .frame(height: 5)
+
+                    // Progress fill
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(isWarning ? Color.focusWarn : Color.focusInk)
+                        .frame(width: max(0, progress * geometry.size.width), height: 5)
+                        .animation(.linear(duration: 1), value: progress)
+                }
+            }
+            .frame(height: 5)
+            .padding(.horizontal, 16)
+            .padding(.top, 11)
+            .padding(.bottom, 16)
+        }
+        .background(Color.white)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(isWarning ? Color.focusWarn.opacity(0.22) : Color.focusLine, lineWidth: 1)
+        )
+        .cornerRadius(18)
+    }
+
+    private func formatTimeRemaining() -> String {
+        let minutes = remainingSeconds / 60
+        let seconds = remainingSeconds % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+// Pulse animation for live dot
+struct PulseAnimation: ViewModifier {
+    @State private var isAnimating = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isAnimating ? 1.6 : 0.55)
+            .opacity(isAnimating ? 0 : 0.7)
+            .onAppear {
+                withAnimation(.easeOut(duration: 1.9).repeatForever(autoreverses: false)) {
+                    isAnimating = true
+                }
+            }
+    }
+}
+
+// Warning pulse for timer
+struct WarningPulseModifier: ViewModifier {
+    @State private var opacity: Double = 1.0
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(opacity)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                    opacity = 0.5
+                }
+            }
+    }
+}
+
+// Helper to wrap modifiers
+struct AnyViewModifier: ViewModifier {
+    private let _body: (Content) -> AnyView
+
+    init<M: ViewModifier>(_ modifier: M) {
+        _body = { content in
+            AnyView(content.modifier(modifier))
+        }
+    }
+
+    func body(content: Content) -> some View {
+        _body(content)
+    }
+}
+
+struct EmptyModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
     }
 }
 

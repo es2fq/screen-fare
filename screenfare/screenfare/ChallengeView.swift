@@ -268,6 +268,9 @@ struct ChallengeView: View {
                 VStack {
                     if isUnlocked {
                         Button {
+                            // Try to open the app that was unlocked
+                            openUnlockedApp()
+                            // Dismiss after attempting to open
                             dismiss()
                         } label: {
                             Text("Open App")
@@ -344,6 +347,22 @@ struct ChallengeView: View {
                 showingResult = false
             }
         }
+    }
+
+    private func openUnlockedApp() {
+        // Get the app that was unlocked
+        guard let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first else {
+            print("[ChallengeView] No app token to open")
+            return
+        }
+
+        // Unfortunately, iOS doesn't provide a direct API to open apps by ApplicationToken
+        // The best we can do is dismiss and let the user manually open the app
+        // The app is now unlocked, so it will open without showing the shield
+
+        // Note: In theory we could try to extract the bundle ID and use openURL,
+        // but ApplicationToken doesn't expose this information directly
+        print("[ChallengeView] App unlocked, user can now open it manually")
     }
 }
 

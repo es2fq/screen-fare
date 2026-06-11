@@ -31,6 +31,9 @@ extension Color {
 
     /// Accent text color
     static let focusAccentInk = Color.white
+
+    /// oklch(0.585 0.16 28) - Warning color for ending sessions
+    static let focusWarn = Color(hex: "C76A4A")
 }
 
 // MARK: - Typography
