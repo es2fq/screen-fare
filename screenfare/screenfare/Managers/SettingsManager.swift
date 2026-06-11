@@ -28,6 +28,12 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var challengeType: ChallengeType {
+        didSet {
+            UserDefaults.standard.set(challengeType.rawValue, forKey: "challengeType")
+        }
+    }
+
     @Published var hasCompletedOnboarding: Bool {
         didSet {
             UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding")
@@ -44,6 +50,13 @@ class SettingsManager: ObservableObject {
             self.challengeDifficulty = difficulty
         } else {
             self.challengeDifficulty = .medium
+        }
+
+        if let savedType = UserDefaults.standard.string(forKey: "challengeType"),
+           let type = ChallengeType(rawValue: savedType) {
+            self.challengeType = type
+        } else {
+            self.challengeType = .math
         }
 
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")

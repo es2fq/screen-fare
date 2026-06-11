@@ -1,11 +1,31 @@
 //
-//  MathChallengeGenerator.swift
+//  Challenges.swift
 //  screenfare
 //
-//  Created by Erik Song on 5/3/26.
+//  Challenge type system and implementations for Math, Typing, and Memory challenges
 //
 
 import Foundation
+
+// MARK: - Challenge Type System
+
+enum ChallengeType: String, CaseIterable {
+    case math = "Math"
+    case typing = "Typing"
+    case memory = "Memory"
+
+    var isPro: Bool {
+        switch self {
+        case .math: return false
+        case .typing, .memory: return true
+        }
+    }
+}
+
+protocol Challenge {
+    var type: ChallengeType { get }
+    var questionText: String { get }
+}
 
 enum ChallengeDifficulty: String, CaseIterable {
     case veryEasy = "Very Easy"
@@ -27,13 +47,15 @@ enum MathOperation: String, CaseIterable {
     }
 }
 
-struct MathChallenge {
+struct MathChallenge: Challenge {
     let firstNumber: Int
     let secondNumber: Int
     let thirdNumber: Int?
     let operation: MathOperation
     let secondOperation: MathOperation?
     let correctAnswer: Int
+
+    var type: ChallengeType { .math }
 
     var questionText: String {
         // Medium: three number addition
@@ -103,5 +125,67 @@ struct MathChallenge {
 
     func isCorrect(_ answer: Int) -> Bool {
         answer == correctAnswer
+    }
+}
+
+// MARK: - Typing Challenge
+
+struct TypingChallenge: Challenge {
+    let targetText: String
+    let type: ChallengeType = .typing
+
+    var questionText: String {
+        targetText
+    }
+
+    private static let prompts = [
+        "I'll use this on purpose, not by reflex.",
+        "A few minutes here is a choice I'm making.",
+        "I decide how this moment is spent.",
+        "This is intentional time, not lost time.",
+        "I'm here because I chose to be.",
+    ]
+
+    init() {
+        self.targetText = TypingChallenge.prompts.randomElement() ?? TypingChallenge.prompts[0]
+    }
+
+    func isCorrect(_ typedText: String) -> Bool {
+        typedText == targetText
+    }
+
+    func firstErrorIndex(in typedText: String) -> Int? {
+        for (index, char) in typedText.enumerated() {
+            let targetIndex = targetText.index(targetText.startIndex, offsetBy: index)
+            if char != targetText[targetIndex] {
+                return index
+            }
+        }
+        return nil
+    }
+}
+
+// MARK: - Memory Challenge
+
+struct MemoryChallenge: Challenge {
+    let litTiles: [Int]
+    let gridSize: Int = 16
+    let columns: Int = 4
+    let litCount: Int = 4
+    let type: ChallengeType = .memory
+
+    var questionText: String {
+        "Memorize the lit tiles"
+    }
+
+    init() {
+        // Generate random lit tiles
+        var indices = Array(0..<gridSize)
+        indices.shuffle()
+        self.litTiles = Array(indices.prefix(litCount)).sorted()
+    }
+
+    func isCorrect(_ selectedTiles: [Int]) -> Bool {
+        selectedTiles.count == litCount && Set(selectedTiles) == Set(litTiles)
     }
 }

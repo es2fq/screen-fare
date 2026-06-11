@@ -14,10 +14,27 @@ struct ChallengeView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var blockingManager = AppBlockingManager.shared
     @StateObject private var settings = SettingsManager.shared
-    @StateObject private var historyManager = UnlockHistoryManager.shared
+    @StateObject private var historyManager = HistoryManager.shared
 
-    @State private var challenge: MathChallenge
+    // Challenge type and state
+    @State private var challengeType: ChallengeType
+    @State private var mathChallenge: MathChallenge?
+    @State private var typingChallenge: TypingChallenge?
+    @State private var memoryChallenge: MemoryChallenge?
+
+    // Math challenge state
     @State private var userAnswer = ""
+
+    // Typing challenge state
+    @State private var typedText = ""
+    @FocusState private var isTypingFocused: Bool
+
+    // Memory challenge state
+    @State private var selectedTiles: [Int] = []
+    @State private var memoryStage: MemoryChallengeContent.MemoryStage = .memorize
+    @State private var memoryCountdown = 3
+
+    // Common state
     @State private var showingResult = false
     @State private var isCorrect = false
     @State private var isUnlocked = false
@@ -25,15 +42,27 @@ struct ChallengeView: View {
     @State private var shakeCount = 0
     @State private var requestedApp: ApplicationToken?
 
-    init() {
+    init(challengeType: ChallengeType? = nil) {
+        // Use provided challenge type or fall back to settings
         let settings = SettingsManager.shared
-        _challenge = State(initialValue: MathChallenge(difficulty: settings.challengeDifficulty))
+        let selectedType = challengeType ?? settings.challengeType
+        _challengeType = State(initialValue: selectedType)
 
         // Try to load the requested app token from App Group
         if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
            let data = sharedDefaults.data(forKey: "com.screenfare.requestedAppToken"),
            let token = try? JSONDecoder().decode(ApplicationToken.self, from: data) {
             _requestedApp = State(initialValue: token)
+        }
+
+        // Initialize appropriate challenge
+        switch selectedType {
+        case .math:
+            _mathChallenge = State(initialValue: MathChallenge(difficulty: settings.challengeDifficulty))
+        case .typing:
+            _typingChallenge = State(initialValue: TypingChallenge())
+        case .memory:
+            _memoryChallenge = State(initialValue: MemoryChallenge())
         }
     }
 
@@ -64,7 +93,7 @@ struct ChallengeView: View {
 
                     Spacer()
 
-                    Text(isUnlocked ? "Done" : "Math · \(difficultyText)")
+                    Text(isUnlocked ? "Done" : challengeLabel)
                         .font(.inter(12))
                         .foregroundColor(.focusMuted)
                 }
@@ -160,10 +189,10 @@ struct ChallengeView: View {
 
                         Spacer().frame(height: 14)
 
-                        // Dark problem/result area
-                        VStack(spacing: 14) {
-                            if isUnlocked {
-                                // Success state
+                        // Challenge content area
+                        if isUnlocked {
+                            // Success state (same for all challenge types)
+                            VStack(spacing: 14) {
                                 Circle()
                                     .fill(Color.white.opacity(0.12))
                                     .frame(width: 46, height: 46)
@@ -181,59 +210,22 @@ struct ChallengeView: View {
                                 Text("access remaining")
                                     .font(.inter(12))
                                     .foregroundColor(.white.opacity(0.6))
-                            } else {
-                                // Challenge state
-                                Text(attempts > 0 ? "Attempt \(attempts + 1) · solve to continue" : "Solve to continue")
-                                    .font(.inter(10, weight: .regular))
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .tracking(1.6)
-                                    .textCase(.uppercase)
-
-                                Text(challenge.questionText)
-                                    .font(.instrumentSerif(46))
-                                    .foregroundColor(.white)
-                                    .opacity(showingResult && !isCorrect ? 1.0 : 1.0)
                             }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, isUnlocked ? 26 : 22)
-                        .background(Color.focusInk)
-                        .cornerRadius(16)
-                        .padding(.horizontal, 14)
-
-                        // Answer input (only in challenge mode)
-                        if !isUnlocked {
-                            HStack {
-                                Spacer()
-
-                                if userAnswer.isEmpty {
-                                    Text("Type the answer")
-                                        .font(.inter(15, weight: .regular))
-                                        .foregroundColor(Color.focusInk.opacity(0.28))
-                                } else {
-                                    Text(userAnswer)
-                                        .font(.system(size: 24, weight: .semibold, design: .default))
-                                        .foregroundColor(.focusInk)
-                                    + Text("|")
-                                        .font(.system(size: 24, weight: .ultraLight))
-                                        .foregroundColor(.focusInk.opacity(0.3))
-                                }
-
-                                Spacer()
-                            }
-                            .frame(height: 54)
-                            .background(showingResult && !isCorrect ? Color(red: 0.975, green: 0.95, blue: 0.94) : Color.focusInk.opacity(0.02))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(
-                                        showingResult && !isCorrect ? Color(red: 0.9, green: 0.5, blue: 0.4) :
-                                        !userAnswer.isEmpty ? Color.focusInk : Color.focusLine,
-                                        lineWidth: 1.5
-                                    )
-                            )
-                            .cornerRadius(14)
-                            .padding(.top, 12)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 26)
+                            .background(Color.focusInk)
+                            .cornerRadius(16)
                             .padding(.horizontal, 14)
+                        } else {
+                            // Challenge-specific content
+                            switch challengeType {
+                            case .math:
+                                mathChallengeContent()
+                            case .typing:
+                                typingChallengeContent()
+                            case .memory:
+                                memoryChallengeContent()
+                            }
                         }
 
                         Spacer().frame(height: 14)
@@ -252,7 +244,7 @@ struct ChallengeView: View {
                 HStack {
                     Spacer()
                     if showingResult && !isCorrect && !isUnlocked {
-                        Text("Not quite — give it another go")
+                        Text(errorMessage)
                             .font(.inter(13, weight: .medium))
                             .foregroundColor(Color(red: 0.7, green: 0.4, blue: 0.3))
                             .transition(.opacity)
@@ -264,13 +256,11 @@ struct ChallengeView: View {
 
                 Spacer()
 
-                // Keypad / Open button
+                // Footer: Keypad / Button
                 VStack {
                     if isUnlocked {
                         Button {
-                            // Try to open the app that was unlocked
                             openUnlockedApp()
-                            // Dismiss after attempting to open
                             dismiss()
                         } label: {
                             Text("Open App")
@@ -282,11 +272,47 @@ struct ChallengeView: View {
                                 .cornerRadius(16)
                         }
                     } else {
-                        CustomKeypad(
-                            input: $userAnswer,
-                            onSubmit: checkAnswer,
-                            canSubmit: !userAnswer.isEmpty && !showingResult
-                        )
+                        switch challengeType {
+                        case .math:
+                            CustomKeypad(
+                                input: $userAnswer,
+                                onSubmit: checkMathAnswer,
+                                canSubmit: !userAnswer.isEmpty && !showingResult
+                            )
+                        case .typing:
+                            Button {
+                                checkTypingAnswer()
+                            } label: {
+                                Text(typingChallenge?.isCorrect(typedText) == true ? "Pay your fare" : "Type the line to continue")
+                                    .font(.inter(16, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(typingChallenge?.isCorrect(typedText) == true ? Color.focusInk : Color.focusInk.opacity(0.12))
+                                    .cornerRadius(16)
+                            }
+                            .disabled(typingChallenge?.isCorrect(typedText) != true)
+                        case .memory:
+                            Button {
+                                checkMemoryAnswer()
+                            } label: {
+                                let remaining = (memoryChallenge?.litCount ?? 4) - selectedTiles.count
+                                let buttonText = memoryStage == .memorize
+                                    ? "Memorizing… \(memoryCountdown)"
+                                    : selectedTiles.count == (memoryChallenge?.litCount ?? 4)
+                                        ? "Confirm"
+                                        : "Select \(remaining) more"
+
+                                Text(buttonText)
+                                    .font(.inter(16, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(memoryStage == .recall && selectedTiles.count == (memoryChallenge?.litCount ?? 4) ? Color.focusInk : Color.focusInk.opacity(0.12))
+                                    .cornerRadius(16)
+                            }
+                            .disabled(memoryStage != .recall || selectedTiles.count != (memoryChallenge?.litCount ?? 4))
+                        }
                     }
                 }
                 .padding(.horizontal, 22)
@@ -295,6 +321,17 @@ struct ChallengeView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: showingResult)
         .animation(.easeInOut(duration: 0.2), value: isUnlocked)
+    }
+
+    private var challengeLabel: String {
+        switch challengeType {
+        case .math:
+            return "Math · \(difficultyText)"
+        case .typing:
+            return "Typing · Pro"
+        case .memory:
+            return "Memory · Pro"
+        }
     }
 
     private var difficultyText: String {
@@ -307,6 +344,104 @@ struct ChallengeView: View {
         }
     }
 
+    private var errorMessage: String {
+        switch challengeType {
+        case .math:
+            return "Not quite — give it another go"
+        case .typing:
+            return "That doesn't match — fix the highlighted part"
+        case .memory:
+            return "Not quite — watch the pattern again"
+        }
+    }
+
+    // MARK: - Challenge Content Views
+
+    @ViewBuilder
+    private func mathChallengeContent() -> some View {
+        VStack(spacing: 0) {
+            // Dark problem block
+            VStack(spacing: 14) {
+                Text(attempts > 0 ? "Attempt \(attempts + 1) · solve to continue" : "Solve to continue")
+                    .font(.inter(10, weight: .regular))
+                    .foregroundColor(.white.opacity(0.5))
+                    .tracking(1.6)
+                    .textCase(.uppercase)
+
+                Text(mathChallenge?.questionText ?? "")
+                    .font(.instrumentSerif(46))
+                    .foregroundColor(.white)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 22)
+            .background(Color.focusInk)
+            .cornerRadius(16)
+            .padding(.horizontal, 14)
+
+            // Answer input
+            HStack {
+                Spacer()
+
+                if userAnswer.isEmpty {
+                    Text("Type the answer")
+                        .font(.inter(15, weight: .regular))
+                        .foregroundColor(Color.focusInk.opacity(0.28))
+                } else {
+                    Text(userAnswer)
+                        .font(.system(size: 24, weight: .semibold, design: .default))
+                        .foregroundColor(.focusInk)
+                    + Text("|")
+                        .font(.system(size: 24, weight: .ultraLight))
+                        .foregroundColor(.focusInk.opacity(0.3))
+                }
+
+                Spacer()
+            }
+            .frame(height: 54)
+            .background(showingResult && !isCorrect ? Color(red: 0.975, green: 0.95, blue: 0.94) : Color.focusInk.opacity(0.02))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(
+                        showingResult && !isCorrect ? Color(red: 0.9, green: 0.5, blue: 0.4) :
+                        !userAnswer.isEmpty ? Color.focusInk : Color.focusLine,
+                        lineWidth: 1.5
+                    )
+            )
+            .cornerRadius(14)
+            .padding(.top, 12)
+            .padding(.horizontal, 14)
+        }
+    }
+
+    @ViewBuilder
+    private func typingChallengeContent() -> some View {
+        if let challenge = typingChallenge {
+            TypingChallengeContent(
+                challenge: challenge,
+                typedText: $typedText,
+                isFocused: $isTypingFocused,
+                isUnlocked: isUnlocked
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func memoryChallengeContent() -> some View {
+        if let challenge = memoryChallenge {
+            MemoryChallengeContent(
+                challenge: challenge,
+                selectedTiles: $selectedTiles,
+                stage: $memoryStage,
+                countdown: $memoryCountdown,
+                isUnlocked: isUnlocked,
+                showError: showingResult && !isCorrect
+            )
+            .onAppear {
+                startMemoryCountdown()
+            }
+        }
+    }
+
     private func formatCountdown() -> String {
         let seconds = Int(settings.unlockDuration)
         let mm = seconds / 60
@@ -314,8 +449,11 @@ struct ChallengeView: View {
         return String(format: "%d:%02d", mm, ss)
     }
 
-    private func checkAnswer() {
-        guard let answer = Int(userAnswer) else {
+    // MARK: - Answer Checking
+
+    private func checkMathAnswer() {
+        guard let answer = Int(userAnswer),
+              let challenge = mathChallenge else {
             return
         }
 
@@ -323,28 +461,88 @@ struct ChallengeView: View {
         showingResult = true
 
         if isCorrect {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                // Unlock the specific app that was requested
-                let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first
-                blockingManager.temporaryUnlock(appToken: appToken, duration: settings.unlockDuration)
-
-                // Record the unlock event
-                let appTokenData = appToken.flatMap { try? JSONEncoder().encode($0) }
-                historyManager.recordUnlock(
-                    appTokenData: appTokenData,
-                    unlockMethod: .mathChallenge,
-                    duration: settings.unlockDuration
-                )
-
-                isUnlocked = true
-            }
+            unlockApp(eventType: .mathChallenge)
         } else {
-            attempts += 1
-            shakeCount += 1
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                challenge = MathChallenge(difficulty: settings.challengeDifficulty)
+            handleIncorrectAnswer {
+                mathChallenge = MathChallenge(difficulty: settings.challengeDifficulty)
                 userAnswer = ""
-                showingResult = false
+            }
+        }
+    }
+
+    private func checkTypingAnswer() {
+        guard let challenge = typingChallenge else { return }
+
+        isCorrect = challenge.isCorrect(typedText)
+        showingResult = true
+
+        if isCorrect {
+            unlockApp(eventType: .mathChallenge) // Using mathChallenge as placeholder
+        } else {
+            handleIncorrectAnswer {
+                typingChallenge = TypingChallenge()
+                typedText = ""
+            }
+        }
+    }
+
+    private func checkMemoryAnswer() {
+        guard let challenge = memoryChallenge else { return }
+
+        isCorrect = challenge.isCorrect(selectedTiles)
+        showingResult = true
+
+        if isCorrect {
+            unlockApp(eventType: .mathChallenge) // Using mathChallenge as placeholder
+        } else {
+            handleIncorrectAnswer {
+                memoryChallenge = MemoryChallenge()
+                selectedTiles = []
+                memoryStage = .memorize
+                startMemoryCountdown()
+            }
+        }
+    }
+
+    private func unlockApp(eventType: HistoryEvent.EventType) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Unlock the specific app that was requested
+            let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first
+            blockingManager.temporaryUnlock(appToken: appToken, duration: settings.unlockDuration)
+
+            // Record the unlock event
+            let appTokenData = appToken.flatMap { try? JSONEncoder().encode($0) }
+            historyManager.recordEvent(
+                appTokenData: appTokenData,
+                eventType: eventType,
+                duration: settings.unlockDuration
+            )
+
+            isUnlocked = true
+        }
+    }
+
+    private func handleIncorrectAnswer(reset: @escaping () -> Void) {
+        attempts += 1
+        shakeCount += 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            reset()
+            showingResult = false
+        }
+    }
+
+    private func startMemoryCountdown() {
+        memoryCountdown = 3
+        memoryStage = .memorize
+
+        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            if memoryCountdown > 1 {
+                memoryCountdown -= 1
+            } else {
+                timer.invalidate()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    memoryStage = .recall
+                }
             }
         }
     }
@@ -506,6 +704,14 @@ struct ShakeEffect<Content: View>: View {
     }
 }
 
-#Preview {
-    ChallengeView()
+#Preview("Math Challenge") {
+    ChallengeView(challengeType: .math)
+}
+
+#Preview("Typing Challenge") {
+    ChallengeView(challengeType: .typing)
+}
+
+#Preview("Memory Challenge") {
+    ChallengeView(challengeType: .memory)
 }

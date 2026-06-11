@@ -17,6 +17,7 @@ class ShieldActionExtension: ShieldActionDelegate {
     override func handle(action: ShieldAction, for application: ApplicationToken, completionHandler: @escaping (ShieldActionResponse) -> Void) {
         // Record block attempt (user saw the shield)
         recordBlockAttempt()
+        recordBlockedEvent(for: application)
 
 
         switch action {
@@ -112,6 +113,55 @@ class ShieldActionExtension: ShieldActionDelegate {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
+    }
+
+    private func recordBlockedEvent(for application: ApplicationToken) {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
+              let appTokenData = try? JSONEncoder().encode(application) else {
+            return
+        }
+
+        let storageKey = "com.screenfare.pendingHistoryEvents"
+
+        // Create new history event
+        let event = HistoryEvent(
+            id: UUID(),
+            appTokenData: appTokenData,
+            timestamp: Date(),
+            eventType: .blocked,
+            duration: 0
+        )
+
+        // Load existing pending events
+        var pendingEvents: [HistoryEvent] = []
+        if let data = sharedDefaults.data(forKey: storageKey),
+           let decoded = try? JSONDecoder().decode([HistoryEvent].self, from: data) {
+            pendingEvents = decoded
+        }
+
+        // Add new event
+        pendingEvents.append(event)
+
+        // Save back to shared storage
+        if let encoded = try? JSONEncoder().encode(pendingEvents) {
+            sharedDefaults.set(encoded, forKey: storageKey)
+            sharedDefaults.synchronize()
+        }
+    }
+}
+
+// Local copy of HistoryEvent for the extension
+private struct HistoryEvent: Codable, Identifiable {
+    let id: UUID
+    let appTokenData: Data
+    let timestamp: Date
+    let eventType: EventType
+    let duration: TimeInterval
+
+    enum EventType: String, Codable {
+        case mathChallenge = "Unlocked · math solved"
+        case dismissed = "Block dismissed"
+        case blocked = "App blocked"
     }
 }
 

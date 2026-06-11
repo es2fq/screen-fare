@@ -14,7 +14,7 @@ import Combine
 struct TodayView: View {
     @StateObject private var blockingManager = AppBlockingManager.shared
     @StateObject private var settings = SettingsManager.shared
-    @StateObject private var historyManager = UnlockHistoryManager.shared
+    @StateObject private var historyManager = HistoryManager.shared
     @StateObject private var statsManager = StatsManager.shared
     @State private var currentTime = Date()
 
@@ -186,7 +186,7 @@ struct TodayView: View {
                                 VStack(spacing: 0) {
                                     RecentActivityRow(
                                         app: try? JSONDecoder().decode(ApplicationToken.self, from: event.appTokenData),
-                                        action: event.unlockMethod.rawValue,
+                                        action: event.eventType.rawValue,
                                         time: formatTime(event.timestamp)
                                     )
 
@@ -214,6 +214,12 @@ struct TodayView: View {
         .onAppear {
             // Clean up any expired unlocks when user views Today tab
             blockingManager.cleanupExpiredUnlocks()
+            // Load any pending history events from shield extension
+            historyManager.loadPendingEvents()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Also load pending events when app comes to foreground
+            historyManager.loadPendingEvents()
         }
     }
 
