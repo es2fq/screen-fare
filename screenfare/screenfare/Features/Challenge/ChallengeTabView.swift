@@ -12,6 +12,7 @@ struct ChallengeTabView: View {
     @StateObject private var settings = SettingsManager.shared
     @State private var view: ViewState = .list
     @State private var selectedType: ChallengeType = .math
+    @FocusState private var isAnyFieldFocused: Bool
 
     // Pre-generated challenges for preview
     @State private var previewChallenges: [ChallengeDifficulty: MathChallenge]
@@ -156,11 +157,17 @@ struct ChallengeTabView: View {
         ZStack {
             Color.focusBg
                 .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // Dismiss keyboard when tapping background
+                    isAnyFieldFocused = false
+                }
 
             VStack(spacing: 0) {
                 // Back button header
                 HStack(spacing: 0) {
                     Button(action: {
+                        isAnyFieldFocused = false
                         view = .list
                     }) {
                         HStack(spacing: 6) {
@@ -178,6 +185,11 @@ struct ChallengeTabView: View {
                 .padding(.horizontal, 22)
                 .padding(.top, 12)
                 .padding(.bottom, 8)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // Dismiss keyboard when tapping header area
+                    isAnyFieldFocused = false
+                }
 
                 ScrollView {
                     VStack(spacing: 0) {
@@ -206,13 +218,19 @@ struct ChallengeTabView: View {
                         .padding(.horizontal, 22)
                         .padding(.top, 12)
                         .padding(.bottom, 20)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            // Dismiss keyboard when tapping header
+                            isAnyFieldFocused = false
+                        }
 
                         // Config card
-                        ConfigCard(type: selectedType, settings: settings, previewChallenges: $previewChallenges, typingChallenge: $typingChallenge, memoryChallenge: $memoryChallenge)
+                        ConfigCard(type: selectedType, settings: settings, previewChallenges: $previewChallenges, typingChallenge: $typingChallenge, memoryChallenge: $memoryChallenge, isAnyFieldFocused: $isAnyFieldFocused)
                             .padding(.horizontal, 22)
 
                         // Done button
                         Button(action: {
+                            isAnyFieldFocused = false
                             settings.challengeType = selectedType
                             view = .list
                         }) {
@@ -226,7 +244,12 @@ struct ChallengeTabView: View {
                         }
                         .padding(.horizontal, 22)
                         .padding(.top, 22)
-                        .padding(.bottom, 24)
+                        .padding(.bottom, 100)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        // Dismiss keyboard when tapping scroll area
+                        isAnyFieldFocused = false
                     }
                 }
             }
@@ -316,6 +339,7 @@ struct ConfigCard: View {
     @Binding var previewChallenges: [ChallengeDifficulty: MathChallenge]
     @Binding var typingChallenge: TypingChallenge
     @Binding var memoryChallenge: MemoryChallenge
+    @FocusState.Binding var isAnyFieldFocused: Bool
 
     var body: some View {
         AppCard {
@@ -329,6 +353,11 @@ struct ConfigCard: View {
                     memoryConfig
                 }
             }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // Dismiss keyboard when tapping card padding/background
+            isAnyFieldFocused = false
         }
     }
 
@@ -364,14 +393,7 @@ struct ConfigCard: View {
             }
             .padding(.top, 4)
 
-            PreviewBox(label: "Sample problem") {
-                if let challenge = previewChallenges[settings.challengeDifficulty] {
-                    Text(challenge.questionText)
-                        .font(.instrumentSerif(27))
-                        .foregroundColor(.focusInk)
-                        .monospacedDigit()
-                }
-            }
+            MathTester(difficulty: settings.challengeDifficulty)
         }
     }
 
@@ -400,12 +422,7 @@ struct ConfigCard: View {
             }
             .padding(.top, 4)
 
-            PreviewBox(label: "Preview") {
-                Text("\"I'll use this on purpose, not by reflex.\"")
-                    .font(.instrumentSerif(16, italic: true))
-                    .foregroundColor(Color.focusInk)
-                    .lineSpacing(1.3)
-            }
+            TypingTester(words: 8, isAnyFieldFocused: $isAnyFieldFocused)
         }
     }
 
@@ -434,12 +451,7 @@ struct ConfigCard: View {
             }
             .padding(.top, 4)
 
-            PreviewBox(label: "Preview") {
-                Text("Memorize the lit tiles, then tap them back from memory.")
-                    .font(.instrumentSerif(16, italic: true))
-                    .foregroundColor(Color.focusInk)
-                    .lineSpacing(1.3)
-            }
+            MemoryTester(tilesToMatch: 4)
         }
     }
 
@@ -473,6 +485,431 @@ struct PreviewBox<Content: View>: View {
         .background(Color.focusInk.opacity(0.04))
         .cornerRadius(12)
         .padding(.top, 2)
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INTERACTIVE CHALLENGE TESTERS
+// ═══════════════════════════════════════════════════════════════
+
+struct TryShell<Content: View>: View {
+    @ViewBuilder let content: Content
+    let hint: String?
+
+    init(hint: String? = nil, @ViewBuilder content: () -> Content) {
+        self.hint = hint
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            Text("TRY IT")
+                .font(.inter(9.5, weight: .medium))
+                .foregroundColor(.focusMuted)
+                .tracking(0.7)
+
+            content
+
+            if let hint = hint {
+                Text(hint)
+                    .font(.inter(11))
+                    .foregroundColor(.focusMuted)
+                    .lineSpacing(1.45)
+            }
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 13)
+        .background(Color.focusInk.opacity(0.04))
+        .cornerRadius(12)
+        .padding(.top, 14)
+    }
+}
+
+struct MathTester: View {
+    let difficulty: ChallengeDifficulty
+    @State private var problem: MathChallenge
+    @State private var userAnswer = ""
+    @State private var result: Result? = nil
+    @FocusState private var isFocused: Bool
+
+    enum Result {
+        case correct
+        case wrong
+    }
+
+    init(difficulty: ChallengeDifficulty) {
+        self.difficulty = difficulty
+        self._problem = State(initialValue: MathChallenge(difficulty: difficulty))
+    }
+
+    var body: some View {
+        TryShell(hint: "Solve it the way you would to unlock — answers are checked.") {
+            VStack(spacing: 13) {
+                // Problem
+                Text(problem.questionText.replacingOccurrences(of: " = ?", with: " ="))
+                    .font(.instrumentSerif(32))
+                    .foregroundColor(.focusInk)
+                    .monospacedDigit()
+                    .tracking(-0.01 * 32)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        // Dismiss keyboard when tapping outside input
+                        isFocused = false
+                    }
+
+                // Input + Button
+                HStack(spacing: 8) {
+                    TextField("Answer", text: $userAnswer)
+                        .keyboardType(.numberPad)
+                        .font(.inter(17, weight: .semibold))
+                        .foregroundColor(.focusInk)
+                        .monospacedDigit()
+                        .padding(.horizontal, 14)
+                        .frame(height: 44)
+                        .background(result == .wrong ? Color(red: 0.955, green: 0.95, blue: 0.94) : Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 11)
+                                .stroke(borderColor, lineWidth: 1.5)
+                        )
+                        .cornerRadius(11)
+                        .focused($isFocused)
+                        .onChange(of: userAnswer) { _, _ in
+                            if result == .wrong {
+                                result = nil
+                            }
+                        }
+
+                    Button(action: handleAction) {
+                        Text(result == .correct ? "Next" : "Check")
+                            .font(.inter(14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(height: 44)
+                            .padding(.horizontal, 16)
+                            .background(canSubmit ? Color.focusInk : Color.focusInk.opacity(0.1))
+                            .cornerRadius(11)
+                    }
+                    .disabled(!canSubmit)
+                }
+
+                // Feedback
+                Text(feedbackText)
+                    .font(.inter(12.5, weight: .medium))
+                    .foregroundColor(feedbackColor)
+                    .frame(height: 16, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        // Dismiss keyboard when tapping outside input
+                        isFocused = false
+                    }
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // Dismiss keyboard when tapping anywhere in the shell
+            isFocused = false
+        }
+        .onChange(of: difficulty) { _, newDifficulty in
+            problem = MathChallenge(difficulty: newDifficulty)
+            userAnswer = ""
+            result = nil
+        }
+    }
+
+    private var canSubmit: Bool {
+        result == .correct || !userAnswer.isEmpty
+    }
+
+    private var borderColor: Color {
+        if result == .correct {
+            return Color(red: 0.55, green: 0.12, blue: 0.12, opacity: 1) // GREEN_C approximation
+        } else if result == .wrong {
+            return Color(red: 0.9, green: 0.5, blue: 0.4) // RED_C approximation
+        }
+        return Color.focusLine
+    }
+
+    private var feedbackText: String {
+        if result == .correct {
+            return "Correct — that would unlock."
+        } else if result == .wrong {
+            return "Not quite. Try again."
+        }
+        return "·"
+    }
+
+    private var feedbackColor: Color {
+        if result == .correct {
+            return Color(red: 0.55, green: 0.65, blue: 0.4) // GREEN_C
+        } else if result == .wrong {
+            return Color(red: 0.7, green: 0.4, blue: 0.3) // RED_C
+        }
+        return Color.clear
+    }
+
+    private func handleAction() {
+        if result == .correct {
+            // Generate new problem
+            problem = MathChallenge(difficulty: difficulty)
+            userAnswer = ""
+            result = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isFocused = true
+            }
+        } else {
+            // Check answer
+            guard let answer = Int(userAnswer) else { return }
+            result = problem.isCorrect(answer) ? .correct : .wrong
+        }
+    }
+}
+
+struct TypingTester: View {
+    let words: Int
+    @FocusState.Binding var isAnyFieldFocused: Bool
+    @State private var typedText = ""
+
+    private let targetPhrases = [
+        "Be here on purpose.",
+        "I choose how this moment is spent.",
+        "A few minutes here is a deliberate choice.",
+        "I will use this app with intention and not by reflex.",
+        "I am opening this on purpose, fully aware of how my time gets spent."
+    ]
+
+    private var targetPhrase: String {
+        // Find phrase closest to target word count
+        let sorted = targetPhrases.sorted { phrase1, phrase2 in
+            let diff1 = abs(phrase1.split(separator: " ").count - words)
+            let diff2 = abs(phrase2.split(separator: " ").count - words)
+            return diff1 < diff2
+        }
+        return sorted.first ?? targetPhrases[0]
+    }
+
+    private var isComplete: Bool {
+        typedText == targetPhrase
+    }
+
+    var body: some View {
+        TryShell(hint: isComplete ? nil : "Tap the line and type it exactly.") {
+            VStack(spacing: 10) {
+                // Display with character coloring - using Text with AttributedString for wrapping
+                ZStack(alignment: .topLeading) {
+                    // Visible text with character coloring
+                    Text(coloredText)
+                        .font(.instrumentSerif(21))
+                        .lineSpacing(1.4)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .onTapGesture {
+                            // Only the text itself focuses the keyboard
+                            isAnyFieldFocused = true
+                        }
+
+                    // Hidden text field
+                    TextField("", text: $typedText)
+                        .opacity(0)
+                        .focused($isAnyFieldFocused)
+                        .onChange(of: typedText) { _, newValue in
+                            if newValue.count > targetPhrase.count {
+                                typedText = String(newValue.prefix(targetPhrase.count))
+                            }
+                        }
+                }
+                .padding(.vertical, 2)
+
+                if isComplete {
+                    Text("Matched — that would unlock.")
+                        .font(.inter(12.5, weight: .medium))
+                        .foregroundColor(Color(red: 0.55, green: 0.65, blue: 0.4))
+                }
+            }
+        }
+    }
+
+    private var coloredText: AttributedString {
+        var result = AttributedString()
+
+        for (index, char) in targetPhrase.enumerated() {
+            let isDone = index < typedText.count
+            let isCorrect = isDone && Array(typedText)[index] == char
+            let isWrong = isDone && Array(typedText)[index] != char
+
+            var charString = AttributedString(String(char))
+
+            if isWrong {
+                charString.foregroundColor = Color(red: 0.7, green: 0.4, blue: 0.3)
+                charString.backgroundColor = Color(red: 0.955, green: 0.95, blue: 0.94)
+            } else if isCorrect {
+                charString.foregroundColor = Color.focusInk
+            } else {
+                charString.foregroundColor = Color.focusInk.opacity(0.3)
+            }
+
+            result.append(charString)
+        }
+
+        return result
+    }
+}
+
+struct MemoryTester: View {
+    let tilesToMatch: Int
+    @State private var targetTiles: [Int] = []
+    @State private var selectedTiles: [Int] = []
+    @State private var stage: Stage = .idle
+    @State private var countdown: Int = 3
+
+    enum Stage {
+        case idle
+        case memorize
+        case recall
+        case done
+        case wrong
+    }
+
+    private let gridSize = 16
+    private let columns = 4
+
+    var body: some View {
+        TryShell(hint: stage == .idle ? "Memorize the lit tiles, then tap them back from memory." : nil) {
+            VStack(spacing: 12) {
+                // Grid
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: columns), spacing: 8) {
+                    ForEach(0..<gridSize, id: \.self) { index in
+                        Button(action: {
+                            if stage == .recall {
+                                toggleTile(index)
+                            }
+                        }) {
+                            RoundedRectangle(cornerRadius: 9)
+                                .fill(tileColor(for: index))
+                                .aspectRatio(1, contentMode: .fit)
+                        }
+                        .disabled(stage != .recall)
+                    }
+                }
+
+                // Button
+                Button(action: handleAction) {
+                    Text(buttonText)
+                        .font(.inter(14, weight: .semibold))
+                        .foregroundColor(buttonDisabled ? Color.focusInk.opacity(0.4) : .white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(buttonDisabled ? Color.focusInk.opacity(0.1) : Color.focusInk)
+                        .cornerRadius(11)
+                }
+                .disabled(buttonDisabled)
+            }
+        }
+    }
+
+    private func tileColor(for index: Int) -> Color {
+        let isTarget = targetTiles.contains(index)
+        let isSelected = selectedTiles.contains(index)
+
+        switch stage {
+        case .idle:
+            return Color.focusInk.opacity(0.06)
+        case .memorize, .wrong:
+            return isTarget ? Color.focusInk : Color.focusInk.opacity(0.06)
+        case .recall:
+            return isSelected ? Color.focusInk : Color.focusInk.opacity(0.06)
+        case .done:
+            return isTarget ? Color(red: 0.55, green: 0.65, blue: 0.4) : Color.focusInk.opacity(0.06)
+        }
+    }
+
+    private var buttonText: String {
+        switch stage {
+        case .idle:
+            return "Show pattern"
+        case .memorize:
+            return "Memorizing… \(countdown)"
+        case .wrong:
+            return "Not quite — watch again"
+        case .recall:
+            let remaining = tilesToMatch - selectedTiles.count
+            return remaining == 0 ? "Check" : "Tap \(remaining) more"
+        case .done:
+            return "Passed — try again"
+        }
+    }
+
+    private var buttonDisabled: Bool {
+        stage == .memorize || stage == .wrong || (stage == .recall && selectedTiles.count != tilesToMatch)
+    }
+
+    private func toggleTile(_ index: Int) {
+        if selectedTiles.contains(index) {
+            selectedTiles.removeAll { $0 == index }
+        } else if selectedTiles.count < tilesToMatch {
+            selectedTiles.append(index)
+        }
+    }
+
+    private func handleAction() {
+        switch stage {
+        case .idle, .done:
+            startGame()
+        case .recall:
+            checkAnswer()
+        default:
+            break
+        }
+    }
+
+    private func startGame() {
+        // Generate random target tiles
+        var allIndices = Array(0..<gridSize)
+        allIndices.shuffle()
+        targetTiles = Array(allIndices.prefix(tilesToMatch)).sorted()
+        selectedTiles = []
+
+        // Start memorization phase
+        stage = .memorize
+        let showMs = 1400 + tilesToMatch * 350
+        countdown = Int(ceil(Double(showMs) / 1000.0))
+
+        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            countdown -= 1
+            if countdown <= 1 {
+                timer.invalidate()
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(showMs) / 1000.0) {
+            stage = .recall
+        }
+    }
+
+    private func checkAnswer() {
+        let isCorrect = Set(selectedTiles) == Set(targetTiles)
+
+        if isCorrect {
+            stage = .done
+        } else {
+            stage = .wrong
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+                selectedTiles = []
+                stage = .memorize
+                let showMs = 1400 + tilesToMatch * 350
+                countdown = Int(ceil(Double(showMs) / 1000.0))
+
+                Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+                    countdown -= 1
+                    if countdown <= 1 {
+                        timer.invalidate()
+                    }
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(showMs) / 1000.0) {
+                    stage = .recall
+                }
+            }
+        }
     }
 }
 
