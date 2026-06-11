@@ -1,0 +1,64 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/ChallengeTabView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "PREVIEW",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "Difficulty",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 83
+        }
+      },
+      {
+        "comment": "",
+        "key": "Duration",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "1 min",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 133
+        }
+      },
+      {
+        "comment": "",
+        "key": "2 hours",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 137
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldm",
+        "location": {
+          "startingColumn": 56,
+          "startingLine": 150
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldh",
+        "location": {
+          "startingColumn": 71,
+          "startingLine": 150
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,128 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/SettingsTabView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Reset Onboarding",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 193
+        }
+      },
+      {
+        "comment": "",
+        "key": "F",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 28
+        }
+      },
+      {
+        "comment": "",
+        "key": "Focus User",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 34
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium • Active",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-relock",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 86
+        }
+      },
+      {
+        "comment": "",
+        "key": "Apps relock after access window",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "Haptic feedback",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "Vibrate on challenge success",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 110
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset onboarding",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 176
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start setup from scratch",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 194
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 195
+        }
+      },
+      {
+        "comment": "",
+        "key": "This will reset the app and show the onboarding flow again.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 199
+        }
+      }
+    ]
+  },
+  "version": 1
+}

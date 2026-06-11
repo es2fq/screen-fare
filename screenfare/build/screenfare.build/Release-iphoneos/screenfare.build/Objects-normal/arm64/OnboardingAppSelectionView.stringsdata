@@ -1,0 +1,80 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingAppSelectionView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "What pulls you\n",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 60
+        }
+      },
+      {
+        "comment": "",
+        "key": "away?",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 62
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose apps and categories Focus will gently restrict.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "No apps selected yet",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manage apps",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 125
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add apps",
+        "location": {
+          "startingColumn": 68,
+          "startingLine": 125
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld selected · tap to manage",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 129
+        }
+      },
+      {
+        "comment": "",
+        "key": "Browse all apps via Screen Time",
+        "location": {
+          "startingColumn": 94,
+          "startingLine": 129
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 216
+        }
+      }
+    ]
+  },
+  "version": 1
+}

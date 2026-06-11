@@ -1,0 +1,64 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingSummaryView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Ready when\n",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 60
+        }
+      },
+      {
+        "comment": "",
+        "key": "you are.",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 62
+        }
+      },
+      {
+        "comment": "",
+        "key": "Review your setup. Nothing changes until you tap activate.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 70
+        }
+      },
+      {
+        "comment": "",
+        "key": "Math · %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 103
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "HOW IT WORKS",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 141
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 216
+        }
+      }
+    ]
+  },
+  "version": 1
+}

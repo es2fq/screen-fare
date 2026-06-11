@@ -1,0 +1,56 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingDifficultyView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "The ",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "pause",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "\nbefore you scroll.",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 42
+        }
+      },
+      {
+        "comment": "",
+        "key": "Solve a math problem to unlock a blocked app. Pick a difficulty.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 50
+        }
+      },
+      {
+        "comment": "",
+        "key": "PREVIEW",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "Difficulty",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 106
+        }
+      }
+    ]
+  },
+  "version": 1
+}

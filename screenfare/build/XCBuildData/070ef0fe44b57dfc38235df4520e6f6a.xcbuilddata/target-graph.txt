@@ -1,0 +1,6 @@
+Target dependency graph (3 targets)
+Target 'screenfare' in project 'screenfare'
+➜ Explicit dependency on target 'ShieldConfigurationExtension' in project 'screenfare'
+➜ Explicit dependency on target 'ShieldActionExtension' in project 'screenfare'
+Target 'ShieldActionExtension' in project 'screenfare' (no dependencies)
+Target 'ShieldConfigurationExtension' in project 'screenfare' (no dependencies)

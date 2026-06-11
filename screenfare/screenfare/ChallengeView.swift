@@ -14,6 +14,7 @@ struct ChallengeView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var blockingManager = AppBlockingManager.shared
     @StateObject private var settings = SettingsManager.shared
+    @StateObject private var historyManager = UnlockHistoryManager.shared
 
     @State private var challenge: MathChallenge
     @State private var userAnswer = ""
@@ -320,7 +321,18 @@ struct ChallengeView: View {
 
         if isCorrect {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                blockingManager.temporaryUnlock(duration: settings.unlockDuration)
+                // Unlock the specific app that was requested
+                let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first
+                blockingManager.temporaryUnlock(appToken: appToken, duration: settings.unlockDuration)
+
+                // Record the unlock event
+                let appTokenData = appToken.flatMap { try? JSONEncoder().encode($0) }
+                historyManager.recordUnlock(
+                    appTokenData: appTokenData,
+                    unlockMethod: .mathChallenge,
+                    duration: settings.unlockDuration
+                )
+
                 isUnlocked = true
             }
         } else {

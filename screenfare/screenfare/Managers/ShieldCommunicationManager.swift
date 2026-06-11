@@ -46,10 +46,21 @@ class ShieldCommunicationManager: ObservableObject {
     }
 
     func checkForUnlockRequest() {
-        // If apps are currently blocked, show challenge when app opens
-        let appBlockingManager = AppBlockingManager.shared
-        if appBlockingManager.isBlocking {
-            shouldShowChallenge = true
+        // Check if an unlock was actually requested from the Shield extension
+        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
+            return
         }
+
+        let unlockRequested = sharedDefaults.bool(forKey: "com.screenfare.unlockRequested")
+        guard unlockRequested else {
+            return
+        }
+
+        // Clear the flag so we don't show the challenge again on next app open
+        sharedDefaults.set(false, forKey: "com.screenfare.unlockRequested")
+        sharedDefaults.synchronize()
+
+        // Show the challenge
+        shouldShowChallenge = true
     }
 }

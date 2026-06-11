@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/esong/coding/screen-fare/screenfare/build/Release-iphoneos/ShieldConfigurationExtension.appex/ShieldConfigurationExtension'
+relocations:     []
+...

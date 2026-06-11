@@ -1,0 +1,88 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/BlocksView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Manage apps",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 34
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld app%@ blocked",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 113
+        }
+      },
+      {
+        "comment": "",
+        "key": "All day",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 102
+        }
+      },
+      {
+        "comment": "",
+        "key": "Block apps 24/7",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "Custom schedule",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 123
+        }
+      },
+      {
+        "comment": "",
+        "key": "Coming soon",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 127
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 154
+        }
+      },
+      {
+        "comment": "",
+        "key": "Challenge required",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 143
+        }
+      },
+      {
+        "comment": "",
+        "key": "Solve math problems to unlock",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 147
+        }
+      }
+    ]
+  },
+  "version": 1
+}

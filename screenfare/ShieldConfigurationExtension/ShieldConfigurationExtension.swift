@@ -14,6 +14,12 @@ import UIKit
 class ShieldConfigurationExtension: ShieldConfigurationDataSource {
 
     override func configuration(shielding application: Application) -> ShieldConfiguration {
+        // Check if this app has an active temporary unlock
+        if isAppTemporarilyUnlocked(application) {
+            // App is unlocked, don't show shield
+            return ShieldConfiguration()
+        }
+
         // Read unlock duration from App Group
         let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
         let unlockDuration = sharedDefaults?.double(forKey: "unlockDuration") ?? 1800 // Default 30 minutes
@@ -74,5 +80,23 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
                 return "\(hours) hr \(remainingMinutes) min"
             }
         }
+    }
+
+    private func isAppTemporarilyUnlocked(_ application: Application) -> Bool {
+        // Load temporary unlocks from shared storage
+        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
+              let data = sharedDefaults.data(forKey: "com.screenfare.temporaryUnlocks"),
+              let unlocks = try? JSONDecoder().decode([Data: Date].self, from: data) else {
+            return false
+        }
+
+        // Check if this specific app has an active unlock
+        guard let appTokenData = try? JSONEncoder().encode(application.token),
+              let expiryTime = unlocks[appTokenData] else {
+            return false
+        }
+
+        // Check if unlock is still valid
+        return Date() < expiryTime
     }
 }

@@ -1,0 +1,64 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingTimeWindowView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "How long should\nthe door ",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "stay open?",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 39
+        }
+      },
+      {
+        "comment": "",
+        "key": "After you solve the problem, the app unlocks for this much time before re-locking.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 47
+        }
+      },
+      {
+        "comment": "",
+        "key": "1 min",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 81
+        }
+      },
+      {
+        "comment": "",
+        "key": "2 hours",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldm",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldh",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 109
+        }
+      }
+    ]
+  },
+  "version": 1
+}

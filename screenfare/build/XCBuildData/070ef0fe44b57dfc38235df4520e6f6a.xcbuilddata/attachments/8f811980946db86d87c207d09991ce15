@@ -1,0 +1,16 @@
+{
+  "" : {
+    "const-values" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension-primary.swiftconstvalues",
+    "dependencies" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension-primary.d",
+    "diagnostics" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension-primary.dia",
+    "emit-module-dependencies" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension-primary-emit-module.dia",
+    "pch" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension-primary.swiftdeps"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/ShieldConfigurationExtension/ShieldConfigurationExtension.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/ShieldConfigurationExtension.build/Objects-normal/arm64/ShieldConfigurationExtension.o"
+  }
+}

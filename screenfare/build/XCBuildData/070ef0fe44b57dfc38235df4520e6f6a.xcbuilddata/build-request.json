@@ -1,0 +1,48 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildAndRun"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "d110bca317262233d480e89bc1aba40048d47a7ba9122ac5f80f383559160b02"
+    },
+    {
+      "guid" : "d110bca317262233d480e89bc1aba400156d1a2668a0a2e13ae7ad91736dad8a"
+    },
+    {
+      "guid" : "d110bca317262233d480e89bc1aba4004a663a7feefb97dffc4d7c4a16aee823"
+    },
+    {
+      "guid" : "d110bca317262233d480e89bc1aba40048d47a7ba9122ac5f80f383559160b02"
+    }
+  ],
+  "containerPath" : "/Users/esong/coding/screen-fare/screenfare/screenfare.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "NO"
+        }
+      }
+    }
+  },
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : false,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

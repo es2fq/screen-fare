@@ -1,0 +1,146 @@
+{
+  "" : {
+    "const-values" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary.swiftconstvalues",
+    "dependencies" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary.d",
+    "diagnostics" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary.dia",
+    "emit-module-dependencies" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary-emit-module.dia",
+    "pch" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary.swiftdeps"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/GeneratedAssetSymbols.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/ChallengeView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ChallengeView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ChallengeView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ChallengeView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Components/CustomSlider.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/CustomSlider.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/CustomSlider.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/CustomSlider.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/ContentView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ContentView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/BlocksView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/BlocksView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/BlocksView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/BlocksView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/ChallengeTabView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ChallengeTabView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ChallengeTabView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ChallengeTabView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/MainAppDesignSystem.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MainAppDesignSystem.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MainAppDesignSystem.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MainAppDesignSystem.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/MainTabView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MainTabView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MainTabView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MainTabView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/SettingsTabView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/SettingsTabView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/SettingsTabView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/SettingsTabView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/TodayView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/TodayView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/TodayView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/TodayView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Managers/AppBlockingManager.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/AppBlockingManager.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/AppBlockingManager.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/AppBlockingManager.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Managers/DarwinNotificationManager.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/DarwinNotificationManager.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/DarwinNotificationManager.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/DarwinNotificationManager.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Managers/MathChallengeGenerator.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MathChallengeGenerator.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MathChallengeGenerator.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/MathChallengeGenerator.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Managers/NotificationManager.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/NotificationManager.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/NotificationManager.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/NotificationManager.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Managers/SettingsManager.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/SettingsManager.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/SettingsManager.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/SettingsManager.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Managers/ShieldCommunicationManager.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ShieldCommunicationManager.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ShieldCommunicationManager.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/ShieldCommunicationManager.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Managers/UnlockHistoryManager.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/UnlockHistoryManager.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/UnlockHistoryManager.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/UnlockHistoryManager.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingAppSelectionView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingAppSelectionView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingAppSelectionView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingAppSelectionView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingContainerView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingContainerView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingContainerView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingContainerView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingDesignSystem.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingDesignSystem.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingDesignSystem.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingDesignSystem.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingDifficultyView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingDifficultyView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingDifficultyView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingDifficultyView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingNotificationView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingNotificationView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingNotificationView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingNotificationView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingScreenTimeView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingScreenTimeView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingScreenTimeView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingScreenTimeView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingSummaryView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingSummaryView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingSummaryView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingSummaryView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingTimeWindowView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingTimeWindowView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingTimeWindowView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingTimeWindowView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingWelcomeView.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingWelcomeView.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingWelcomeView.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/OnboardingWelcomeView.o"
+  },
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/screenfareApp.swift" : {
+    "index-unit-output-path" : "/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfareApp.o",
+    "llvm-bc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfareApp.bc",
+    "object" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfareApp.o"
+  }
+}

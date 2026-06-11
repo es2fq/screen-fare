@@ -1,0 +1,12 @@
+{
+  "/Users/esong/coding/screen-fare/screenfare/screenfare/Components/CustomSlider.swift" : {
+    "abi-baseline-json" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare.abi.json",
+    "const-values" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary.swiftconstvalues",
+    "dependencies" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary.d",
+    "diagnostics" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-primary.dia",
+    "objc-header" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare-Swift.h",
+    "swiftdoc" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare.swiftdoc",
+    "swiftmodule" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare.swiftmodule",
+    "swiftsourceinfo" : "/Users/esong/coding/screen-fare/screenfare/build/screenfare.build/Release-iphoneos/screenfare.build/Objects-normal/arm64/screenfare.swiftsourceinfo"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/MainApp/TodayView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Today",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 30
+        }
+      },
+      {
+        "comment": "",
+        "key": ".",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "Focus is",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "on",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 70
+        }
+      },
+      {
+        "comment": "",
+        "key": ".",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "off",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "Math · %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 165
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlock for %@ after solving",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 169
+        }
+      },
+      {
+        "comment": "",
+        "key": "App",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 321
+        }
+      }
+    ]
+  },
+  "version": 1
+}

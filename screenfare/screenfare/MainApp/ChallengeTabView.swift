@@ -92,15 +92,14 @@ struct ChallengeTabView: View {
                         }
 
                         // Difficulty slider
-                        Slider(
+                        CustomSlider(
                             value: Binding(
                                 get: { Double(ChallengeDifficulty.allCases.firstIndex(of: settings.challengeDifficulty) ?? 2) },
                                 set: { settings.challengeDifficulty = ChallengeDifficulty.allCases[Int($0)] }
                             ),
-                            in: 0...4,
+                            range: 0...4,
                             step: 1
                         )
-                        .tint(Color.focusInk)
                     }
                 }
 
@@ -124,12 +123,11 @@ struct ChallengeTabView: View {
 
                         // Duration slider
                         VStack(spacing: 6) {
-                            Slider(
+                            CustomSlider(
                                 value: $settings.unlockDuration,
-                                in: 60...7200,
+                                range: 60...7200,
                                 step: 60
                             )
-                            .tint(Color.focusInk)
 
                             HStack {
                                 Text("1 min")

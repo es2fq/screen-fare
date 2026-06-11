@@ -71,12 +71,11 @@ struct OnboardingTimeWindowView: View {
                     }
 
                     VStack(spacing: 6) {
-                        Slider(
+                        CustomSlider(
                             value: $selectedDuration,
-                            in: 60...7200, // 1 min to 2 hours
+                            range: 60...7200, // 1 min to 2 hours
                             step: 60
                         )
-                        .tint(Color.focusInk)
 
                         HStack {
                             Text("1 min")

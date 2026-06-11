@@ -112,16 +112,15 @@ struct OnboardingDifficultyView: View {
                             .foregroundColor(.focusInk)
                     }
 
-                    // Slider without tick marks
-                    Slider(
+                    // Custom slider
+                    CustomSlider(
                         value: Binding(
                             get: { Double(ChallengeDifficulty.allCases.firstIndex(of: selectedDifficulty) ?? 2) },
                             set: { selectedDifficulty = ChallengeDifficulty.allCases[Int($0)] }
                         ),
-                        in: 0...4,
+                        range: 0...4,
                         step: 1
                     )
-                    .tint(Color.focusInk)
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 18)
@@ -152,53 +151,6 @@ struct OnboardingDifficultyView: View {
         case .medium: return "Medium"
         case .hard: return "Hard"
         case .veryHard: return "Very hard"
-        }
-    }
-}
-
-struct CustomDifficultySlider: View {
-    @Binding var selectedDifficulty: ChallengeDifficulty
-
-    @State private var sliderValue: Double = 2 // Start at medium (index 2)
-
-    private let difficulties = ChallengeDifficulty.allCases
-
-    init(selectedDifficulty: Binding<ChallengeDifficulty>) {
-        self._selectedDifficulty = selectedDifficulty
-        let index = ChallengeDifficulty.allCases.firstIndex(of: selectedDifficulty.wrappedValue) ?? 2
-        self._sliderValue = State(initialValue: Double(index))
-    }
-
-    var body: some View {
-        VStack(spacing: 10) {
-            // Slider
-            Slider(
-                value: $sliderValue,
-                in: 0...4,
-                step: 1
-            )
-            .tint(Color.focusInk)
-            .onChange(of: sliderValue) { oldValue, newValue in
-                let newDifficulty = difficulties[Int(newValue)]
-
-                // Only update if difficulty actually changed
-                if newDifficulty != selectedDifficulty {
-                    selectedDifficulty = newDifficulty
-                }
-            }
-
-            // Tick marks - space-between layout
-            HStack(spacing: 0) {
-                ForEach(0..<5) { index in
-                    if index > 0 {
-                        Spacer()
-                    }
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(index <= Int(sliderValue) ? Color.focusInk : Color.focusInk.opacity(0.2))
-                        .frame(width: 4, height: 4)
-                }
-            }
-            .padding(.horizontal, 12) // Account for slider thumb radius (14px)
         }
     }
 }

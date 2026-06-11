@@ -1,0 +1,16 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingDesignSystem.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "f",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 67
+        }
+      }
+    ]
+  },
+  "version": 1
+}

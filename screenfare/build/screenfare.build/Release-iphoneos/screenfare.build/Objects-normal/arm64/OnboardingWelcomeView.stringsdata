@@ -1,0 +1,32 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/Onboarding/OnboardingWelcomeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Focus, by",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 26
+        }
+      },
+      {
+        "comment": "",
+        "key": "design.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 31
+        }
+      },
+      {
+        "comment": "",
+        "key": "Block the apps that pull you in. Open them only after a brief, intentional pause.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 42
+        }
+      }
+    ]
+  },
+  "version": 1
+}

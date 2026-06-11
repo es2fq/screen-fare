@@ -1,0 +1,160 @@
+{
+  "source": "/Users/esong/coding/screen-fare/screenfare/screenfare/ChallengeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 67
+        }
+      },
+      {
+        "comment": "",
+        "key": "Math · %@",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 67
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not now",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 54
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fare ",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 78
+        }
+      },
+      {
+        "comment": "",
+        "key": "paid",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": ".",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pay your ",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "fare",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": ".",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 89
+        }
+      },
+      {
+        "comment": "",
+        "key": "Blocked App",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 143
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlocked for %@",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 147
+        }
+      },
+      {
+        "comment": "",
+        "key": "Solve to unlock for %@",
+        "location": {
+          "startingColumn": 99,
+          "startingLine": 147
+        }
+      },
+      {
+        "comment": "",
+        "key": "access remaining",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": "Attempt %lld · solve to continue",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 186
+        }
+      },
+      {
+        "comment": "",
+        "key": "Solve to continue",
+        "location": {
+          "startingColumn": 102,
+          "startingLine": 186
+        }
+      },
+      {
+        "comment": "",
+        "key": "Type the answer",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 210
+        }
+      },
+      {
+        "comment": "",
+        "key": "|",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 217
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not quite — give it another go",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open App",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 273
+        }
+      }
+    ]
+  },
+  "version": 1
+}

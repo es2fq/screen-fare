@@ -12,6 +12,8 @@
 		98B0B55A2FD9BBFC00933948 /* ShieldConfigurationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 98B0B54D2FD9BBFC00933948 /* ShieldConfigurationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		98B0B5692FD9BCCC00933948 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B0B54F2FD9BBFC00933948 /* ManagedSettings.framework */; };
 		98B0B5712FD9BCCC00933948 /* ShieldActionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 98B0B5682FD9BCCC00933948 /* ShieldActionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		98B0B58A2FDA594900933948 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B0B5892FDA594900933948 /* DeviceActivity.framework */; };
+		98B0B5922FDA594900933948 /* DeviceMonitorActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 98B0B5882FDA594900933948 /* DeviceMonitorActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +31,13 @@
 			remoteGlobalIDString = 98B0B5672FD9BCCC00933948;
 			remoteInfo = ShieldActionExtension;
 		};
+		98B0B5902FDA594900933948 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9867839D2FA82DC20091CF6D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 98B0B5872FDA594900933948;
+			remoteInfo = DeviceMonitorActivityExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -39,6 +48,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				98B0B55A2FD9BBFC00933948 /* ShieldConfigurationExtension.appex in Embed Foundation Extensions */,
+				98B0B5922FDA594900933948 /* DeviceMonitorActivityExtension.appex in Embed Foundation Extensions */,
 				98B0B5712FD9BCCC00933948 /* ShieldActionExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -52,6 +62,8 @@
 		98B0B54F2FD9BBFC00933948 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
 		98B0B5512FD9BBFC00933948 /* ManagedSettingsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettingsUI.framework; path = System/Library/Frameworks/ManagedSettingsUI.framework; sourceTree = SDKROOT; };
 		98B0B5682FD9BCCC00933948 /* ShieldActionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShieldActionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		98B0B5882FDA594900933948 /* DeviceMonitorActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DeviceMonitorActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		98B0B5892FDA594900933948 /* DeviceActivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DeviceActivity.framework; path = System/Library/Frameworks/DeviceActivity.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -75,6 +87,13 @@
 				Info.plist,
 			);
 			target = 98B0B5672FD9BCCC00933948 /* ShieldActionExtension */;
+		};
+		98B0B5932FDA594900933948 /* Exceptions for "DeviceMonitorActivityExtension" folder in "DeviceMonitorActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 98B0B5872FDA594900933948 /* DeviceMonitorActivityExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -101,6 +120,14 @@
 				98B0B5722FD9BCCC00933948 /* Exceptions for "ShieldActionExtension" folder in "ShieldActionExtension" target */,
 			);
 			path = ShieldActionExtension;
+			sourceTree = "<group>";
+		};
+		98B0B58B2FDA594900933948 /* DeviceMonitorActivityExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				98B0B5932FDA594900933948 /* Exceptions for "DeviceMonitorActivityExtension" folder in "DeviceMonitorActivityExtension" target */,
+			);
+			path = DeviceMonitorActivityExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -130,6 +157,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		98B0B5852FDA594900933948 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				98B0B58A2FDA594900933948 /* DeviceActivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -138,6 +173,7 @@
 			children = (
 				98B0B5532FD9BBFC00933948 /* ShieldConfigurationExtension */,
 				98B0B56A2FD9BCCC00933948 /* ShieldActionExtension */,
+				98B0B58B2FDA594900933948 /* DeviceMonitorActivityExtension */,
 				98B0B54E2FD9BBFC00933948 /* Frameworks */,
 				986783A62FA82DC20091CF6D /* Products */,
 				986783A72FA82DC20091CF6D /* screenfare */,
@@ -150,6 +186,7 @@
 				986783A52FA82DC20091CF6D /* screenfare.app */,
 				98B0B54D2FD9BBFC00933948 /* ShieldConfigurationExtension.appex */,
 				98B0B5682FD9BCCC00933948 /* ShieldActionExtension.appex */,
+				98B0B5882FDA594900933948 /* DeviceMonitorActivityExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -159,6 +196,7 @@
 			children = (
 				98B0B54F2FD9BBFC00933948 /* ManagedSettings.framework */,
 				98B0B5512FD9BBFC00933948 /* ManagedSettingsUI.framework */,
+				98B0B5892FDA594900933948 /* DeviceActivity.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -180,6 +218,7 @@
 			dependencies = (
 				98B0B5592FD9BBFC00933948 /* PBXTargetDependency */,
 				98B0B5702FD9BCCC00933948 /* PBXTargetDependency */,
+				98B0B5912FDA594900933948 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				986783A72FA82DC20091CF6D /* screenfare */,
@@ -235,6 +274,28 @@
 			productReference = 98B0B5682FD9BCCC00933948 /* ShieldActionExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		98B0B5872FDA594900933948 /* DeviceMonitorActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 98B0B5942FDA594900933948 /* Build configuration list for PBXNativeTarget "DeviceMonitorActivityExtension" */;
+			buildPhases = (
+				98B0B5842FDA594900933948 /* Sources */,
+				98B0B5852FDA594900933948 /* Frameworks */,
+				98B0B5862FDA594900933948 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				98B0B58B2FDA594900933948 /* DeviceMonitorActivityExtension */,
+			);
+			name = DeviceMonitorActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = DeviceMonitorActivityExtension;
+			productReference = 98B0B5882FDA594900933948 /* DeviceMonitorActivityExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -252,6 +313,9 @@
 						CreatedOnToolsVersion = 26.4.1;
 					};
 					98B0B5672FD9BCCC00933948 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					98B0B5872FDA594900933948 = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
 				};
@@ -273,6 +337,7 @@
 				986783A42FA82DC20091CF6D /* screenfare */,
 				98B0B54C2FD9BBFC00933948 /* ShieldConfigurationExtension */,
 				98B0B5672FD9BCCC00933948 /* ShieldActionExtension */,
+				98B0B5872FDA594900933948 /* DeviceMonitorActivityExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -293,6 +358,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		98B0B5662FD9BCCC00933948 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		98B0B5862FDA594900933948 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -323,6 +395,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		98B0B5842FDA594900933948 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -335,6 +414,11 @@
 			isa = PBXTargetDependency;
 			target = 98B0B5672FD9BCCC00933948 /* ShieldActionExtension */;
 			targetProxy = 98B0B56F2FD9BCCC00933948 /* PBXContainerItemProxy */;
+		};
+		98B0B5912FDA594900933948 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 98B0B5872FDA594900933948 /* DeviceMonitorActivityExtension */;
+			targetProxy = 98B0B5902FDA594900933948 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -654,6 +738,66 @@
 			};
 			name = Release;
 		};
+		98B0B5952FDA594900933948 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DeviceMonitorActivityExtension/DeviceMonitorActivityExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 63JWSH47RD;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DeviceMonitorActivityExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DeviceMonitorActivityExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = esong.screenfare.DeviceMonitorActivityExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		98B0B5962FDA594900933948 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DeviceMonitorActivityExtension/DeviceMonitorActivityExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 63JWSH47RD;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DeviceMonitorActivityExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DeviceMonitorActivityExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = esong.screenfare.DeviceMonitorActivityExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -689,6 +833,15 @@
 			buildConfigurations = (
 				98B0B5742FD9BCCC00933948 /* Debug */,
 				98B0B5752FD9BCCC00933948 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		98B0B5942FDA594900933948 /* Build configuration list for PBXNativeTarget "DeviceMonitorActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				98B0B5952FDA594900933948 /* Debug */,
+				98B0B5962FDA594900933948 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
