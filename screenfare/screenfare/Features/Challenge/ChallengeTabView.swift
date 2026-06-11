@@ -668,6 +668,8 @@ struct TypingTester: View {
     let words: Int
     @FocusState.Binding var isAnyFieldFocused: Bool
     @State private var typedText = ""
+    @State private var shakeCount = 0
+    @State private var wrongChar: String? = nil
 
     private let targetPhrases = [
         "Be here on purpose.",
@@ -695,27 +697,80 @@ struct TypingTester: View {
         TryShell(hint: isComplete ? nil : "Tap the line and type it exactly.") {
             VStack(spacing: 10) {
                 // Display with character coloring - using Text with AttributedString for wrapping
-                ZStack(alignment: .topLeading) {
-                    // Visible text with character coloring
-                    Text(coloredText)
-                        .font(.instrumentSerif(21))
-                        .lineSpacing(1.4)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .onTapGesture {
-                            // Only the text itself focuses the keyboard
-                            isAnyFieldFocused = true
-                        }
-
-                    // Hidden text field
-                    TextField("", text: $typedText)
-                        .opacity(0)
-                        .focused($isAnyFieldFocused)
-                        .onChange(of: typedText) { _, newValue in
-                            if newValue.count > targetPhrase.count {
-                                typedText = String(newValue.prefix(targetPhrase.count))
+                ShakeEffect(trigger: shakeCount) {
+                    ZStack(alignment: .topLeading) {
+                        // Visible text with character coloring
+                        Text(coloredText)
+                            .font(.instrumentSerif(21))
+                            .lineSpacing(1.4)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .onTapGesture {
+                                // Only the text itself focuses the keyboard
+                                isAnyFieldFocused = true
                             }
-                        }
+
+                        // Hidden text field with custom binding for validation
+                        TextField("", text: Binding(
+                            get: { typedText },
+                            set: { newValue in
+                                // Prevent backspace - only allow moving forward
+                                if newValue.count < typedText.count {
+                                    return
+                                }
+
+                                // Validate each character as it's typed (case sensitive)
+                                if newValue.count > typedText.count {
+                                    // Validate ALL new characters, not just the last one
+                                    // This prevents skipping when typing very quickly
+                                    let startIndex = typedText.count
+                                    let endIndex = min(newValue.count, targetPhrase.count)
+
+                                    var allCorrect = true
+                                    var firstWrongChar: String? = nil
+
+                                    // Check each new character
+                                    for i in startIndex..<endIndex {
+                                        let targetChar = Array(targetPhrase)[i]
+                                        let typedChar = Array(newValue)[i]
+
+                                        if targetChar != typedChar {
+                                            allCorrect = false
+                                            firstWrongChar = String(typedChar)
+                                            break
+                                        }
+                                    }
+
+                                    if allCorrect && endIndex <= targetPhrase.count {
+                                        // All new characters are correct - accept them
+                                        typedText = String(newValue.prefix(endIndex))
+                                    } else {
+                                        // Wrong character detected - show it briefly, then reject
+                                        if let wrongCharacter = firstWrongChar {
+                                            wrongChar = wrongCharacter
+                                            shakeCount += 1
+
+                                            // Haptic feedback
+                                            let impact = UIImpactFeedbackGenerator(style: .light)
+                                            impact.impactOccurred()
+
+                                            // Clear wrong char after brief delay
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                                wrongChar = nil
+                                            }
+                                        }
+                                        // Don't update typedText - stay at current position
+                                    }
+                                }
+                            }
+                        ))
+                            .opacity(0)
+                            .focused($isAnyFieldFocused)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                            .keyboardType(.asciiCapable)
+                    }
                 }
                 .padding(.vertical, 2)
 
@@ -734,15 +789,23 @@ struct TypingTester: View {
         for (index, char) in targetPhrase.enumerated() {
             let isDone = index < typedText.count
             let isCorrect = isDone && Array(typedText)[index] == char
-            let isWrong = isDone && Array(typedText)[index] != char
+            let isCursor = index == typedText.count && isAnyFieldFocused
+            let isWrongPosition = index == typedText.count && wrongChar != nil
 
-            var charString = AttributedString(String(char))
+            // Show the wrong character if present
+            let displayChar = isWrongPosition && wrongChar != nil ? wrongChar! : String(char)
+            var charString = AttributedString(displayChar)
 
-            if isWrong {
+            if isWrongPosition && wrongChar != nil {
+                // Wrong character - show in red with background
                 charString.foregroundColor = Color(red: 0.7, green: 0.4, blue: 0.3)
                 charString.backgroundColor = Color(red: 0.955, green: 0.95, blue: 0.94)
             } else if isCorrect {
                 charString.foregroundColor = Color.focusInk
+            } else if isCursor {
+                // Cursor position - highlight the next character to type
+                charString.foregroundColor = Color.focusInk
+                charString.backgroundColor = Color.focusAccent.opacity(0.2)
             } else {
                 charString.foregroundColor = Color.focusInk.opacity(0.3)
             }
