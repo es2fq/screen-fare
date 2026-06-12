@@ -14,13 +14,15 @@ struct ContentView: View {
     @StateObject private var settings = SettingsManager.shared
     @State private var showingChallenge = false
     @State private var showingOnboarding = false
+    @State private var selectedTab = 0
 
     var body: some View {
         Group {
             if settings.hasCompletedOnboarding {
-                MainTabView()
+                MainTabView(selectedTab: $selectedTab)
                     .sheet(isPresented: $showingChallenge) {
                         ChallengeView()
+                            .environment(\.selectedTab, $selectedTab)
                     }
                     .onChange(of: notificationManager.shouldShowChallenge) { _, shouldShow in
                         if shouldShow {

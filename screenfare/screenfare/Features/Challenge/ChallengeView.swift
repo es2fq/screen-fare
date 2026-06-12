@@ -12,6 +12,7 @@ import ManagedSettings
 
 struct ChallengeView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.selectedTab) private var selectedTab
     @StateObject private var blockingManager = AppBlockingManager.shared
     @StateObject private var settings = SettingsManager.shared
     @StateObject private var historyManager = HistoryManager.shared
@@ -529,8 +530,9 @@ struct ChallengeView: View {
     @ViewBuilder
     private var footer: some View {
         if phase == .unlocked {
-            TicketBtn("Open App") {
+            TicketBtn("Close") {
                 openUnlockedApp()
+                selectedTab?.wrappedValue = 0 // Navigate to Today tab
                 dismiss()
             }
         } else {

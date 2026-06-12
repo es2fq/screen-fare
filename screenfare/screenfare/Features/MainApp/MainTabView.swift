@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @State private var selectedTab = 0
+    @Binding var selectedTab: Int
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -88,6 +88,18 @@ struct CustomTabBar: View {
     }
 }
 
+// Environment key for selected tab
+struct SelectedTabKey: EnvironmentKey {
+    static let defaultValue: Binding<Int>? = nil
+}
+
+extension EnvironmentValues {
+    var selectedTab: Binding<Int>? {
+        get { self[SelectedTabKey.self] }
+        set { self[SelectedTabKey.self] = newValue }
+    }
+}
+
 #Preview {
-    MainTabView()
+    MainTabView(selectedTab: .constant(0))
 }
