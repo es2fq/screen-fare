@@ -13,6 +13,7 @@ struct ChallengeTabView: View {
     @State private var view: ViewState = .list
     @State private var selectedType: ChallengeType = .math
     @FocusState private var isAnyFieldFocused: Bool
+    @State private var configViewCount = 0 // Track config view appearances
 
     // Pre-generated challenges for preview
     @State private var previewChallenges: [ChallengeDifficulty: MathChallenge]
@@ -82,6 +83,7 @@ struct ChallengeTabView: View {
                             Button(action: {
                                 selectedType = type
                                 view = .config
+                                configViewCount += 1 // Increment to reset testers
                             }) {
                                 HStack(spacing: 13) {
                                     // Icon
@@ -225,7 +227,7 @@ struct ChallengeTabView: View {
                         }
 
                         // Config card
-                        ConfigCard(type: selectedType, settings: settings, previewChallenges: $previewChallenges, typingChallenge: $typingChallenge, memoryChallenge: $memoryChallenge, isAnyFieldFocused: $isAnyFieldFocused)
+                        ConfigCard(type: selectedType, settings: settings, previewChallenges: $previewChallenges, typingChallenge: $typingChallenge, memoryChallenge: $memoryChallenge, isAnyFieldFocused: $isAnyFieldFocused, configViewCount: configViewCount)
                             .padding(.horizontal, 22)
 
                         // Done button
@@ -350,6 +352,7 @@ struct ConfigCard: View {
     @Binding var typingChallenge: TypingChallenge
     @Binding var memoryChallenge: MemoryChallenge
     @FocusState.Binding var isAnyFieldFocused: Bool
+    let configViewCount: Int
 
     var body: some View {
         AppCard {
@@ -393,6 +396,7 @@ struct ConfigCard: View {
             )
 
             MathTester(difficulty: settings.challengeDifficulty)
+                .id("\(settings.challengeDifficulty.rawValue)-\(configViewCount)")
         }
     }
 
@@ -422,6 +426,7 @@ struct ConfigCard: View {
             )
 
             TypingTester(difficulty: settings.typingDifficulty, isAnyFieldFocused: $isAnyFieldFocused)
+                .id("\(settings.typingDifficulty.rawValue)-\(configViewCount)")
         }
     }
 
@@ -457,7 +462,7 @@ struct ConfigCard: View {
             )
 
             MemoryTester(gridSize: settings.memoryGridSize, tilesToMatch: settings.memoryTilesToMatch)
-                .id("\(settings.memoryGridSize)-\(settings.memoryTilesToMatch)") // Reset when settings change
+                .id("\(settings.memoryGridSize)-\(settings.memoryTilesToMatch)-\(configViewCount)") // Reset when settings change or when re-entering config
         }
     }
 
@@ -684,23 +689,17 @@ struct MemoryTester: View {
 
                 // Button
                 Button(action: handleAction) {
-                    HStack(spacing: 6) {
-                        if stage == .idle {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 12, weight: .semibold))
-                        } else if stage == .wrong || stage == .done {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 12, weight: .semibold))
-                        }
-
-                        Text(buttonText)
-                            .font(.inter(14, weight: .semibold))
-                    }
-                    .foregroundColor(buttonDisabled ? Color.focusInk.opacity(0.4) : (stage == .recall ? Color.focusInk : .white))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .background(buttonBackground)
-                    .cornerRadius(11)
+                    Text(buttonText)
+                        .font(.inter(14, weight: .semibold))
+                        .foregroundColor(buttonDisabled ? Color.focusInk.opacity(0.3) : Color.focusInk)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 11)
+                                .strokeBorder(buttonDisabled ? Color.focusLine.opacity(0.5) : Color.focusLine, lineWidth: 1)
+                        )
+                        .cornerRadius(11)
                 }
                 .disabled(buttonDisabled)
             }
@@ -761,21 +760,6 @@ struct MemoryTester: View {
 
     private var buttonDisabled: Bool {
         stage == .memorize || stage == .recall
-    }
-
-    private var buttonBackground: Color {
-        if buttonDisabled {
-            return Color.focusInk.opacity(0.1)
-        }
-
-        switch stage {
-        case .recall:
-            // Light background for counter display
-            return Color.focusInk.opacity(0.06)
-        case .idle, .memorize, .wrong, .done:
-            // Dark background for action buttons
-            return Color.focusInk
-        }
     }
 
     private func toggleTile(_ index: Int) {
