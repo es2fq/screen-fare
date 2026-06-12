@@ -275,7 +275,7 @@ struct ChallengeTabView: View {
         case .typing:
             return typingDifficultyLabel(for: settings.typingDifficulty)
         case .memory:
-            return "4 tiles"
+            return "\(settings.memoryGridSize)×\(settings.memoryGridSize) grid"
         }
     }
 
@@ -392,17 +392,6 @@ struct ConfigCard: View {
                 step: 1
             )
 
-            HStack {
-                Text("Very easy")
-                    .font(.inter(11))
-                    .foregroundColor(.focusMuted)
-                Spacer()
-                Text("Very hard")
-                    .font(.inter(11))
-                    .foregroundColor(.focusMuted)
-            }
-            .padding(.top, 4)
-
             MathTester(difficulty: settings.challengeDifficulty)
         }
     }
@@ -432,17 +421,6 @@ struct ConfigCard: View {
                 step: 1
             )
 
-            HStack {
-                Text("Shortest")
-                    .font(.inter(11))
-                    .foregroundColor(.focusMuted)
-                Spacer()
-                Text("Longest")
-                    .font(.inter(11))
-                    .foregroundColor(.focusMuted)
-            }
-            .padding(.top, 4)
-
             TypingTester(difficulty: settings.typingDifficulty, isAnyFieldFocused: $isAnyFieldFocused)
         }
     }
@@ -450,29 +428,36 @@ struct ConfigCard: View {
     private var memoryConfig: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Tiles to match")
+                Text("Grid size")
                     .font(.inter(13))
                     .foregroundColor(.focusMuted)
                 Spacer()
-                Text("4 tiles")
+                Text(memoryDifficultyLabel)
                     .font(.inter(15, weight: .semibold))
                     .foregroundColor(.focusInk)
             }
 
-            CustomSlider(value: .constant(4), range: 3...6, step: 1)
+            CustomSlider(
+                value: Binding(
+                    get: { Double(settings.memoryGridSize) },
+                    set: { newValue in
+                        let gridSize = Int(newValue)
+                        settings.memoryGridSize = gridSize
 
-            HStack {
-                Text("3")
-                    .font(.inter(11))
-                    .foregroundColor(.focusMuted)
-                Spacer()
-                Text("6 tiles")
-                    .font(.inter(11))
-                    .foregroundColor(.focusMuted)
-            }
-            .padding(.top, 4)
+                        // Set tiles to match based on grid size
+                        // Keep it challenging but achievable
+                        settings.memoryTilesToMatch = min(gridSize + 1, gridSize * gridSize)
 
-            MemoryTester(tilesToMatch: 4)
+                        // Regenerate memory challenge
+                        memoryChallenge = MemoryChallenge(gridSize: settings.memoryGridSize, litCount: settings.memoryTilesToMatch)
+                    }
+                ),
+                range: 3...7,
+                step: 1
+            )
+
+            MemoryTester(gridSize: settings.memoryGridSize, tilesToMatch: settings.memoryTilesToMatch)
+                .id("\(settings.memoryGridSize)-\(settings.memoryTilesToMatch)") // Reset when settings change
         }
     }
 
@@ -494,6 +479,11 @@ struct ConfigCard: View {
         case .long: return "Long"
         case .longest: return "Longest"
         }
+    }
+
+    private var memoryDifficultyLabel: String {
+        let gridSize = settings.memoryGridSize
+        return "\(gridSize)×\(gridSize)"
     }
 }
 
@@ -650,6 +640,7 @@ struct TypingTester: View {
 }
 
 struct MemoryTester: View {
+    let gridSize: Int  // e.g., 3 for 3x3, 4 for 4x4
     let tilesToMatch: Int
     @State private var targetTiles: [Int] = []
     @State private var selectedTiles: [Int] = []
@@ -664,15 +655,16 @@ struct MemoryTester: View {
         case wrong
     }
 
-    private let gridSize = 16
-    private let columns = 4
+    private var totalTiles: Int {
+        gridSize * gridSize
+    }
 
     var body: some View {
         TryShell(hint: stage == .idle ? "Memorize the lit tiles, then tap them back from memory." : nil) {
             VStack(spacing: 12) {
                 // Grid
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: columns), spacing: 8) {
-                    ForEach(0..<gridSize, id: \.self) { index in
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: gridSize), spacing: 8) {
+                    ForEach(0..<totalTiles, id: \.self) { index in
                         Button(action: {
                             if stage == .recall {
                                 toggleTile(index)
@@ -680,6 +672,10 @@ struct MemoryTester: View {
                         }) {
                             RoundedRectangle(cornerRadius: 9)
                                 .fill(tileColor(for: index))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 9)
+                                        .strokeBorder(tileBorder(for: index), lineWidth: 1.5)
+                                )
                                 .aspectRatio(1, contentMode: .fit)
                         }
                         .disabled(stage != .recall)
@@ -688,13 +684,23 @@ struct MemoryTester: View {
 
                 // Button
                 Button(action: handleAction) {
-                    Text(buttonText)
-                        .font(.inter(14, weight: .semibold))
-                        .foregroundColor(buttonDisabled ? Color.focusInk.opacity(0.4) : .white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(buttonDisabled ? Color.focusInk.opacity(0.1) : Color.focusInk)
-                        .cornerRadius(11)
+                    HStack(spacing: 6) {
+                        if stage == .idle {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                        } else if stage == .wrong || stage == .done {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+
+                        Text(buttonText)
+                            .font(.inter(14, weight: .semibold))
+                    }
+                    .foregroundColor(buttonDisabled ? Color.focusInk.opacity(0.4) : (stage == .recall ? Color.focusInk : .white))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .background(buttonBackground)
+                    .cornerRadius(11)
                 }
                 .disabled(buttonDisabled)
             }
@@ -708,33 +714,68 @@ struct MemoryTester: View {
         switch stage {
         case .idle:
             return Color.focusInk.opacity(0.06)
-        case .memorize, .wrong:
+        case .memorize:
             return isTarget ? Color.focusInk : Color.focusInk.opacity(0.06)
         case .recall:
             return isSelected ? Color.focusInk : Color.focusInk.opacity(0.06)
+        case .wrong:
+            // Show discrepancy: wrong selections in red, correct answers highlighted
+            if isSelected && !isTarget {
+                return .transitRedSoft
+            } else if isTarget {
+                return Color.focusInk
+            } else {
+                return Color.focusInk.opacity(0.06)
+            }
         case .done:
             return isTarget ? Color(red: 0.55, green: 0.65, blue: 0.4) : Color.focusInk.opacity(0.06)
         }
     }
 
+    private func tileBorder(for index: Int) -> Color {
+        let isTarget = targetTiles.contains(index)
+        let isSelected = selectedTiles.contains(index)
+
+        if stage == .wrong {
+            if isSelected && !isTarget {
+                return .transitRed
+            }
+        }
+        return .clear
+    }
+
     private var buttonText: String {
         switch stage {
         case .idle:
-            return "Show pattern"
+            return "Start"
         case .memorize:
             return "Memorizing… \(countdown)"
-        case .wrong:
-            return "Not quite — watch again"
         case .recall:
-            let remaining = tilesToMatch - selectedTiles.count
-            return remaining == 0 ? "Check" : "Tap \(remaining) more"
+            return "\(selectedTiles.count)/\(tilesToMatch)"
+        case .wrong:
+            return "Again"
         case .done:
-            return "Passed — try again"
+            return "Again"
         }
     }
 
     private var buttonDisabled: Bool {
-        stage == .memorize || stage == .wrong || (stage == .recall && selectedTiles.count != tilesToMatch)
+        stage == .memorize || stage == .recall
+    }
+
+    private var buttonBackground: Color {
+        if buttonDisabled {
+            return Color.focusInk.opacity(0.1)
+        }
+
+        switch stage {
+        case .recall:
+            // Light background for counter display
+            return Color.focusInk.opacity(0.06)
+        case .idle, .memorize, .wrong, .done:
+            // Dark background for action buttons
+            return Color.focusInk
+        }
     }
 
     private func toggleTile(_ index: Int) {
@@ -742,15 +783,21 @@ struct MemoryTester: View {
             selectedTiles.removeAll { $0 == index }
         } else if selectedTiles.count < tilesToMatch {
             selectedTiles.append(index)
+
+            // Auto-submit when all tiles are selected
+            if selectedTiles.count == tilesToMatch {
+                checkAnswer()
+            }
         }
     }
 
     private func handleAction() {
         switch stage {
-        case .idle, .done:
+        case .idle, .done, .wrong:
             startGame()
         case .recall:
-            checkAnswer()
+            // No manual check needed - auto-submits on tile selection
+            break
         default:
             break
         }
@@ -758,25 +805,23 @@ struct MemoryTester: View {
 
     private func startGame() {
         // Generate random target tiles
-        var allIndices = Array(0..<gridSize)
+        var allIndices = Array(0..<totalTiles)
         allIndices.shuffle()
         targetTiles = Array(allIndices.prefix(tilesToMatch)).sorted()
         selectedTiles = []
 
-        // Start memorization phase
+        // Start memorization phase with 3-second countdown (same as actual challenge)
         stage = .memorize
-        let showMs = 1400 + tilesToMatch * 350
-        countdown = Int(ceil(Double(showMs) / 1000.0))
+        countdown = 3
 
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-            countdown -= 1
-            if countdown <= 1 {
-                timer.invalidate()
+            if countdown > 0 {
+                countdown -= 1
+                if countdown == 0 {
+                    timer.invalidate()
+                    stage = .recall
+                }
             }
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(showMs) / 1000.0) {
-            stage = .recall
         }
     }
 
@@ -787,23 +832,7 @@ struct MemoryTester: View {
             stage = .done
         } else {
             stage = .wrong
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-                selectedTiles = []
-                stage = .memorize
-                let showMs = 1400 + tilesToMatch * 350
-                countdown = Int(ceil(Double(showMs) / 1000.0))
-
-                Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-                    countdown -= 1
-                    if countdown <= 1 {
-                        timer.invalidate()
-                    }
-                }
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(showMs) / 1000.0) {
-                    stage = .recall
-                }
-            }
+            // Stay on wrong state until user clicks "Try again"
         }
     }
 }

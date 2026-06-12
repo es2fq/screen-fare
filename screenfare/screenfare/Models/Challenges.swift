@@ -80,6 +80,11 @@ struct MathChallenge: Challenge {
         }
     }
 
+    // Convenience accessor for ticket design compatibility
+    var question: String {
+        questionText
+    }
+
     init(difficulty: ChallengeDifficulty = .medium) {
         switch difficulty {
         case .veryEasy:
@@ -144,6 +149,11 @@ struct TypingChallenge: Challenge {
     let type: ChallengeType = .typing
 
     var questionText: String {
+        targetText
+    }
+
+    // Convenience accessor for ticket design compatibility
+    var text: String {
         targetText
     }
 
@@ -234,24 +244,33 @@ struct TypingChallenge: Challenge {
 // MARK: - Memory Challenge
 
 struct MemoryChallenge: Challenge {
-    let litTiles: [Int]
-    let gridSize: Int = 16
-    let columns: Int = 4
-    let litCount: Int = 4
+    let litIndices: [Int]
+    let gridSize: Int
+    let columns: Int
+    let litCount: Int
     let type: ChallengeType = .memory
 
     var questionText: String {
         "Memorize the lit tiles"
     }
 
-    init() {
+    // Legacy accessor for backwards compatibility
+    var litTiles: [Int] {
+        litIndices
+    }
+
+    init(gridSize: Int = 4, litCount: Int = 4) {
+        self.gridSize = gridSize * gridSize
+        self.columns = gridSize
+        self.litCount = litCount
+
         // Generate random lit tiles
-        var indices = Array(0..<gridSize)
+        var indices = Array(0..<self.gridSize)
         indices.shuffle()
-        self.litTiles = Array(indices.prefix(litCount)).sorted()
+        self.litIndices = Array(indices.prefix(litCount)).sorted()
     }
 
     func isCorrect(_ selectedTiles: [Int]) -> Bool {
-        selectedTiles.count == litCount && Set(selectedTiles) == Set(litTiles)
+        selectedTiles.count == litCount && Set(selectedTiles) == Set(litIndices)
     }
 }

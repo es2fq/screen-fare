@@ -34,6 +34,18 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var memoryGridSize: Int {
+        didSet {
+            UserDefaults.standard.set(memoryGridSize, forKey: "memoryGridSize")
+        }
+    }
+
+    @Published var memoryTilesToMatch: Int {
+        didSet {
+            UserDefaults.standard.set(memoryTilesToMatch, forKey: "memoryTilesToMatch")
+        }
+    }
+
     @Published var challengeType: ChallengeType {
         didSet {
             UserDefaults.standard.set(challengeType.rawValue, forKey: "challengeType")
@@ -64,6 +76,12 @@ class SettingsManager: ObservableObject {
         } else {
             self.typingDifficulty = .medium
         }
+
+        let savedGridSize = UserDefaults.standard.integer(forKey: "memoryGridSize")
+        self.memoryGridSize = savedGridSize > 0 ? savedGridSize : 3 // Default 3x3
+
+        let savedTilesToMatch = UserDefaults.standard.integer(forKey: "memoryTilesToMatch")
+        self.memoryTilesToMatch = savedTilesToMatch > 0 ? savedTilesToMatch : 4 // Default 4 tiles
 
         if let savedType = UserDefaults.standard.string(forKey: "challengeType"),
            let type = ChallengeType(rawValue: savedType) {

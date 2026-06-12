@@ -2,8 +2,8 @@
 //  ChallengeView.swift
 //  screenfare
 //
-//  Pixel-perfect implementation of the "Card" variation from Claude Design handoff
-//  Design specs: challenge-variations.jsx → VariationCard
+//  Ticket-themed challenge implementation
+//  Design specs: challenge-ticket.jsx and challenge-ticket-pro.jsx
 //
 
 import SwiftUI
@@ -16,55 +16,75 @@ struct ChallengeView: View {
     @StateObject private var settings = SettingsManager.shared
     @StateObject private var historyManager = HistoryManager.shared
 
-    // Challenge type and state
+    // Challenge phase
+    enum ChallengePhase {
+        case challenge
+        case paying    // Stamp and tear animation
+        case unlocked  // Shows validated ticket with countdown
+    }
+
+    @State private var phase: ChallengePhase = .challenge
     @State private var challengeType: ChallengeType
-    @State private var mathChallenge: MathChallenge?
-    @State private var typingChallenge: TypingChallenge?
-    @State private var memoryChallenge: MemoryChallenge?
+    @State private var requestedApp: ApplicationToken?
 
     // Math challenge state
+    @State private var mathChallenge: MathChallenge?
     @State private var userAnswer = ""
-    @State private var mathResult: MathChallengeResult? = nil
     @FocusState private var isMathFocused: Bool
 
     // Typing challenge state
+    @State private var typingChallenge: TypingChallenge?
     @State private var typedText = ""
     @FocusState private var isTypingFocused: Bool
 
     // Memory challenge state
+    @State private var memoryChallenge: MemoryChallenge?
     @State private var selectedTiles: [Int] = []
-    @State private var memoryStage: MemoryChallengeContent.MemoryStage = .memorize
+    @State private var memoryStage: MemoryStage = .memorize
     @State private var memoryCountdown = 3
 
+    enum MemoryStage {
+        case memorize
+        case recall
+    }
+
     // Common state
-    @State private var showingResult = false
-    @State private var isCorrect = false
-    @State private var isUnlocked = false
     @State private var attempts = 0
     @State private var shakeCount = 0
-    @State private var requestedApp: ApplicationToken?
+    @State private var showError = false
+    @State private var showStamp = false
+
+    // Animation state for tear
+    @State private var fareStubOffset: CGFloat = 0
+    @State private var fareStubRotation: Double = 0
+    @State private var fareStubOpacity: Double = 1
+    @State private var passStubOffset: CGFloat = 0
+    @State private var passStubScale: CGFloat = 1
+
+    // Countdown timer
+    @State private var remainingTime: TimeInterval = 0
+    @State private var countdownTimer: Timer?
 
     init(challengeType: ChallengeType? = nil) {
-        // Use provided challenge type or fall back to settings
         let settings = SettingsManager.shared
         let selectedType = challengeType ?? settings.challengeType
         _challengeType = State(initialValue: selectedType)
 
-        // Try to load the requested app token from App Group
+        // Load requested app token
         if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
            let data = sharedDefaults.data(forKey: "com.screenfare.requestedAppToken"),
            let token = try? JSONDecoder().decode(ApplicationToken.self, from: data) {
             _requestedApp = State(initialValue: token)
         }
 
-        // Initialize appropriate challenge
+        // Initialize challenge
         switch selectedType {
         case .math:
             _mathChallenge = State(initialValue: MathChallenge(difficulty: settings.challengeDifficulty))
         case .typing:
             _typingChallenge = State(initialValue: TypingChallenge(difficulty: settings.typingDifficulty))
         case .memory:
-            _memoryChallenge = State(initialValue: MemoryChallenge())
+            _memoryChallenge = State(initialValue: MemoryChallenge(gridSize: settings.memoryGridSize, litCount: settings.memoryTilesToMatch))
         }
     }
 
@@ -74,291 +94,511 @@ struct ChallengeView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top bar: "Not now" + "Math · Medium"
+                // Header (fixed)
                 HStack(alignment: .center) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 14, weight: .medium))
-                            Text("Not now")
-                                .font(.inter(13, weight: .medium))
-                        }
-                        .foregroundColor(.focusMuted)
-                        .padding(.horizontal, 14)
-                        .padding(.leading, 10)
-                        .padding(.vertical, 8)
-                        .background(Color.focusInk.opacity(0.05))
-                        .cornerRadius(17)
-                    }
+                    Wordmark()
 
                     Spacer()
-                        .frame(maxWidth: .infinity) // Prevent excessive stretching
 
-                    Text(isUnlocked ? "Done" : challengeLabel)
-                        .font(.inter(12))
-                        .foregroundColor(.focusMuted)
+                    if phase == .challenge {
+                        CloseX {
+                            dismiss()
+                        }
+                    }
                 }
-                .frame(height: 44) // Fixed height to prevent stretching
                 .padding(.horizontal, 22)
                 .padding(.top, 60)
-                .padding(.bottom, 12)
+                .padding(.bottom, 4)
 
-                // Title
-                HStack {
-                    if isUnlocked {
-                        (Text("Fare ")
-                            .font(.instrumentSerif(30))
-                         + Text("paid")
-                            .font(.instrumentSerif(30, italic: true))
-                         + Text(".")
-                            .font(.instrumentSerif(30)))
-                    } else {
-                        (Text("Pay your ")
-                            .font(.instrumentSerif(30))
-                         + Text("fare")
-                            .font(.instrumentSerif(30, italic: true))
-                         + Text(".")
-                            .font(.instrumentSerif(30)))
-                    }
-                }
-                .foregroundColor(.focusInk)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true) // Prevent vertical stretching
-                .padding(.horizontal, 22)
-                .padding(.bottom, 16)
-
-                // Main card
-                ShakeEffect(trigger: shakeCount) {
+                // Scrollable content area
+                ScrollView {
                     VStack(spacing: 0) {
-                        // App info row
-                        HStack(spacing: 14) {
-                            // Use Label from FamilyControls to show actual blocked app
-                            ZStack(alignment: .bottomTrailing) {
-                                // Prefer the requested app, fallback to first blocked app
-                                if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
-                                    Label(app)
-                                        .labelStyle(.iconOnly)
-                                        .scaleEffect(1.6) // Scale up the FamilyControls icon
-                                        .frame(width: 58, height: 58) // Frame to contain the scaled icon
-                                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                                } else {
-                                    // Fallback if no apps available
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(Color.focusAccent)
-                                        .frame(width: 58, height: 58)
-                                        .overlay(
-                                            Image(systemName: "app.fill")
-                                                .font(.system(size: 26))
-                                                .foregroundColor(.white)
-                                        )
-                                }
+                        Spacer()
+                            .frame(minHeight: 20)
 
-                                // Lock badge
-                                Circle()
-                                    .fill(Color.focusBg)
-                                    .frame(width: 24, height: 24)
-                                    .overlay(
-                                        Image(systemName: "lock.fill")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.focusInk)
-                                    )
-                                    .offset(x: 7, y: 7)
+                        // Main ticket
+                        VStack(spacing: 0) {
+                            // FARE STUB (top) - tears off on payment
+                            if phase != .unlocked {
+                                fareStub
+                                    .offset(y: fareStubOffset)
+                                    .rotationEffect(.degrees(fareStubRotation))
+                                    .opacity(fareStubOpacity)
                             }
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                // Use generic title instead of app name
-                                Text("Blocked App")
-                                    .font(.inter(16, weight: .semibold))
-                                    .foregroundColor(.focusInk)
+                            // PASS STUB (bottom) - what you keep
+                            passStub
+                                .offset(y: passStubOffset)
+                                .scaleEffect(passStubScale)
+                        }
+                        .modifier(ShakeModifier(trigger: shakeCount))
+                        .padding(.horizontal, 22)
+                        .shadow(color: Color.black.opacity(0.12), radius: 20, x: 0, y: 20)
 
-                                Text(isUnlocked ? "Unlocked for \(settings.unlockDurationText)" : "Solve to unlock for \(settings.unlockDurationText)")
-                                    .font(.inter(13))
-                                    .foregroundColor(.focusMuted)
+                        // Status message
+                        HStack {
+                            Spacer()
+                            if phase == .paying {
+                                Text(payingLabel)
+                                    .font(.inter(13, weight: .semibold))
+                                    .foregroundColor(.transitGreen)
+                                    .tracking(0.26)
+                            } else if phase == .challenge && showError {
+                                Text(errorText)
+                                    .font(.inter(13, weight: .medium))
+                                    .foregroundColor(.transitRed)
+                                    .transition(.opacity)
                             }
-
                             Spacer()
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 18)
+                        .frame(height: 18)
+                        .padding(.top, 16)
 
-                        Divider()
-                            .background(Color.focusLine)
-                            .padding(.horizontal, 14)
+                        Spacer()
+                            .frame(minHeight: 20)
 
-                        Spacer().frame(height: 14)
-
-                        // Challenge content area
-                        if isUnlocked {
-                            // Success state (same for all challenge types)
-                            VStack(spacing: 14) {
-                                Circle()
-                                    .fill(Color.white.opacity(0.12))
-                                    .frame(width: 46, height: 46)
-                                    .overlay(
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 22, weight: .regular))
-                                            .foregroundColor(.white)
-                                    )
-
-                                Text(formatCountdown())
-                                    .font(.system(size: 40, weight: .semibold, design: .monospaced))
-                                    .foregroundColor(.white)
-                                    .tracking(-1.2)
-
-                                Text("access remaining")
-                                    .font(.inter(12))
-                                    .foregroundColor(.white.opacity(0.6))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 26)
-                            .background(Color.focusInk)
-                            .cornerRadius(16)
-                            .padding(.horizontal, 14)
-                        } else {
-                            // Challenge-specific content
-                            switch challengeType {
-                            case .math:
-                                mathChallengeContent()
-                            case .typing:
-                                typingChallengeContent()
-                            case .memory:
-                                memoryChallengeContent()
-                            }
-                        }
-
-                        Spacer().frame(height: 14)
-                    }
-                    .background(Color.white)
-                    .cornerRadius(22)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22)
-                            .stroke(Color.focusLine, lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 10)
-                }
-                .padding(.horizontal, 22)
-
-                // Error message
-                HStack {
-                    Spacer()
-                    if showingResult && !isCorrect && !isUnlocked {
-                        Text(errorMessage)
-                            .font(.inter(13, weight: .medium))
-                            .foregroundColor(Color(red: 0.7, green: 0.4, blue: 0.3))
-                            .transition(.opacity)
-                    }
-                    Spacer()
-                }
-                .frame(height: 18)
-                .padding(.top, 12)
-
-                Spacer()
-                    .frame(maxHeight: 100) // Limit spacer expansion to prevent stretching
-
-                // Footer: Button (only for non-math challenges and unlocked state)
-                VStack {
-                    if isUnlocked {
-                        Button {
-                            openUnlockedApp()
-                            dismiss()
-                        } label: {
-                            Text("Open App")
-                                .font(.inter(16, weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(Color.focusInk)
-                                .cornerRadius(16)
-                        }
-                    } else if challengeType != .math {
-                        // Math challenge has its own inline button, so only show footer for typing/memory
-                        switch challengeType {
-                        case .math:
-                            EmptyView()
-                        case .typing:
-                            Button {
-                                checkTypingAnswer()
-                            } label: {
-                                Text(typingChallenge?.isCorrect(typedText) == true ? "Pay your fare" : "Type the line to continue")
-                                    .font(.inter(16, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
-                                    .background(typingChallenge?.isCorrect(typedText) == true ? Color.focusInk : Color.focusInk.opacity(0.12))
-                                    .cornerRadius(16)
-                            }
-                            .disabled(typingChallenge?.isCorrect(typedText) != true)
-                        case .memory:
-                            Button {
-                                checkMemoryAnswer()
-                            } label: {
-                                let remaining = (memoryChallenge?.litCount ?? 4) - selectedTiles.count
-                                let buttonText = memoryStage == .memorize
-                                    ? "Memorizing… \(memoryCountdown)"
-                                    : selectedTiles.count == (memoryChallenge?.litCount ?? 4)
-                                        ? "Confirm"
-                                        : "Select \(remaining) more"
-
-                                Text(buttonText)
-                                    .font(.inter(16, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
-                                    .background(memoryStage == .recall && selectedTiles.count == (memoryChallenge?.litCount ?? 4) ? Color.focusInk : Color.focusInk.opacity(0.12))
-                                    .cornerRadius(16)
-                            }
-                            .disabled(memoryStage != .recall || selectedTiles.count != (memoryChallenge?.litCount ?? 4))
-                        }
+                        // Footer button
+                        footer
+                            .padding(.horizontal, 22)
+                            .padding(.bottom, 34)
                     }
                 }
-                .padding(.horizontal, 22)
-                .padding(.bottom, 38)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: showingResult)
-        .animation(.easeInOut(duration: 0.2), value: isUnlocked)
         .onAppear {
-            // Auto-focus the appropriate field when challenge appears
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                switch challengeType {
-                case .math:
-                    isMathFocused = true
-                case .typing:
-                    isTypingFocused = true
-                case .memory:
-                    break // No keyboard for memory challenge
+            focusInput()
+            if challengeType == .memory {
+                startMemoryCountdown()
+            }
+        }
+    }
+
+    // MARK: - Fare Stub (Top)
+
+    @ViewBuilder
+    private var fareStub: some View {
+        ZStack {
+            VStack(spacing: 0) {
+                // Dark header
+                HStack {
+                    HStack(spacing: 8) {
+                        Image(systemName: "star")
+                            .font(.system(size: 13))
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+
+                        Text("SINGLE FARE")
+                            .font(.inter(10, weight: .semibold))
+                            .tracking(1.8)
+                            .foregroundColor(.white.opacity(0.85))
+                    }
+
+                    Spacer()
+
+                    Text(ticketNumber)
+                        .font(.system(size: 11, design: .monospaced))
+                        .tracking(0.44)
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 11)
+                .padding(.bottom, -1)
+                .background(Color.focusInk)
+
+                // App info row
+                HStack(alignment: .center, spacing: 11) {
+                    // App icon
+                    if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
+                        Label(app)
+                            .labelStyle(.iconOnly)
+                            .scaleEffect(1.35)
+                            .frame(width: 34, height: 34)
+                    }
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Blocked App")
+                            .font(.inter(15, weight: .semibold))
+                            .foregroundColor(.focusInk)
+
+                        Text("Boarding · blocked")
+                            .font(.inter(11.5))
+                            .foregroundColor(.focusMuted)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text("VALID")
+                            .font(.inter(9.5, weight: .medium))
+                            .tracking(1.33)
+                            .foregroundColor(.focusMuted)
+
+                        Text(settings.unlockDurationText)
+                            .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.focusInk)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 15)
+
+                // Challenge content
+                VStack(spacing: 0) {
+                    if let fareLabel = fareLabel, let fareMeta = fareMeta {
+                        HStack {
+                            Text(fareLabel.uppercased())
+                                .font(.inter(10.5, weight: .medium))
+                                .tracking(1.68)
+                                .foregroundColor(.focusMuted)
+
+                            Spacer()
+
+                            Text(fareMeta)
+                                .font(.inter(11))
+                                .foregroundColor(.focusMuted)
+                        }
+                        .padding(.bottom, 10)
+                    }
+
+                    challengeContent
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, 20)
+            }
+            .background(Color.white)
+            .clipShape(UnevenRoundedRectangle(
+                topLeadingRadius: phase == .unlocked ? 0 : 22,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: phase == .unlocked ? 0 : 22
+            ))
+            .overlay(
+                // Paid stamp overlay - positioned absolutely in center
+                Group {
+                    if showStamp {
+                        PaidStamp(show: showStamp)
+                    }
+                }
+            )
+        }
+    }
+
+    // MARK: - Pass Stub (Bottom)
+
+    @ViewBuilder
+    private var passStub: some View {
+        VStack(spacing: 0) {
+            if phase == .unlocked {
+                // Validated header (green)
+                HStack {
+                    HStack(spacing: 7) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+
+                        Text("VALIDATED")
+                            .font(.inter(10, weight: .bold))
+                            .tracking(1.8)
+                            .foregroundColor(.white)
+                    }
+
+                    Spacer()
+
+                    Text(ticketNumber)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.85))
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 11)
+                .padding(.bottom, -1)
+                .background(Color.transitGreen)
+
+                // App info
+                HStack(spacing: 11) {
+                    if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
+                        Label(app)
+                            .labelStyle(.iconOnly)
+                            .scaleEffect(1.35)
+                            .frame(width: 34, height: 34)
+                    }
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Blocked App")
+                            .font(.inter(15, weight: .semibold))
+                            .foregroundColor(.focusInk)
+
+                        Text("Access granted")
+                            .font(.inter(11.5))
+                            .foregroundColor(.focusMuted)
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .padding(.bottom, 8)
+
+                // Countdown
+                VStack(spacing: 4) {
+                    Text("EXPIRES IN")
+                        .font(.inter(10, weight: .medium))
+                        .tracking(1.8)
+                        .foregroundColor(.focusMuted)
+
+                    Text(formatCountdown())
+                        .font(.system(size: 46, weight: .semibold, design: .monospaced))
+                        .tracking(-1.38)
+                        .foregroundColor(.focusInk)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+                .padding(.top, 2)
+
+                // Barcode and zone
+                HStack {
+                    Barcode()
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text("ZONE")
+                            .font(.inter(9.5, weight: .medium))
+                            .tracking(1.33)
+                            .foregroundColor(.focusMuted)
+
+                        Text("01")
+                            .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.focusInk)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+            } else {
+                // Unstamped bottom stub
+                HStack {
+                    Barcode(tint: Color.focusInk.opacity(0.5), height: 30)
+
+                    Spacer()
+
+                    HStack(spacing: 18) {
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("ZONE")
+                                .font(.inter(9, weight: .medium))
+                                .tracking(1.26)
+                                .foregroundColor(.focusMuted)
+
+                            Text("01")
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .foregroundColor(.focusInk)
+                        }
+
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("TYPE")
+                                .font(.inter(9, weight: .medium))
+                                .tracking(1.26)
+                                .foregroundColor(.focusMuted)
+
+                            Text(ticketType)
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .foregroundColor(.focusInk)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 15)
+                .padding(.bottom, 1)
+            }
+        }
+        .background(Color.white)
+        .clipShape(UnevenRoundedRectangle(
+            topLeadingRadius: phase == .unlocked ? 22 : 0,
+            bottomLeadingRadius: 22,
+            bottomTrailingRadius: 22,
+            topTrailingRadius: phase == .unlocked ? 22 : 0
+        ))
+    }
+
+    // MARK: - Challenge Content
+
+    @ViewBuilder
+    private var challengeContent: some View {
+        switch challengeType {
+        case .math:
+            mathContent
+        case .typing:
+            typingContent
+        case .memory:
+            memoryContent
+        }
+    }
+
+    @ViewBuilder
+    private var mathContent: some View {
+        if let challenge = mathChallenge {
+            VStack(spacing: 16) {
+                // Problem
+                Text(challenge.question)
+                    .font(.instrumentSerif(50))
+                    .foregroundColor(.focusInk)
+                    .opacity(phase == .paying ? 0.5 : 1)
+                    .monospacedDigit()
+
+                // Answer field
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(
+                            showError ? Color.transitRed : (userAnswer.isEmpty ? Color.focusInk.opacity(0.14) : Color.focusInk),
+                            lineWidth: 1.5
+                        )
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(showError ? Color.transitRedSoft : Color.white)
+                        )
+                        .frame(height: 54)
+
+                    if userAnswer.isEmpty {
+                        Text("Enter answer")
+                            .font(.inter(15))
+                            .foregroundColor(Color.focusInk.opacity(0.28))
+                    } else {
+                        HStack(spacing: 2) {
+                            Text(userAnswer)
+                                .font(.system(size: 25, weight: .semibold, design: .monospaced))
+                                .foregroundColor(.focusInk)
+
+                            if phase == .challenge {
+                                Rectangle()
+                                    .fill(Color.focusInk)
+                                    .frame(width: 2, height: 25)
+                                    .blinking()
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
-    private var challengeLabel: String {
+    @ViewBuilder
+    private var typingContent: some View {
+        if let challenge = typingChallenge {
+            VStack(spacing: 12) {
+                // Typing field with character-by-character feedback
+                TypingField(
+                    target: challenge.text,
+                    typed: $typedText,
+                    isFocused: $isTypingFocused,
+                    isActive: phase == .challenge,
+                    onComplete: checkTypingAnswer
+                )
+
+                // Hint
+                Divider()
+                    .background(Color.focusLine)
+
+                HStack {
+                    Text(typingHintText)
+                        .font(.inter(12))
+                        .foregroundColor(.focusMuted)
+
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var memoryContent: some View {
+        if let challenge = memoryChallenge {
+            // Memory grid only (no level progress bar)
+            MemoryGrid(
+                challenge: challenge,
+                selectedTiles: $selectedTiles,
+                stage: memoryStage,
+                showError: showError,
+                gridSize: challenge.columns,
+                isActive: phase == .challenge,
+                onComplete: checkMemoryAnswer
+            )
+        }
+    }
+
+    // MARK: - Footer
+
+    @ViewBuilder
+    private var footer: some View {
+        if phase == .unlocked {
+            TicketBtn("Open App") {
+                openUnlockedApp()
+                dismiss()
+            }
+        } else {
+            switch challengeType {
+            case .math:
+                TicketKeypad(input: $userAnswer, onSubmit: checkMathAnswer, canSubmit: !userAnswer.isEmpty && phase == .challenge)
+            case .typing:
+                EmptyView() // No button needed - auto-submits on completion
+            case .memory:
+                EmptyView() // No button needed - auto-submits on completion
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var ticketNumber: String {
+        let blockCount = StatsManager.shared.todayStats.blocksToday
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMdd"
+        let dateString = dateFormatter.string(from: Date())
+        return "No. \(blockCount)·\(dateString)"
+    }
+
+    private var ticketType: String {
+        switch challengeType {
+        case .math: return "MATH"
+        case .typing: return "TYPE"
+        case .memory: return "MEM"
+        }
+    }
+
+    private var fareLabel: String? {
         switch challengeType {
         case .math:
-            return "Math · \(difficultyText)"
+            return "Fare due"
         case .typing:
-            return "Typing · Pro"
+            return "Type the line"
         case .memory:
-            return "Memory · Pro"
+            switch memoryStage {
+            case .memorize: return "Memorize \(memoryChallenge?.litCount ?? 4)"
+            case .recall: return "Tap the \(memoryChallenge?.litCount ?? 4)"
+            }
         }
     }
 
-    private var difficultyText: String {
-        switch settings.challengeDifficulty {
-        case .veryEasy: return "Very Easy"
-        case .easy: return "Easy"
-        case .medium: return "Medium"
-        case .hard: return "Hard"
-        case .veryHard: return "Very Hard"
-        }
-    }
-
-    private var errorMessage: String {
+    private var fareMeta: String? {
         switch challengeType {
         case .math:
-            return "Not quite — give it another go"
+            return attempts > 0 ? "Attempt \(attempts + 1)" : "Solve to board"
+        case .typing:
+            return "\(typedText.count)/\(typingChallenge?.text.count ?? 0)"
+        case .memory:
+            switch memoryStage {
+            case .memorize: return "\(memoryCountdown)s"
+            case .recall: return "\(selectedTiles.count)/\(memoryChallenge?.litCount ?? 4)"
+            }
+        }
+    }
+
+    private var payingLabel: String {
+        "Tearing your stub…"
+    }
+
+    private var errorText: String {
+        switch challengeType {
+        case .math:
+            return "Not the right fare — try again"
         case .typing:
             return "That doesn't match — fix the highlighted part"
         case .memory:
@@ -366,58 +606,55 @@ struct ChallengeView: View {
         }
     }
 
-    // MARK: - Challenge Content Views
-
-    @ViewBuilder
-    private func mathChallengeContent() -> some View {
-        if let challenge = mathChallenge {
-            MathChallengeContent(
-                challenge: challenge,
-                userAnswer: $userAnswer,
-                result: $mathResult,
-                isFocused: $isMathFocused,
-                onSubmit: checkMathAnswer
-            )
+    private var typingHintText: String {
+        if typingChallenge?.isCorrect(typedText) == true {
+            return "Looks good — pay your fare"
+        } else if showError {
+            return "Match the line exactly"
+        } else {
+            return "Keep going"
         }
     }
 
-    @ViewBuilder
-    private func typingChallengeContent() -> some View {
-        if let challenge = typingChallenge {
-            TypingChallengeContent(
-                challenge: challenge,
-                typedText: $typedText,
-                isFocused: $isTypingFocused,
-                isUnlocked: isUnlocked
-            )
-        }
-    }
-
-    @ViewBuilder
-    private func memoryChallengeContent() -> some View {
-        if let challenge = memoryChallenge {
-            MemoryChallengeContent(
-                challenge: challenge,
-                selectedTiles: $selectedTiles,
-                stage: $memoryStage,
-                countdown: $memoryCountdown,
-                isUnlocked: isUnlocked,
-                showError: showingResult && !isCorrect
-            )
-            .onAppear {
-                startMemoryCountdown()
+    private var memoryButtonText: String {
+        switch memoryStage {
+        case .memorize:
+            return "Memorizing… \(memoryCountdown)"
+        case .recall:
+            let remaining = (memoryChallenge?.litCount ?? 4) - selectedTiles.count
+            if selectedTiles.count == memoryChallenge?.litCount {
+                return "Pay your fare"
+            } else {
+                return "Select \(remaining) more"
             }
         }
     }
 
+    private var memoryButtonDisabled: Bool {
+        memoryStage != .recall || selectedTiles.count != memoryChallenge?.litCount
+    }
+
     private func formatCountdown() -> String {
-        let seconds = Int(settings.unlockDuration)
+        let seconds = Int(remainingTime)
         let mm = seconds / 60
         let ss = seconds % 60
         return String(format: "%d:%02d", mm, ss)
     }
 
-    // MARK: - Answer Checking
+    // MARK: - Actions
+
+    private func focusInput() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            switch challengeType {
+            case .math:
+                isMathFocused = true
+            case .typing:
+                isTypingFocused = true
+            case .memory:
+                break
+            }
+        }
+    }
 
     private func checkMathAnswer() {
         guard let answer = Int(userAnswer),
@@ -425,118 +662,366 @@ struct ChallengeView: View {
             return
         }
 
-        let correct = challenge.isCorrect(answer)
-        mathResult = correct ? .correct : .wrong
-
-        if correct {
-            unlockApp(eventType: .mathChallenge)
+        if challenge.isCorrect(answer) {
+            succeed()
         } else {
-            attempts += 1
-            shakeCount += 1
-            // Don't reset - let the user try again with feedback
+            handleError()
         }
     }
 
     private func checkTypingAnswer() {
         guard let challenge = typingChallenge else { return }
 
-        isCorrect = challenge.isCorrect(typedText)
-        showingResult = true
-
-        if isCorrect {
-            unlockApp(eventType: .mathChallenge) // Using mathChallenge as placeholder
+        if challenge.isCorrect(typedText) {
+            succeed()
         } else {
-            handleIncorrectAnswer {
-                regenerateTypingChallenge()
-            }
+            handleError()
         }
     }
 
     private func checkMemoryAnswer() {
         guard let challenge = memoryChallenge else { return }
 
-        isCorrect = challenge.isCorrect(selectedTiles)
-        showingResult = true
-
-        if isCorrect {
-            unlockApp(eventType: .mathChallenge) // Using mathChallenge as placeholder
+        if challenge.isCorrect(selectedTiles) {
+            succeed()
         } else {
-            handleIncorrectAnswer {
-                memoryChallenge = MemoryChallenge()
+            handleError()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.15) {
+                memoryChallenge = MemoryChallenge(gridSize: settings.memoryGridSize, litCount: settings.memoryTilesToMatch)
                 selectedTiles = []
+                showError = false
                 memoryStage = .memorize
                 startMemoryCountdown()
             }
         }
     }
 
-    private func unlockApp(eventType: HistoryEvent.EventType) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            // Unlock the specific app that was requested
-            let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first
-            blockingManager.temporaryUnlock(appToken: appToken, duration: settings.unlockDuration)
+    private func succeed() {
+        phase = .paying
+        showStamp = true
 
-            // Record the unlock event
-            let appTokenData = appToken.flatMap { try? JSONEncoder().encode($0) }
-            historyManager.recordEvent(
-                appTokenData: appTokenData,
-                eventType: eventType,
-                duration: settings.unlockDuration
-            )
+        // Animate tear after stamp (even faster: 0.6s)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            animateTear()
 
-            isUnlocked = true
+            // Change phase to unlocked AFTER the tear animation completes (0.6s)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                phase = .unlocked
+                unlockApp()
+            }
         }
     }
 
-    private func handleIncorrectAnswer(reset: @escaping () -> Void) {
+    private func handleError() {
         attempts += 1
         shakeCount += 1
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            reset()
-            showingResult = false
+        showError = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
+            if challengeType == .math {
+                userAnswer = ""
+            }
+            showError = false
         }
     }
 
-    private func regenerateTypingChallenge() {
-        typingChallenge = TypingChallenge(difficulty: settings.typingDifficulty)
-        typedText = ""
-    }
+    private func animateTear() {
+        // Fare stub tears away - faster with dramatic rotation
+        withAnimation(.timingCurve(0.5, 0, 0.7, 0, duration: 0.6)) {
+            fareStubOffset = -460
+            fareStubRotation = -15  // Much more dramatic rotation for visible tear effect
+        }
 
-    private func startMemoryCountdown() {
-        memoryCountdown = 3
-        memoryStage = .memorize
+        // Fade at the end - adjusted timing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.linear(duration: 0.3)) {
+                fareStubOpacity = 0
+            }
+        }
 
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-            if memoryCountdown > 1 {
-                memoryCountdown -= 1
-            } else {
-                timer.invalidate()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    memoryStage = .recall
+        // Pass stub bounce - adjusted timing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation(.timingCurve(0.4, 0, 0.2, 1, duration: 0.15)) {
+                passStubOffset = -7
+                passStubScale = 1.012
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                    passStubOffset = 0
+                    passStubScale = 1.0
                 }
             }
         }
     }
 
-    private func openUnlockedApp() {
-        // Get the app that was unlocked
-        guard let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first else {
-            print("[ChallengeView] No app token to open")
-            return
+    private func unlockApp() {
+        let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first
+        blockingManager.temporaryUnlock(appToken: appToken, duration: settings.unlockDuration)
+
+        let appTokenData = appToken.flatMap { try? JSONEncoder().encode($0) }
+        let eventType: HistoryEvent.EventType = {
+            switch challengeType {
+            case .math: return .mathChallenge
+            case .typing: return .mathChallenge // Placeholder
+            case .memory: return .mathChallenge // Placeholder
+            }
+        }()
+
+        historyManager.recordEvent(
+            appTokenData: appTokenData,
+            eventType: eventType,
+            duration: settings.unlockDuration
+        )
+
+        // Start countdown
+        remainingTime = settings.unlockDuration
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if remainingTime > 0 {
+                remainingTime -= 1
+            } else {
+                countdownTimer?.invalidate()
+            }
         }
+    }
 
-        // Unfortunately, iOS doesn't provide a direct API to open apps by ApplicationToken
-        // The best we can do is dismiss and let the user manually open the app
-        // The app is now unlocked, so it will open without showing the shield
+    private func openUnlockedApp() {
+        countdownTimer?.invalidate()
+    }
 
-        // Note: In theory we could try to extract the bundle ID and use openURL,
-        // but ApplicationToken doesn't expose this information directly
-        print("[ChallengeView] App unlocked, user can now open it manually")
+    private func startMemoryCountdown() {
+        memoryCountdown = 3
+
+        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            if memoryCountdown > 0 {
+                memoryCountdown -= 1
+                if memoryCountdown == 0 {
+                    timer.invalidate()
+                    memoryStage = .recall
+                }
+            }
+        }
     }
 }
 
-// Custom keypad matching the Card design
-struct CustomKeypad: View {
+// MARK: - Supporting Views
+
+struct TypingField: View {
+    let target: String
+    @Binding var typed: String
+    var isFocused: FocusState<Bool>.Binding
+    let isActive: Bool
+    let onComplete: () -> Void
+    @State private var shakeCount = 0
+    @State private var wrongChar: String? = nil
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            // Target text with character-by-character coloring
+            Text(coloredText)
+                .font(.instrumentSerif(26))
+                .lineSpacing(6)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(2)
+                .modifier(ShakeModifier(trigger: shakeCount))
+                .onTapGesture {
+                    isFocused.wrappedValue = true
+                }
+
+            // Invisible text field with validation
+            TextField("", text: Binding(
+                get: { typed },
+                set: { newValue in
+                    if !isActive { return }
+
+                    // Prevent backspace - only allow moving forward
+                    if newValue.count < typed.count {
+                        return
+                    }
+
+                    // Validate each character as it's typed (case sensitive)
+                    if newValue.count > typed.count {
+                        let startIndex = typed.count
+                        let endIndex = min(newValue.count, target.count)
+
+                        var allCorrect = true
+                        var firstWrongChar: String? = nil
+
+                        // Check each new character
+                        for i in startIndex..<endIndex {
+                            let targetChar = Array(target)[i]
+                            let typedChar = Array(newValue)[i]
+
+                            if targetChar != typedChar {
+                                allCorrect = false
+                                firstWrongChar = String(typedChar)
+                                break
+                            }
+                        }
+
+                        if allCorrect && endIndex <= target.count {
+                            // All new characters are correct - accept them
+                            typed = String(newValue.prefix(endIndex))
+
+                            // Auto-submit if complete
+                            if typed.count == target.count {
+                                // Hide keyboard
+                                isFocused.wrappedValue = false
+                                onComplete()
+                            }
+                        } else {
+                            // Wrong character detected - show it briefly, then reject
+                            if let wrongCharacter = firstWrongChar {
+                                wrongChar = wrongCharacter
+                                shakeCount += 1
+
+                                // Haptic feedback
+                                let impact = UIImpactFeedbackGenerator(style: .light)
+                                impact.impactOccurred()
+
+                                // Clear wrong char after brief delay
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    wrongChar = nil
+                                }
+                            }
+                            // Don't update typed - stay at current position
+                        }
+                    }
+                }
+            ), axis: .vertical)
+                .focused(isFocused)
+                .opacity(0)
+                .disabled(!isActive)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .keyboardType(.asciiCapable)
+        }
+        .frame(minHeight: 100) // Ensure minimum height for multi-line text
+    }
+
+    private var coloredText: AttributedString {
+        var result = AttributedString()
+
+        for (index, char) in target.enumerated() {
+            let isDone = index < typed.count
+            let isCorrect = isDone && Array(typed)[index] == char
+            let isCursor = index == typed.count && isFocused.wrappedValue && isActive
+            let isWrongPosition = index == typed.count && wrongChar != nil
+
+            // Show the wrong character if present
+            let displayChar = isWrongPosition && wrongChar != nil ? wrongChar! : String(char)
+            var charString = AttributedString(displayChar)
+
+            if isWrongPosition && wrongChar != nil {
+                // Wrong character - show in red with background
+                charString.foregroundColor = .transitRed
+                charString.backgroundColor = .transitRedSoft
+            } else if isCorrect {
+                charString.foregroundColor = .focusInk
+            } else if isCursor {
+                // Cursor position - highlight the next character to type
+                charString.foregroundColor = .focusInk
+                charString.backgroundColor = Color.focusAccent.opacity(0.2)
+            } else {
+                charString.foregroundColor = Color.focusInk.opacity(0.26)
+            }
+
+            result.append(charString)
+        }
+
+        return result
+    }
+}
+
+struct MemoryGrid: View {
+    let challenge: MemoryChallenge
+    @Binding var selectedTiles: [Int]
+    let stage: ChallengeView.MemoryStage
+    let showError: Bool
+    let gridSize: Int
+    let isActive: Bool
+    let onComplete: () -> Void
+
+    private var radius: CGFloat {
+        12
+    }
+
+    private var gap: CGFloat {
+        9
+    }
+
+    var body: some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: gap), count: gridSize)
+
+        LazyVGrid(columns: columns, spacing: gap) {
+            ForEach(0..<(gridSize * gridSize), id: \.self) { index in
+                Button {
+                    toggleTile(index)
+                } label: {
+                    Rectangle()
+                        .fill(tileColor(index))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: radius)
+                                .strokeBorder(tileBorder(index), lineWidth: 1.5)
+                        )
+                        .aspectRatio(1, contentMode: .fit)
+                        .cornerRadius(radius)
+                }
+                .disabled(stage != .recall || !isActive)
+            }
+        }
+    }
+
+    private func toggleTile(_ index: Int) {
+        if selectedTiles.contains(index) {
+            selectedTiles.removeAll { $0 == index }
+        } else if selectedTiles.count < challenge.litCount {
+            selectedTiles.append(index)
+
+            // Auto-submit when all tiles are selected
+            if selectedTiles.count == challenge.litCount {
+                onComplete()
+            }
+        }
+    }
+
+    private func tileColor(_ index: Int) -> Color {
+        let isLit = challenge.litIndices.contains(index)
+        let isSelected = selectedTiles.contains(index)
+
+        if stage == .memorize {
+            return isLit ? .focusInk : Color.focusInk.opacity(0.05)
+        } else {
+            if showError && isSelected && !isLit {
+                return .transitRedSoft
+            } else if isSelected {
+                return .focusInk
+            } else {
+                return Color.focusInk.opacity(0.05)
+            }
+        }
+    }
+
+    private func tileBorder(_ index: Int) -> Color {
+        let isLit = challenge.litIndices.contains(index)
+        let isSelected = selectedTiles.contains(index)
+
+        if stage == .recall && showError {
+            if isSelected && !isLit {
+                return .transitRed
+            } else if isLit && !isSelected {
+                return Color.focusInk.opacity(0.35)
+            }
+        }
+
+        return .clear
+    }
+}
+
+// MARK: - Ticket Keypad
+
+struct TicketKeypad: View {
     @Binding var input: String
     let onSubmit: () -> Void
     let canSubmit: Bool
@@ -632,44 +1117,23 @@ struct KeypadButton: View {
     }
 }
 
-// Shake animation on error
-struct ShakeEffect<Content: View>: View {
-    let trigger: Int
-    let content: Content
+// MARK: - Extensions
 
-    init(trigger: Int, @ViewBuilder content: () -> Content) {
-        self.trigger = trigger
-        self.content = content()
+extension View {
+    func blinking() -> some View {
+        self.modifier(BlinkingModifier())
     }
+}
 
-    @State private var offset: CGFloat = 0
+struct BlinkingModifier: ViewModifier {
+    @State private var isVisible = true
 
-    var body: some View {
+    func body(content: Content) -> some View {
         content
-            .offset(x: offset)
-            .onChange(of: trigger) { _ in
-                withAnimation(.linear(duration: 0.08)) {
-                    offset = -9
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                    withAnimation(.linear(duration: 0.08)) {
-                        offset = 8
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                        withAnimation(.linear(duration: 0.08)) {
-                            offset = -5
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                            withAnimation(.linear(duration: 0.08)) {
-                                offset = 3
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                                withAnimation(.linear(duration: 0.08)) {
-                                    offset = 0
-                                }
-                            }
-                        }
-                    }
+            .opacity(isVisible ? 1 : 0)
+            .onAppear {
+                withAnimation(.linear(duration: 0.5).repeatForever(autoreverses: true)) {
+                    isVisible.toggle()
                 }
             }
     }
