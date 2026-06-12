@@ -23,6 +23,7 @@ class AppBlockingManager: ObservableObject {
     private let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
     private let temporaryUnlocksKey = "com.screenfare.temporaryUnlocks"
     private let unlockDurationsKey = "com.screenfare.unlockDurations"
+    private let blockedAppsKey = "com.screenfare.blockedApps"
     private var activeMonitors: [Data: DeviceActivityName] = [:] // Track active device activity monitors
 
     @Published var isAuthorized = false
@@ -59,6 +60,12 @@ class AppBlockingManager: ObservableObject {
         // Check authorization status on init
         checkAuthorizationStatus()
 
+        // Load persisted selected apps first
+        loadSelectedApps()
+
+        // Load persisted blocked apps state
+        loadBlockedApps()
+
         // Load persisted temporary unlocks
         loadTemporaryUnlocks()
 
@@ -86,6 +93,43 @@ class AppBlockingManager: ObservableObject {
     }
 
     // MARK: - Persistence
+
+    private func loadSelectedApps() {
+        // Load the persisted selected apps
+        guard let data = sharedDefaults?.data(forKey: "com.screenfare.selectedApps"),
+              let appTokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: data),
+              !appTokens.isEmpty else {
+            return
+        }
+
+        // Reconstruct the FamilyActivitySelection
+        var selection = FamilyActivitySelection()
+        selection.applicationTokens = appTokens
+        selectedApps = selection
+    }
+
+    private func saveBlockedApps() {
+        // Save a simple boolean flag for whether focus is on/off
+        if blockedApps != nil {
+            sharedDefaults?.set(true, forKey: blockedAppsKey)
+        } else {
+            sharedDefaults?.set(false, forKey: blockedAppsKey)
+        }
+        sharedDefaults?.synchronize()
+    }
+
+    private func loadBlockedApps() {
+        // Check if focus mode was active
+        let focusWasOn = sharedDefaults?.bool(forKey: blockedAppsKey) ?? false
+
+        if focusWasOn && !selectedApps.applicationTokens.isEmpty {
+            // Focus was on and we have selected apps - restore the blocking state
+            blockedApps = selectedApps
+        } else {
+            // Focus was off
+            blockedApps = nil
+        }
+    }
 
     private func saveTemporaryUnlocks() {
         guard let encoded = try? JSONEncoder().encode(temporaryUnlocks) else { return }
@@ -148,6 +192,9 @@ class AppBlockingManager: ObservableObject {
 
         // Store the blocked apps (triggers UI update immediately)
         blockedApps = selectedApps
+
+        // Save blockedApps state to persist focus mode
+        saveBlockedApps()
 
         // Move all heavy work to background to keep UI responsive
         let appsToEncode = selectedApps.applicationTokens
@@ -220,6 +267,9 @@ class AppBlockingManager: ObservableObject {
         store.shield.webDomains = nil
         unlockExpiryTime = nil
         blockedApps = nil
+
+        // Save that focus is now off
+        saveBlockedApps()
 
         // Clear all temporary unlocks (user manually turned off Focus)
         temporaryUnlocks.removeAll()

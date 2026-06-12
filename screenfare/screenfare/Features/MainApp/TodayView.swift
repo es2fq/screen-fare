@@ -478,15 +478,15 @@ struct UnlockedSessionCard: View {
     var body: some View {
         VStack(spacing: 0) {
             // App info row
-            HStack(spacing: 12) {
+            HStack(spacing: 14) {
                 Label(app)
                     .labelStyle(.iconOnly)
-                    .frame(width: 38, height: 38)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .scaleEffect(1.6) // Scale up the FamilyControls icon
+                    .frame(width: 52, height: 52) // Frame to contain the scaled icon
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Label(app)
-                        .labelStyle(.titleOnly)
+                    Text("Unlocked App")
                         .font(.inter(15, weight: .semibold))
                         .foregroundColor(.focusInk)
                         .lineLimit(1)

@@ -560,13 +560,8 @@ struct MathTester: View {
     let difficulty: ChallengeDifficulty
     @State private var problem: MathChallenge
     @State private var userAnswer = ""
-    @State private var result: Result? = nil
+    @State private var result: MathChallengeResult? = nil
     @FocusState private var isFocused: Bool
-
-    enum Result {
-        case correct
-        case wrong
-    }
 
     init(difficulty: ChallengeDifficulty) {
         self.difficulty = difficulty
@@ -575,65 +570,14 @@ struct MathTester: View {
 
     var body: some View {
         TryShell(hint: "Solve it the way you would to unlock — answers are checked.") {
-            VStack(spacing: 13) {
-                // Problem
-                Text(problem.questionText.replacingOccurrences(of: " = ?", with: " ="))
-                    .font(.instrumentSerif(32))
-                    .foregroundColor(.focusInk)
-                    .monospacedDigit()
-                    .tracking(-0.01 * 32)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // Dismiss keyboard when tapping outside input
-                        isFocused = false
-                    }
-
-                // Input + Button
-                HStack(spacing: 8) {
-                    TextField("Answer", text: $userAnswer)
-                        .keyboardType(.numberPad)
-                        .font(.inter(17, weight: .semibold))
-                        .foregroundColor(.focusInk)
-                        .monospacedDigit()
-                        .padding(.horizontal, 14)
-                        .frame(height: 44)
-                        .background(result == .wrong ? Color(red: 0.955, green: 0.95, blue: 0.94) : Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 11)
-                                .stroke(borderColor, lineWidth: 1.5)
-                        )
-                        .cornerRadius(11)
-                        .focused($isFocused)
-                        .onChange(of: userAnswer) { _, _ in
-                            if result == .wrong {
-                                result = nil
-                            }
-                        }
-
-                    Button(action: handleAction) {
-                        Text(result == .correct ? "Next" : "Check")
-                            .font(.inter(14, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(height: 44)
-                            .padding(.horizontal, 16)
-                            .background(canSubmit ? Color.focusInk : Color.focusInk.opacity(0.1))
-                            .cornerRadius(11)
-                    }
-                    .disabled(!canSubmit)
-                }
-
-                // Feedback
-                Text(feedbackText)
-                    .font(.inter(12.5, weight: .medium))
-                    .foregroundColor(feedbackColor)
-                    .frame(height: 16, alignment: .leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // Dismiss keyboard when tapping outside input
-                        isFocused = false
-                    }
-            }
+            // Use shared math challenge field component
+            MathChallengeField(
+                questionText: problem.questionText,
+                userAnswer: $userAnswer,
+                result: $result,
+                isFocused: $isFocused,
+                onSubmit: handleAction
+            )
         }
         .contentShape(Rectangle())
         .onTapGesture {
@@ -645,37 +589,6 @@ struct MathTester: View {
             userAnswer = ""
             result = nil
         }
-    }
-
-    private var canSubmit: Bool {
-        result == .correct || !userAnswer.isEmpty
-    }
-
-    private var borderColor: Color {
-        if result == .correct {
-            return Color(red: 0.55, green: 0.12, blue: 0.12, opacity: 1) // GREEN_C approximation
-        } else if result == .wrong {
-            return Color(red: 0.9, green: 0.5, blue: 0.4) // RED_C approximation
-        }
-        return Color.focusLine
-    }
-
-    private var feedbackText: String {
-        if result == .correct {
-            return "Correct — that would unlock."
-        } else if result == .wrong {
-            return "Not quite. Try again."
-        }
-        return "·"
-    }
-
-    private var feedbackColor: Color {
-        if result == .correct {
-            return Color(red: 0.55, green: 0.65, blue: 0.4) // GREEN_C
-        } else if result == .wrong {
-            return Color(red: 0.7, green: 0.4, blue: 0.3) // RED_C
-        }
-        return Color.clear
     }
 
     private func handleAction() {
@@ -699,8 +612,6 @@ struct TypingTester: View {
     let difficulty: TypingDifficulty
     @FocusState.Binding var isAnyFieldFocused: Bool
     @State private var typedText = ""
-    @State private var shakeCount = 0
-    @State private var wrongChar: String? = nil
     @State private var challenge: TypingChallenge
 
     init(difficulty: TypingDifficulty, isAnyFieldFocused: FocusState<Bool>.Binding) {
@@ -709,94 +620,19 @@ struct TypingTester: View {
         self._challenge = State(initialValue: TypingChallenge(difficulty: difficulty))
     }
 
-    private var targetPhrase: String {
-        challenge.targetText
-    }
-
     private var isComplete: Bool {
-        typedText == targetPhrase
+        typedText == challenge.targetText
     }
 
     var body: some View {
         TryShell(hint: isComplete ? nil : "Tap the line and type it exactly.") {
             VStack(spacing: 10) {
-                // Display with character coloring - using Text with AttributedString for wrapping
-                ShakeEffect(trigger: shakeCount) {
-                    ZStack(alignment: .topLeading) {
-                        // Visible text with character coloring
-                        Text(coloredText)
-                            .font(.instrumentSerif(21))
-                            .lineSpacing(1.4)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .onTapGesture {
-                                // Only the text itself focuses the keyboard
-                                isAnyFieldFocused = true
-                            }
-
-                        // Hidden text field with custom binding for validation
-                        TextField("", text: Binding(
-                            get: { typedText },
-                            set: { newValue in
-                                // Prevent backspace - only allow moving forward
-                                if newValue.count < typedText.count {
-                                    return
-                                }
-
-                                // Validate each character as it's typed (case sensitive)
-                                if newValue.count > typedText.count {
-                                    // Validate ALL new characters, not just the last one
-                                    // This prevents skipping when typing very quickly
-                                    let startIndex = typedText.count
-                                    let endIndex = min(newValue.count, targetPhrase.count)
-
-                                    var allCorrect = true
-                                    var firstWrongChar: String? = nil
-
-                                    // Check each new character
-                                    for i in startIndex..<endIndex {
-                                        let targetChar = Array(targetPhrase)[i]
-                                        let typedChar = Array(newValue)[i]
-
-                                        if targetChar != typedChar {
-                                            allCorrect = false
-                                            firstWrongChar = String(typedChar)
-                                            break
-                                        }
-                                    }
-
-                                    if allCorrect && endIndex <= targetPhrase.count {
-                                        // All new characters are correct - accept them
-                                        typedText = String(newValue.prefix(endIndex))
-                                    } else {
-                                        // Wrong character detected - show it briefly, then reject
-                                        if let wrongCharacter = firstWrongChar {
-                                            wrongChar = wrongCharacter
-                                            shakeCount += 1
-
-                                            // Haptic feedback
-                                            let impact = UIImpactFeedbackGenerator(style: .light)
-                                            impact.impactOccurred()
-
-                                            // Clear wrong char after brief delay
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                                wrongChar = nil
-                                            }
-                                        }
-                                        // Don't update typedText - stay at current position
-                                    }
-                                }
-                            }
-                        ))
-                            .opacity(0)
-                            .focused($isAnyFieldFocused)
-                            .autocorrectionDisabled()
-                            .textInputAutocapitalization(.never)
-                            .disableAutocorrection(true)
-                            .keyboardType(.asciiCapable)
-                    }
-                }
-                .padding(.vertical, 2)
+                // Use shared typing challenge field component
+                TypingChallengeField(
+                    targetText: challenge.targetText,
+                    typedText: $typedText,
+                    isFocused: $isAnyFieldFocused
+                )
 
                 if isComplete {
                     Text("Matched — that would unlock.")
@@ -809,41 +645,7 @@ struct TypingTester: View {
             // Reset typing state and generate new challenge when difficulty changes
             challenge = TypingChallenge(difficulty: newDifficulty)
             typedText = ""
-            wrongChar = nil
         }
-    }
-
-    private var coloredText: AttributedString {
-        var result = AttributedString()
-
-        for (index, char) in targetPhrase.enumerated() {
-            let isDone = index < typedText.count
-            let isCorrect = isDone && Array(typedText)[index] == char
-            let isCursor = index == typedText.count && isAnyFieldFocused
-            let isWrongPosition = index == typedText.count && wrongChar != nil
-
-            // Show the wrong character if present
-            let displayChar = isWrongPosition && wrongChar != nil ? wrongChar! : String(char)
-            var charString = AttributedString(displayChar)
-
-            if isWrongPosition && wrongChar != nil {
-                // Wrong character - show in red with background
-                charString.foregroundColor = Color(red: 0.7, green: 0.4, blue: 0.3)
-                charString.backgroundColor = Color(red: 0.955, green: 0.95, blue: 0.94)
-            } else if isCorrect {
-                charString.foregroundColor = Color.focusInk
-            } else if isCursor {
-                // Cursor position - highlight the next character to type
-                charString.foregroundColor = Color.focusInk
-                charString.backgroundColor = Color.focusAccent.opacity(0.2)
-            } else {
-                charString.foregroundColor = Color.focusInk.opacity(0.3)
-            }
-
-            result.append(charString)
-        }
-
-        return result
     }
 }
 
@@ -1009,6 +811,10 @@ struct MemoryTester: View {
 struct AccessWindowCard: View {
     @Binding var duration: TimeInterval
 
+    private var selectedMinutes: Int {
+        Int(duration / 60)
+    }
+
     var body: some View {
         AppCard {
             VStack(spacing: 12) {
@@ -1025,7 +831,7 @@ struct AccessWindowCard: View {
 
                 CustomSlider(
                     value: $duration,
-                    range: 60...7200,
+                    range: 60...3600,
                     step: 60
                 )
 
@@ -1034,11 +840,35 @@ struct AccessWindowCard: View {
                         .font(.inter(11))
                         .foregroundColor(.focusMuted)
                     Spacer()
-                    Text("2 hours")
+                    Text("1 hour")
                         .font(.inter(11))
                         .foregroundColor(.focusMuted)
                 }
                 .padding(.top, 4)
+
+                // Quick presets
+                HStack(spacing: 8) {
+                    ForEach([5, 15, 30, 45, 60], id: \.self) { preset in
+                        Button(action: {
+                            duration = TimeInterval(preset * 60)
+                        }) {
+                            Text(preset < 60 ? "\(preset)m" : "\(preset/60)h")
+                                .font(.inter(13, weight: .semibold))
+                                .foregroundColor(selectedMinutes == preset ? .white : .focusInk)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 32)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(selectedMinutes == preset ? Color.focusInk : Color.focusLine, lineWidth: 1)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(selectedMinutes == preset ? Color.focusInk : Color.focusCard)
+                                        )
+                                )
+                        }
+                    }
+                }
+                .padding(.top, 6)
             }
         }
     }

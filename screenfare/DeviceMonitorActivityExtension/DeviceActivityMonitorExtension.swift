@@ -92,7 +92,9 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         }
 
         // Apply shields (this will forcibly close any unlocked apps whose time expired)
-        store.shield.applications = blockedApps.isEmpty ? nil : blockedApps
+        // Note: Keep shields active even if blockedApps is empty (all apps temporarily unlocked)
+        // Setting to nil would disable focus mode entirely
+        store.shield.applications = blockedApps
 
         print("[DeviceMonitor] Shield reapplied to \(blockedApps.count) apps")
     }

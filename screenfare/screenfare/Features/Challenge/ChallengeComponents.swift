@@ -7,6 +7,31 @@
 
 import SwiftUI
 
+// MARK: - Math Challenge View
+
+struct MathChallengeContent: View {
+    let challenge: MathChallenge
+    @Binding var userAnswer: String
+    @Binding var result: MathChallengeResult?
+    @FocusState.Binding var isFocused: Bool
+    let onSubmit: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Use shared math challenge field component
+            MathChallengeField(
+                questionText: challenge.questionText,
+                userAnswer: $userAnswer,
+                result: $result,
+                isFocused: $isFocused,
+                onSubmit: onSubmit
+            )
+            .padding(.horizontal, 14)
+            .padding(.top, 12)
+        }
+    }
+}
+
 // MARK: - Typing Challenge View
 
 struct TypingChallengeContent: View {
@@ -19,35 +44,16 @@ struct TypingChallengeContent: View {
         typedText == challenge.targetText
     }
 
-    var firstErrorIndex: Int? {
-        challenge.firstErrorIndex(in: typedText)
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            // Prompt overlay with character-by-character validation
-            ZStack(alignment: .topLeading) {
-                // Render each character with appropriate styling
-                Text(renderPrompt())
-                    .font(.instrumentSerif(27))
-                    .lineSpacing(6)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                // Invisible text field that captures input
-                TextEditor(text: $typedText)
-                    .font(.instrumentSerif(27))
-                    .lineSpacing(6)
-                    .padding(.horizontal, 2)
-                    .padding(.vertical, 6)
-                    .opacity(0.01)
-                    .focused($isFocused)
-                    .disabled(isUnlocked)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .scrollContentBackground(.hidden)
-            }
+            // Use shared typing challenge field component
+            TypingChallengeField(
+                targetText: challenge.targetText,
+                typedText: $typedText,
+                isFocused: $isFocused
+            )
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
             .frame(minHeight: 120)
 
             // Progress indicator
@@ -56,10 +62,6 @@ struct TypingChallengeContent: View {
                     Text("Looks good")
                         .font(.inter(12))
                         .foregroundColor(.focusMuted)
-                } else if let _ = firstErrorIndex {
-                    Text("Match it exactly")
-                        .font(.inter(12))
-                        .foregroundColor(Color(red: 0.7, green: 0.4, blue: 0.3))
                 } else {
                     Text("Keep going")
                         .font(.inter(12))
@@ -78,41 +80,6 @@ struct TypingChallengeContent: View {
         }
         .padding(.horizontal, 14)
         .padding(.top, 12)
-    }
-
-    private func renderPrompt() -> AttributedString {
-        var result = AttributedString()
-        let target = challenge.targetText
-
-        for (index, char) in target.enumerated() {
-            var charString = AttributedString(String(char))
-
-            if index < typedText.count {
-                let typedIndex = typedText.index(typedText.startIndex, offsetBy: index)
-                let typedChar = typedText[typedIndex]
-
-                if typedChar == char {
-                    // Correct character
-                    charString.foregroundColor = .focusInk
-                } else {
-                    // Incorrect character
-                    charString.foregroundColor = Color(red: 0.7, green: 0.4, blue: 0.3)
-                    charString.backgroundColor = Color(red: 0.975, green: 0.95, blue: 0.94)
-                }
-            } else {
-                // Not yet typed
-                charString.foregroundColor = Color.focusInk.opacity(0.26)
-            }
-
-            // Add caret indicator at current position
-            if isFocused && index == typedText.count && !isUnlocked {
-                charString.underlineStyle = .single
-            }
-
-            result.append(charString)
-        }
-
-        return result
     }
 }
 

@@ -73,7 +73,7 @@ struct OnboardingTimeWindowView: View {
                     VStack(spacing: 6) {
                         CustomSlider(
                             value: $selectedDuration,
-                            range: 60...7200, // 1 min to 2 hours
+                            range: 60...3600, // 1 min to 1 hour
                             step: 60
                         )
 
@@ -82,7 +82,7 @@ struct OnboardingTimeWindowView: View {
                                 .font(.inter(11))
                                 .foregroundColor(.focusMuted)
                             Spacer()
-                            Text("2 hours")
+                            Text("1 hour")
                                 .font(.inter(11))
                                 .foregroundColor(.focusMuted)
                         }
@@ -102,7 +102,7 @@ struct OnboardingTimeWindowView: View {
 
                 // Quick presets
                 HStack(spacing: 8) {
-                    ForEach([2, 5, 15, 30, 60], id: \.self) { preset in
+                    ForEach([5, 15, 30, 45, 60], id: \.self) { preset in
                         Button(action: {
                             selectedDuration = TimeInterval(preset * 60)
                         }) {

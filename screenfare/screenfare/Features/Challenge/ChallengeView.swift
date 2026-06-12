@@ -24,6 +24,8 @@ struct ChallengeView: View {
 
     // Math challenge state
     @State private var userAnswer = ""
+    @State private var mathResult: MathChallengeResult? = nil
+    @FocusState private var isMathFocused: Bool
 
     // Typing challenge state
     @State private var typedText = ""
@@ -73,7 +75,7 @@ struct ChallengeView: View {
 
             VStack(spacing: 0) {
                 // Top bar: "Not now" + "Math · Medium"
-                HStack {
+                HStack(alignment: .center) {
                     Button {
                         dismiss()
                     } label: {
@@ -92,14 +94,16 @@ struct ChallengeView: View {
                     }
 
                     Spacer()
+                        .frame(maxWidth: .infinity) // Prevent excessive stretching
 
                     Text(isUnlocked ? "Done" : challengeLabel)
                         .font(.inter(12))
                         .foregroundColor(.focusMuted)
                 }
+                .frame(height: 44) // Fixed height to prevent stretching
                 .padding(.horizontal, 22)
-                .padding(.top, 72)
-                .padding(.bottom, 8)
+                .padding(.top, 60)
+                .padding(.bottom, 12)
 
                 // Title
                 HStack {
@@ -121,6 +125,7 @@ struct ChallengeView: View {
                 }
                 .foregroundColor(.focusInk)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true) // Prevent vertical stretching
                 .padding(.horizontal, 22)
                 .padding(.bottom, 16)
 
@@ -128,23 +133,24 @@ struct ChallengeView: View {
                 ShakeEffect(trigger: shakeCount) {
                     VStack(spacing: 0) {
                         // App info row
-                        HStack(spacing: 12) {
+                        HStack(spacing: 14) {
                             // Use Label from FamilyControls to show actual blocked app
                             ZStack(alignment: .bottomTrailing) {
                                 // Prefer the requested app, fallback to first blocked app
                                 if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
                                     Label(app)
                                         .labelStyle(.iconOnly)
-                                        .frame(width: 36, height: 36)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .scaleEffect(1.6) // Scale up the FamilyControls icon
+                                        .frame(width: 58, height: 58) // Frame to contain the scaled icon
+                                        .clipShape(RoundedRectangle(cornerRadius: 14))
                                 } else {
                                     // Fallback if no apps available
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: 14)
                                         .fill(Color.focusAccent)
-                                        .frame(width: 36, height: 36)
+                                        .frame(width: 58, height: 58)
                                         .overlay(
                                             Image(systemName: "app.fill")
-                                                .font(.system(size: 16))
+                                                .font(.system(size: 26))
                                                 .foregroundColor(.white)
                                         )
                                 }
@@ -152,36 +158,30 @@ struct ChallengeView: View {
                                 // Lock badge
                                 Circle()
                                     .fill(Color.focusBg)
-                                    .frame(width: 18, height: 18)
+                                    .frame(width: 24, height: 24)
                                     .overlay(
                                         Image(systemName: "lock.fill")
-                                            .font(.system(size: 9))
+                                            .font(.system(size: 12))
                                             .foregroundColor(.focusInk)
                                     )
-                                    .offset(x: 4, y: 4)
+                                    .offset(x: 7, y: 7)
                             }
 
-                            VStack(alignment: .leading, spacing: 1) {
-                                // Prefer the requested app, fallback to first blocked app
-                                if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
-                                    Label(app)
-                                        .labelStyle(.titleOnly)
-                                        .font(.inter(15, weight: .semibold))
-                                        .foregroundColor(.focusInk)
-                                } else {
-                                    Text("Blocked App")
-                                        .font(.inter(15, weight: .semibold))
-                                        .foregroundColor(.focusInk)
-                                }
+                            VStack(alignment: .leading, spacing: 2) {
+                                // Use generic title instead of app name
+                                Text("Blocked App")
+                                    .font(.inter(16, weight: .semibold))
+                                    .foregroundColor(.focusInk)
+
                                 Text(isUnlocked ? "Unlocked for \(settings.unlockDurationText)" : "Solve to unlock for \(settings.unlockDurationText)")
-                                    .font(.inter(12))
+                                    .font(.inter(13))
                                     .foregroundColor(.focusMuted)
                             }
 
                             Spacer()
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 20)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 18)
 
                         Divider()
                             .background(Color.focusLine)
@@ -255,8 +255,9 @@ struct ChallengeView: View {
                 .padding(.top, 12)
 
                 Spacer()
+                    .frame(maxHeight: 100) // Limit spacer expansion to prevent stretching
 
-                // Footer: Keypad / Button
+                // Footer: Button (only for non-math challenges and unlocked state)
                 VStack {
                     if isUnlocked {
                         Button {
@@ -271,14 +272,11 @@ struct ChallengeView: View {
                                 .background(Color.focusInk)
                                 .cornerRadius(16)
                         }
-                    } else {
+                    } else if challengeType != .math {
+                        // Math challenge has its own inline button, so only show footer for typing/memory
                         switch challengeType {
                         case .math:
-                            CustomKeypad(
-                                input: $userAnswer,
-                                onSubmit: checkMathAnswer,
-                                canSubmit: !userAnswer.isEmpty && !showingResult
-                            )
+                            EmptyView()
                         case .typing:
                             Button {
                                 checkTypingAnswer()
@@ -321,6 +319,19 @@ struct ChallengeView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: showingResult)
         .animation(.easeInOut(duration: 0.2), value: isUnlocked)
+        .onAppear {
+            // Auto-focus the appropriate field when challenge appears
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                switch challengeType {
+                case .math:
+                    isMathFocused = true
+                case .typing:
+                    isTypingFocused = true
+                case .memory:
+                    break // No keyboard for memory challenge
+                }
+            }
+        }
     }
 
     private var challengeLabel: String {
@@ -359,57 +370,14 @@ struct ChallengeView: View {
 
     @ViewBuilder
     private func mathChallengeContent() -> some View {
-        VStack(spacing: 0) {
-            // Dark problem block
-            VStack(spacing: 14) {
-                Text(attempts > 0 ? "Attempt \(attempts + 1) · solve to continue" : "Solve to continue")
-                    .font(.inter(10, weight: .regular))
-                    .foregroundColor(.white.opacity(0.5))
-                    .tracking(1.6)
-                    .textCase(.uppercase)
-
-                Text(mathChallenge?.questionText ?? "")
-                    .font(.instrumentSerif(46))
-                    .foregroundColor(.white)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 22)
-            .background(Color.focusInk)
-            .cornerRadius(16)
-            .padding(.horizontal, 14)
-
-            // Answer input
-            HStack {
-                Spacer()
-
-                if userAnswer.isEmpty {
-                    Text("Type the answer")
-                        .font(.inter(15, weight: .regular))
-                        .foregroundColor(Color.focusInk.opacity(0.28))
-                } else {
-                    Text(userAnswer)
-                        .font(.system(size: 24, weight: .semibold, design: .default))
-                        .foregroundColor(.focusInk)
-                    + Text("|")
-                        .font(.system(size: 24, weight: .ultraLight))
-                        .foregroundColor(.focusInk.opacity(0.3))
-                }
-
-                Spacer()
-            }
-            .frame(height: 54)
-            .background(showingResult && !isCorrect ? Color(red: 0.975, green: 0.95, blue: 0.94) : Color.focusInk.opacity(0.02))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(
-                        showingResult && !isCorrect ? Color(red: 0.9, green: 0.5, blue: 0.4) :
-                        !userAnswer.isEmpty ? Color.focusInk : Color.focusLine,
-                        lineWidth: 1.5
-                    )
+        if let challenge = mathChallenge {
+            MathChallengeContent(
+                challenge: challenge,
+                userAnswer: $userAnswer,
+                result: $mathResult,
+                isFocused: $isMathFocused,
+                onSubmit: checkMathAnswer
             )
-            .cornerRadius(14)
-            .padding(.top, 12)
-            .padding(.horizontal, 14)
         }
     }
 
@@ -457,16 +425,15 @@ struct ChallengeView: View {
             return
         }
 
-        isCorrect = challenge.isCorrect(answer)
-        showingResult = true
+        let correct = challenge.isCorrect(answer)
+        mathResult = correct ? .correct : .wrong
 
-        if isCorrect {
+        if correct {
             unlockApp(eventType: .mathChallenge)
         } else {
-            handleIncorrectAnswer {
-                mathChallenge = MathChallenge(difficulty: settings.challengeDifficulty)
-                userAnswer = ""
-            }
+            attempts += 1
+            shakeCount += 1
+            // Don't reset - let the user try again with feedback
         }
     }
 
