@@ -61,8 +61,8 @@ struct ChallengeView: View {
     @State private var passStubOffset: CGFloat = 0
     @State private var passStubScale: CGFloat = 1
 
-    // Countdown timer
-    @State private var remainingTime: TimeInterval = 0
+    // Countdown timer - now uses current time to calculate from expiry
+    @State private var currentTime = Date()
     @State private var countdownTimer: Timer?
 
     init(challengeType: ChallengeType? = nil) {
@@ -635,9 +635,16 @@ struct ChallengeView: View {
     }
 
     private func formatCountdown() -> String {
-        let seconds = Int(remainingTime)
-        let mm = seconds / 60
-        let ss = seconds % 60
+        // Get expiry time from blocking manager
+        guard let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first,
+              let appTokenData = try? JSONEncoder().encode(appToken),
+              let expiryTime = blockingManager.temporaryUnlocks[appTokenData] else {
+            return "0:00"
+        }
+
+        let remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
+        let mm = remainingSeconds / 60
+        let ss = remainingSeconds % 60
         return String(format: "%d:%02d", mm, ss)
     }
 
@@ -774,14 +781,10 @@ struct ChallengeView: View {
             duration: settings.unlockDuration
         )
 
-        // Start countdown
-        remainingTime = settings.unlockDuration
+        // Start countdown - update current time immediately and then every second
+        currentTime = Date()
         countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if remainingTime > 0 {
-                remainingTime -= 1
-            } else {
-                countdownTimer?.invalidate()
-            }
+            currentTime = Date()
         }
     }
 
