@@ -230,13 +230,13 @@ struct ChallengeTabView: View {
                         ConfigCard(type: selectedType, settings: settings, previewChallenges: $previewChallenges, typingChallenge: $typingChallenge, memoryChallenge: $memoryChallenge, isAnyFieldFocused: $isAnyFieldFocused, configViewCount: configViewCount)
                             .padding(.horizontal, 22)
 
-                        // Done button
+                        // Select/Done button
                         Button(action: {
                             isAnyFieldFocused = false
                             settings.challengeType = selectedType
                             view = .list
                         }) {
-                            Text("Done")
+                            Text(selectedType == settings.challengeType ? "Done" : "Select")
                                 .font(.inter(15, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)

@@ -26,18 +26,30 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
             return
         }
 
-        // Load all selected apps
-        guard let selectedAppsData = sharedDefaults.data(forKey: "com.screenfare.selectedApps"),
-              var selectedTokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: selectedAppsData) else {
-            print("[DeviceActivity] Failed to load selected apps")
-            return
+        // Load all selected apps and categories
+        var selectedTokens = Set<ApplicationToken>()
+        var selectedCategories = Set<ActivityCategoryToken>()
+
+        if let selectedAppsData = sharedDefaults.data(forKey: "com.screenfare.selectedApps"),
+           let tokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: selectedAppsData) {
+            selectedTokens = tokens
+        }
+
+        if let selectedCategoriesData = sharedDefaults.data(forKey: "com.screenfare.selectedCategories"),
+           let categories = try? JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: selectedCategoriesData) {
+            selectedCategories = categories
         }
 
         // REMOVE the unlocked app from shields so it can be accessed
         selectedTokens.remove(appToken)
         store.shield.applications = selectedTokens
 
-        print("[DeviceActivity] Removed app from shields, \(selectedTokens.count) apps still shielded")
+        // Reapply category shields (unchanged)
+        if !selectedCategories.isEmpty {
+            store.shield.applicationCategories = .specific(selectedCategories)
+        }
+
+        print("[DeviceActivity] Removed app from shields, \(selectedTokens.count) apps + \(selectedCategories.count) categories still shielded")
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
@@ -63,20 +75,32 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
             }
         }
 
-        // Load all selected apps and RE-ADD the app that was temporarily unlocked
-        guard let selectedAppsData = sharedDefaults.data(forKey: "com.screenfare.selectedApps"),
-              let selectedTokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: selectedAppsData) else {
-            print("[DeviceActivity] Failed to load selected apps")
-            return
+        // Load all selected apps and categories
+        var selectedTokens = Set<ApplicationToken>()
+        var selectedCategories = Set<ActivityCategoryToken>()
+
+        if let selectedAppsData = sharedDefaults.data(forKey: "com.screenfare.selectedApps"),
+           let tokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: selectedAppsData) {
+            selectedTokens = tokens
+        }
+
+        if let selectedCategoriesData = sharedDefaults.data(forKey: "com.screenfare.selectedCategories"),
+           let categories = try? JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: selectedCategoriesData) {
+            selectedCategories = categories
         }
 
         // Re-apply ALL shields (including the one that just expired)
         store.shield.applications = selectedTokens
 
+        // Reapply category shields
+        if !selectedCategories.isEmpty {
+            store.shield.applicationCategories = .specific(selectedCategories)
+        }
+
         // Clean up schedule data
         sharedDefaults.removeObject(forKey: "deviceActivity.\(activity.rawValue).appToken")
         sharedDefaults.synchronize()
 
-        print("[DeviceActivity] Re-added app to shields, \(selectedTokens.count) apps now shielded")
+        print("[DeviceActivity] Re-added app to shields, \(selectedTokens.count) apps + \(selectedCategories.count) categories now shielded")
     }
 }

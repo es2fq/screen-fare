@@ -20,6 +20,7 @@ struct ContentView: View {
         Group {
             if settings.hasCompletedOnboarding {
                 MainTabView(selectedTab: $selectedTab)
+                    .environment(\.selectedTab, $selectedTab)
                     .sheet(isPresented: $showingChallenge) {
                         ChallengeView()
                             .environment(\.selectedTab, $selectedTab)

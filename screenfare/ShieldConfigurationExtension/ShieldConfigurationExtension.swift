@@ -20,8 +20,25 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             return ShieldConfiguration()
         }
 
-        // Note: Block counting happens in ShieldActionExtension
+        return createCustomShieldConfiguration()
+    }
 
+    override func configuration(shielding application: Application, in category: ActivityCategory) -> ShieldConfiguration {
+        // Apps blocked via category shield
+        // Check if the category itself is temporarily unlocked
+        if isCategoryTemporarilyUnlocked(category) {
+            return ShieldConfiguration()
+        }
+
+        // Check if this specific app has an active temporary unlock
+        if isAppTemporarilyUnlocked(application) {
+            return ShieldConfiguration()
+        }
+
+        return createCustomShieldConfiguration()
+    }
+
+    private func createCustomShieldConfiguration() -> ShieldConfiguration {
         // Read unlock duration from App Group
         let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
         let unlockDuration = sharedDefaults?.double(forKey: "unlockDuration") ?? 1800 // Default 30 minutes
@@ -95,6 +112,24 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
         // Check if this specific app has an active unlock
         guard let appTokenData = try? JSONEncoder().encode(application.token),
               let expiryTime = unlocks[appTokenData] else {
+            return false
+        }
+
+        let now = Date()
+        return now < expiryTime
+    }
+
+    private func isCategoryTemporarilyUnlocked(_ category: ActivityCategory) -> Bool {
+        // Load temporary category unlocks from shared storage
+        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
+              let data = sharedDefaults.data(forKey: "com.screenfare.temporaryCategoryUnlocks"),
+              let unlocks = try? JSONDecoder().decode([Data: Date].self, from: data) else {
+            return false
+        }
+
+        // Check if this specific category has an active unlock
+        guard let categoryTokenData = try? JSONEncoder().encode(category.token),
+              let expiryTime = unlocks[categoryTokenData] else {
             return false
         }
 

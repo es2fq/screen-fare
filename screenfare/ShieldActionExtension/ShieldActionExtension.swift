@@ -17,17 +17,42 @@ class ShieldActionExtension: ShieldActionDelegate {
     override func handle(action: ShieldAction, for application: ApplicationToken, completionHandler: @escaping (ShieldActionResponse) -> Void) {
         // Record block attempt (user saw the shield)
         recordBlockAttempt()
-        recordBlockedEvent(for: application)
-
 
         switch action {
         case .primaryButtonPressed:
+            // User clicked "Start Challenge" - don't record event yet, wait for ChallengeView to appear
             markUnlockRequested(for: application)
             sendUnlockNotification()
             // Keep shield open - user must complete challenge in main app
             completionHandler(.defer)
 
         case .secondaryButtonPressed:
+            // User clicked "Not Now" - record walked away event
+            recordWalkedAwayEvent(for: application)
+            completionHandler(.close)
+
+        @unknown default:
+            completionHandler(.close)
+        }
+    }
+
+    override func handle(action: ShieldAction, for category: ActivityCategoryToken, completionHandler: @escaping (ShieldActionResponse) -> Void) {
+        // Record block attempt (user saw the shield)
+        recordBlockAttempt()
+
+        switch action {
+        case .primaryButtonPressed:
+            // User clicked "Start Challenge" on a category-blocked app
+            // Note: We don't have the specific ApplicationToken here, only the category
+            // Store the category token so the main app knows which category to unlock
+            markCategoryUnlockRequested(for: category)
+            sendUnlockNotification()
+            // Keep shield open - user must complete challenge in main app
+            completionHandler(.defer)
+
+        case .secondaryButtonPressed:
+            // User clicked "Not Now" - record walked away event
+            recordWalkedAwayForCategory(for: category)
             completionHandler(.close)
 
         @unknown default:
@@ -48,6 +73,28 @@ class ShieldActionExtension: ShieldActionDelegate {
         if let data = try? JSONEncoder().encode(application) {
             sharedDefaults.set(data, forKey: "com.screenfare.requestedAppToken")
         }
+
+        // Clear any category request since this is an app-specific request
+        sharedDefaults.removeObject(forKey: "com.screenfare.requestedCategoryToken")
+
+        sharedDefaults.synchronize()
+    }
+
+    private func markCategoryUnlockRequested(for category: ActivityCategoryToken) {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
+            return
+        }
+
+        // Store that an unlock was requested
+        sharedDefaults.set(true, forKey: "com.screenfare.unlockRequested")
+
+        // Store the CategoryToken data
+        if let data = try? JSONEncoder().encode(category) {
+            sharedDefaults.set(data, forKey: "com.screenfare.requestedCategoryToken")
+        }
+
+        // Clear any app request since this is a category request
+        sharedDefaults.removeObject(forKey: "com.screenfare.requestedAppToken")
 
         sharedDefaults.synchronize()
     }
@@ -115,7 +162,7 @@ class ShieldActionExtension: ShieldActionDelegate {
         return formatter.string(from: Date())
     }
 
-    private func recordBlockedEvent(for application: ApplicationToken) {
+    private func recordWalkedAwayEvent(for application: ApplicationToken) {
         guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
               let appTokenData = try? JSONEncoder().encode(application) else {
             return
@@ -123,13 +170,25 @@ class ShieldActionExtension: ShieldActionDelegate {
 
         let storageKey = "com.screenfare.pendingHistoryEvents"
 
+        // Read challenge type from settings
+        let challengeTypeRaw = sharedDefaults.string(forKey: "challengeType") ?? "math"
+        let challengeTypeName: String = {
+            switch challengeTypeRaw {
+            case "math": return "Math"
+            case "typing": return "Typing"
+            case "memory": return "Memory"
+            default: return "Math"
+            }
+        }()
+
         // Create new history event
         let event = HistoryEvent(
             id: UUID(),
             appTokenData: appTokenData,
             timestamp: Date(),
-            eventType: .blocked,
-            duration: 0
+            eventType: .walkedAway,
+            duration: 0,
+            challengeType: challengeTypeName
         )
 
         // Load existing pending events
@@ -148,6 +207,18 @@ class ShieldActionExtension: ShieldActionDelegate {
             sharedDefaults.synchronize()
         }
     }
+
+    private func recordWalkedAwayForCategory(for category: ActivityCategoryToken) {
+        // For category blocks, we don't have the specific app token
+        // Just increment the walked away counter without recording to history
+        // (since we can't show which specific app in the category was accessed)
+        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
+            return
+        }
+
+        // Could track category-level stats here if needed in the future
+        print("[ShieldAction] User walked away from category-blocked app")
+    }
 }
 
 // Local copy of HistoryEvent for the extension
@@ -157,11 +228,12 @@ private struct HistoryEvent: Codable, Identifiable {
     let timestamp: Date
     let eventType: EventType
     let duration: TimeInterval
+    let challengeType: String?
 
     enum EventType: String, Codable {
-        case mathChallenge = "Unlocked · math solved"
-        case dismissed = "Block dismissed"
-        case blocked = "App blocked"
+        case farePaid = "Fare paid"
+        case walkedAway = "Walked away"
+        case challengeStarted = "Challenge started"
     }
 }
 

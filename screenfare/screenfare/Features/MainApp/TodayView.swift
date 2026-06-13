@@ -17,6 +17,7 @@ struct TodayView: View {
     @StateObject private var historyManager = HistoryManager.shared
     @StateObject private var statsManager = StatsManager.shared
     @State private var currentTime = Date()
+    @Environment(\.selectedTab) private var selectedTab
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -58,10 +59,10 @@ struct TodayView: View {
                         )
 
                     VStack(alignment: .leading, spacing: 0) {
-                        // Top row: "Focus is on/off" + Toggle
+                        // Top row: "Screen Fare is on/off" + Toggle
                         HStack(alignment: .top) {
                             VStack(alignment: .leading, spacing: 6) {
-                                Text("Focus is")
+                                Text("Screen Fare is")
                                     .font(.inter(11))
                                     .foregroundColor(blockingManager.isBlocking ? Color.white.opacity(0.6) : Color.focusInk.opacity(0.5))
                                     .tracking(1.2)
@@ -122,41 +123,48 @@ struct TodayView: View {
                 SectionHeader(title: "Active rule")
                     .padding(.top, 22)
 
-                AppCard {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.focusInk.opacity(0.06))
-                                .frame(width: 36, height: 36)
+                Button(action: {
+                    // Navigate to Challenge tab (index 2)
+                    selectedTab?.wrappedValue = 2
+                }) {
+                    AppCard {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.focusInk.opacity(0.06))
+                                    .frame(width: 36, height: 36)
 
-                            Image(systemName: "number")
-                                .font(.system(size: 18))
-                                .foregroundColor(.focusInk)
-                        }
+                                Image(systemName: challengeTypeIcon)
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.focusInk)
+                            }
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Math · \(difficultyText)")
-                                .font(.inter(15, weight: .medium))
-                                .foregroundColor(.focusInk)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(challengeTypeName) · \(difficultyText)")
+                                    .font(.inter(15, weight: .medium))
+                                    .foregroundColor(.focusInk)
 
-                            Text("Unlock for \(settings.unlockDurationText) after solving")
-                                .font(.inter(12.5))
+                                Text("Unlock for \(settings.unlockDurationText) after solving")
+                                    .font(.inter(12.5))
+                                    .foregroundColor(.focusMuted)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .regular))
                                 .foregroundColor(.focusMuted)
                         }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.focusMuted)
+                        .padding(.vertical, 14)
                     }
-                    .padding(.vertical, 14)
                 }
+                .buttonStyle(.plain)
 
-                // Unlocked now section - show unlocked apps with countdown
-                if !blockingManager.temporaryUnlocks.isEmpty {
+                // Unlocked now section - show unlocked apps and categories with countdown
+                if !blockingManager.temporaryUnlocks.isEmpty || !blockingManager.temporaryCategoryUnlocks.isEmpty {
                     UnlockedNowSection(
                         temporaryUnlocks: blockingManager.temporaryUnlocks,
+                        temporaryCategoryUnlocks: blockingManager.temporaryCategoryUnlocks,
                         currentTime: currentTime,
                         onLock: { appData in
                             blockingManager.relockApp(appData: appData)
@@ -185,9 +193,12 @@ struct TodayView: View {
                             ForEach(Array(historyManager.recentEvents.prefix(3).enumerated()), id: \.element.id) { index, event in
                                 VStack(spacing: 0) {
                                     RecentActivityRow(
-                                        app: try? JSONDecoder().decode(ApplicationToken.self, from: event.appTokenData),
+                                        app: event.appTokenData.flatMap { try? JSONDecoder().decode(ApplicationToken.self, from: $0) },
+                                        category: event.categoryTokenData.flatMap { try? JSONDecoder().decode(ActivityCategoryToken.self, from: $0) },
                                         action: event.eventType.rawValue,
-                                        time: formatTime(event.timestamp)
+                                        time: formatTime(event.timestamp),
+                                        challengeType: event.challengeType,
+                                        duration: event.duration
                                     )
 
                                     if index < historyManager.recentEvents.prefix(3).count - 1 {
@@ -223,13 +234,44 @@ struct TodayView: View {
         }
     }
 
+    private var challengeTypeName: String {
+        switch settings.challengeType {
+        case .math: return "Math"
+        case .typing: return "Typing"
+        case .memory: return "Memory"
+        }
+    }
+
+    private var challengeTypeIcon: String {
+        switch settings.challengeType {
+        case .math: return "plus.forwardslash.minus"
+        case .typing: return "keyboard"
+        case .memory: return "brain.head.profile"
+        }
+    }
+
     private var difficultyText: String {
-        switch settings.challengeDifficulty {
-        case .veryEasy: return "Very Easy"
-        case .easy: return "Easy"
-        case .medium: return "Medium"
-        case .hard: return "Hard"
-        case .veryHard: return "Very Hard"
+        switch settings.challengeType {
+        case .math:
+            switch settings.challengeDifficulty {
+            case .veryEasy: return "Very Easy"
+            case .easy: return "Easy"
+            case .medium: return "Medium"
+            case .hard: return "Hard"
+            case .veryHard: return "Very Hard"
+            }
+        case .typing:
+            switch settings.typingDifficulty {
+            case .shortest: return "Shortest"
+            case .short: return "Short"
+            case .medium: return "Medium"
+            case .long: return "Long"
+            case .longest: return "Longest"
+            }
+        case .memory:
+            let gridSize = settings.memoryGridSize
+            let tileCount = settings.memoryTilesToMatch
+            return "\(gridSize)×\(gridSize) · \(tileCount) tiles"
         }
     }
 
@@ -298,30 +340,47 @@ struct StatPill: View {
 /// Recent activity row
 struct RecentActivityRow: View {
     let app: ApplicationToken?
+    let category: ActivityCategoryToken?
     let action: String
     let time: String
+    let challengeType: String?
+    let duration: TimeInterval
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            // App icon only
-            if let app = app {
+            // App or Category icon (34px to match HTML design)
+            if let category = category {
+                Label(category)
+                    .labelStyle(.iconOnly)
+                    .frame(width: 34, height: 34)
+                    .scaleEffect(1.3)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else if let app = app {
                 Label(app)
                     .labelStyle(.iconOnly)
-                    .frame(width: 40, height: 40)
-                    .scaleEffect(1.5)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .frame(width: 34, height: 34)
+                    .scaleEffect(1.3)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color.focusInk.opacity(0.06))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 34, height: 34)
             }
 
-            // Action text (what happened)
-            Text(action)
-                .font(.inter(15, weight: .medium))
-                .foregroundColor(.focusInk)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                // Main label: "Fare paid" or "Walked away"
+                Text(mainLabel)
+                    .font(.inter(15, weight: .medium))
+                    .foregroundColor(isWalkedAway ? .focusAccent : .focusInk)
+                    .lineLimit(1)
+
+                // Subtitle
+                Text(subtitle)
+                    .font(.inter(12.5))
+                    .foregroundColor(.focusMuted)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             // Time
             Text(time)
@@ -330,6 +389,47 @@ struct RecentActivityRow: View {
                 .monospacedDigit()
         }
         .padding(.vertical, 14)
+    }
+
+    private var isWalkedAway: Bool {
+        action == "Walked away"
+    }
+
+    private var mainLabel: String {
+        if action == "Walked away" {
+            return "Walked away"
+        } else if action == "Challenge started" {
+            return "Challenge started"
+        } else {
+            return "Fare paid"
+        }
+    }
+
+    private var subtitle: String {
+        let itemType = category != nil ? "category" : "app"
+
+        if action == "Walked away" {
+            return "Closed blocked \(itemType)"
+        } else if action == "Challenge started" {
+            // Show challenge type (e.g., "Math", "Typing", "Memory")
+            return challengeType ?? "Challenge"
+        } else {
+            // Format duration for fare paid
+            let minutes = Int(duration / 60)
+            let durationText: String
+            if minutes < 60 {
+                durationText = "\(minutes) min"
+            } else {
+                let hours = minutes / 60
+                let mins = minutes % 60
+                if mins == 0 {
+                    durationText = "\(hours) hr"
+                } else {
+                    durationText = "\(hours)h \(mins)m"
+                }
+            }
+            return "Unlocked \(itemType) for \(durationText)"
+        }
     }
 }
 
@@ -385,6 +485,7 @@ struct TemporaryUnlockRow: View {
 /// Design specs: unlocked.jsx → UnlockedNow (lines 140-161)
 struct UnlockedNowSection: View {
     let temporaryUnlocks: [Data: Date]
+    let temporaryCategoryUnlocks: [Data: Date]
     let currentTime: Date
     let onLock: (Data) -> Void
 
@@ -392,11 +493,24 @@ struct UnlockedNowSection: View {
         temporaryUnlocks.sorted(by: { $0.value < $1.value })
     }
 
+    private var sortedCategoryUnlocks: [(key: Data, value: Date)] {
+        temporaryCategoryUnlocks.sorted(by: { $0.value < $1.value })
+    }
+
+    private var totalCount: Int {
+        temporaryUnlocks.count + temporaryCategoryUnlocks.count
+    }
+
     private var hasWarning: Bool {
-        sortedUnlocks.contains { unlock in
+        let appWarning = sortedUnlocks.contains { unlock in
             let remaining = max(0, unlock.value.timeIntervalSince(currentTime))
             return remaining <= 60
         }
+        let categoryWarning = sortedCategoryUnlocks.contains { unlock in
+            let remaining = max(0, unlock.value.timeIntervalSince(currentTime))
+            return remaining <= 60
+        }
+        return appWarning || categoryWarning
     }
 
     var body: some View {
@@ -425,7 +539,7 @@ struct UnlockedNowSection: View {
 
                 Spacer()
 
-                Text("\(sortedUnlocks.count) \(sortedUnlocks.count == 1 ? "app" : "apps")")
+                Text("\(totalCount) \(totalCount == 1 ? "item" : "items")")
                     .font(.inter(11.5))
                     .foregroundColor(.focusMuted)
                     .monospacedDigit()
@@ -435,6 +549,7 @@ struct UnlockedNowSection: View {
 
             // Unlocked session cards
             VStack(spacing: 10) {
+                // Display unlocked apps
                 ForEach(sortedUnlocks, id: \.key) { unlock in
                     if let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: unlock.key) {
                         let duration = AppBlockingManager.shared.unlockDurations[unlock.key] ?? 300
@@ -444,6 +559,22 @@ struct UnlockedNowSection: View {
                             totalDuration: duration,
                             currentTime: currentTime,
                             onLock: { onLock(unlock.key) }
+                        )
+                    }
+                }
+
+                // Display unlocked categories
+                ForEach(sortedCategoryUnlocks, id: \.key) { unlock in
+                    if let categoryToken = try? JSONDecoder().decode(ActivityCategoryToken.self, from: unlock.key) {
+                        let duration = AppBlockingManager.shared.unlockDurations[unlock.key] ?? 300
+                        UnlockedCategorySessionCard(
+                            category: categoryToken,
+                            expiryTime: unlock.value,
+                            totalDuration: duration,
+                            currentTime: currentTime,
+                            onLock: {
+                                AppBlockingManager.shared.relockCategory(categoryData: unlock.key)
+                            }
                         )
                     }
                 }
@@ -573,6 +704,132 @@ struct UnlockedSessionCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 18)
                 .stroke(isWarning ? Color.focusWarn.opacity(0.22) : Color.focusLine, lineWidth: 1)
+        )
+        .cornerRadius(18)
+    }
+
+    private func formatTimeRemaining() -> String {
+        let minutes = remainingSeconds / 60
+        let seconds = remainingSeconds % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+/// Individual unlocked category session card
+struct UnlockedCategorySessionCard: View {
+    let category: ActivityCategoryToken
+    let expiryTime: Date
+    let totalDuration: TimeInterval
+    let currentTime: Date
+    let onLock: () -> Void
+
+    private var remainingSeconds: Int {
+        max(0, Int(expiryTime.timeIntervalSince(currentTime)))
+    }
+
+    private var isWarning: Bool {
+        remainingSeconds <= 60
+    }
+
+    private var progress: Double {
+        let total = totalDuration
+        let remaining = expiryTime.timeIntervalSince(currentTime)
+        return max(0, min(1, remaining / total))
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Category info row
+            HStack(spacing: 14) {
+                Label(category)
+                    .labelStyle(.iconOnly)
+                    .scaleEffect(1.6)
+                    .frame(width: 52, height: 52)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Unlocked Category")
+                        .font(.inter(15, weight: .semibold))
+                        .foregroundColor(.focusInk)
+                        .lineLimit(1)
+
+                    Text(isWarning ? "Locking soon" : "Open now")
+                        .font(.inter(12.5, weight: isWarning ? .medium : .regular))
+                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusMuted)
+                }
+
+                Spacer(minLength: 0)
+
+                // Lock now button
+                Button(action: onLock) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                        Text("Lock now")
+                            .font(.inter(12.5, weight: .semibold))
+                    }
+                    .foregroundColor(isWarning ? .white : .focusInk)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 7)
+                    .background(isWarning ? Color.focusInk : Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isWarning ? Color.clear : Color.focusLine, lineWidth: 1)
+                    )
+                    .cornerRadius(16)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+
+            // Timer and window info
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(formatTimeRemaining())
+                        .font(.instrumentSerif(31))
+                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusInk)
+                        .monospacedDigit()
+                        .modifier(isWarning ? AnyViewModifier(WarningPulseModifier()) : AnyViewModifier(EmptyModifier()))
+
+                    Text(" left")
+                        .font(.instrumentSerif(15, italic: true))
+                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusMuted)
+                        .padding(.leading, 7)
+                }
+
+                Spacer()
+
+                Text("\(Int(totalDuration / 60)) min window")
+                    .font(.inter(10.5))
+                    .foregroundColor(.focusMuted)
+                    .tracking(0.9)
+                    .textCase(.uppercase)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 15)
+
+            // Progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.focusLine)
+                        .frame(height: 4)
+
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(isWarning ? Color.focusWarn : Color.focusAccent)
+                        .frame(width: geometry.size.width * progress, height: 4)
+                }
+            }
+            .frame(height: 4)
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 16)
+        }
+        .background(Color.white)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(isWarning ? Color.focusWarn : Color.focusLine, lineWidth: isWarning ? 1.5 : 1)
         )
         .cornerRadius(18)
     }

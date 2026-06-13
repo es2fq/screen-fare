@@ -27,6 +27,7 @@ struct ChallengeView: View {
     @State private var phase: ChallengePhase = .challenge
     @State private var challengeType: ChallengeType
     @State private var requestedApp: ApplicationToken?
+    @State private var requestedCategory: ActivityCategoryToken?
 
     // Math challenge state
     @State private var mathChallenge: MathChallenge?
@@ -72,10 +73,17 @@ struct ChallengeView: View {
         _challengeType = State(initialValue: selectedType)
 
         // Load requested app token
-        if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
-           let data = sharedDefaults.data(forKey: "com.screenfare.requestedAppToken"),
-           let token = try? JSONDecoder().decode(ApplicationToken.self, from: data) {
-            _requestedApp = State(initialValue: token)
+        if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") {
+            if let data = sharedDefaults.data(forKey: "com.screenfare.requestedAppToken"),
+               let token = try? JSONDecoder().decode(ApplicationToken.self, from: data) {
+                _requestedApp = State(initialValue: token)
+            }
+
+            // Load requested category token
+            if let data = sharedDefaults.data(forKey: "com.screenfare.requestedCategoryToken"),
+               let token = try? JSONDecoder().decode(ActivityCategoryToken.self, from: data) {
+                _requestedCategory = State(initialValue: token)
+            }
         }
 
         // Initialize challenge
@@ -171,6 +179,24 @@ struct ChallengeView: View {
             if challengeType == .memory {
                 startMemoryCountdown()
             }
+
+            // Record challenge started event when the challenge view actually appears
+            if let appToken = requestedApp {
+                let appTokenData = try? JSONEncoder().encode(appToken)
+                let challengeTypeName: String = {
+                    switch challengeType {
+                    case .math: return "Math"
+                    case .typing: return "Typing"
+                    case .memory: return "Memory"
+                    }
+                }()
+                historyManager.recordEvent(
+                    appTokenData: appTokenData,
+                    eventType: .challengeStarted,
+                    duration: 0,
+                    challengeType: challengeTypeName
+                )
+            }
         }
     }
 
@@ -208,8 +234,13 @@ struct ChallengeView: View {
 
                 // App info row
                 HStack(alignment: .center, spacing: 11) {
-                    // App icon
-                    if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
+                    // App or Category icon
+                    if let category = requestedCategory {
+                        Label(category)
+                            .labelStyle(.iconOnly)
+                            .scaleEffect(1.35)
+                            .frame(width: 34, height: 34)
+                    } else if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
                         Label(app)
                             .labelStyle(.iconOnly)
                             .scaleEffect(1.35)
@@ -217,7 +248,7 @@ struct ChallengeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Blocked App")
+                        Text(requestedCategory != nil ? "Blocked Category" : "Blocked App")
                             .font(.inter(15, weight: .semibold))
                             .foregroundColor(.focusInk)
 
@@ -316,7 +347,12 @@ struct ChallengeView: View {
 
                 // App info
                 HStack(spacing: 11) {
-                    if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
+                    if let category = requestedCategory {
+                        Label(category)
+                            .labelStyle(.iconOnly)
+                            .scaleEffect(1.35)
+                            .frame(width: 34, height: 34)
+                    } else if let app = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first {
                         Label(app)
                             .labelStyle(.iconOnly)
                             .scaleEffect(1.35)
@@ -324,7 +360,7 @@ struct ChallengeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Blocked App")
+                        Text(requestedCategory != nil ? "Blocked Category" : "Blocked App")
                             .font(.inter(15, weight: .semibold))
                             .foregroundColor(.focusInk)
 
@@ -637,17 +673,33 @@ struct ChallengeView: View {
     }
 
     private func formatCountdown() -> String {
-        // Get expiry time from blocking manager
-        guard let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first,
-              let appTokenData = try? JSONEncoder().encode(appToken),
-              let expiryTime = blockingManager.temporaryUnlocks[appTokenData] else {
-            return "0:00"
+        // Check if this is a category unlock
+        if let categoryToken = requestedCategory,
+           let categoryTokenData = try? JSONEncoder().encode(categoryToken) {
+            if let expiryTime = blockingManager.temporaryCategoryUnlocks[categoryTokenData] {
+                let remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
+                let mm = remainingSeconds / 60
+                let ss = remainingSeconds % 60
+                return String(format: "%d:%02d", mm, ss)
+            } else {
+                print("[ChallengeView] ⚠️ Category token exists but not in temporaryCategoryUnlocks")
+                print("[ChallengeView] temporaryCategoryUnlocks count: \(blockingManager.temporaryCategoryUnlocks.count)")
+                return "0:00"
+            }
         }
 
-        let remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
-        let mm = remainingSeconds / 60
-        let ss = remainingSeconds % 60
-        return String(format: "%d:%02d", mm, ss)
+        // Otherwise check for app unlock
+        if let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first,
+           let appTokenData = try? JSONEncoder().encode(appToken),
+           let expiryTime = blockingManager.temporaryUnlocks[appTokenData] {
+            let remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
+            let mm = remainingSeconds / 60
+            let ss = remainingSeconds % 60
+            return String(format: "%d:%02d", mm, ss)
+        }
+
+        print("[ChallengeView] ⚠️ No valid unlock found for countdown")
+        return "0:00"
     }
 
     // MARK: - Actions
@@ -765,23 +817,49 @@ struct ChallengeView: View {
     }
 
     private func unlockApp() {
-        let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first
-        blockingManager.temporaryUnlock(appToken: appToken, duration: settings.unlockDuration)
+        // Check if this is a category unlock or app unlock
+        if let categoryToken = requestedCategory {
+            // Unlock the entire category
+            blockingManager.temporaryUnlockCategory(categoryToken: categoryToken, duration: settings.unlockDuration)
 
-        let appTokenData = appToken.flatMap { try? JSONEncoder().encode($0) }
-        let eventType: HistoryEvent.EventType = {
-            switch challengeType {
-            case .math: return .mathChallenge
-            case .typing: return .mathChallenge // Placeholder
-            case .memory: return .mathChallenge // Placeholder
-            }
-        }()
+            let categoryTokenData = try? JSONEncoder().encode(categoryToken)
 
-        historyManager.recordEvent(
-            appTokenData: appTokenData,
-            eventType: eventType,
-            duration: settings.unlockDuration
-        )
+            let challengeTypeName: String = {
+                switch challengeType {
+                case .math: return "Math"
+                case .typing: return "Typing"
+                case .memory: return "Memory"
+                }
+            }()
+
+            // Record category unlock to history
+            historyManager.replaceChallengeStartedWithFarePaid(
+                categoryTokenData: categoryTokenData,
+                duration: settings.unlockDuration,
+                challengeType: challengeTypeName
+            )
+        } else {
+            // Unlock specific app
+            let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first
+            blockingManager.temporaryUnlock(appToken: appToken, duration: settings.unlockDuration)
+
+            let appTokenData = appToken.flatMap { try? JSONEncoder().encode($0) }
+
+            let challengeTypeName: String = {
+                switch challengeType {
+                case .math: return "Math"
+                case .typing: return "Typing"
+                case .memory: return "Memory"
+                }
+            }()
+
+            // Replace challengeStarted event with farePaid event
+            historyManager.replaceChallengeStartedWithFarePaid(
+                appTokenData: appTokenData,
+                duration: settings.unlockDuration,
+                challengeType: challengeTypeName
+            )
+        }
 
         // Start countdown - update current time immediately and then every second
         currentTime = Date()

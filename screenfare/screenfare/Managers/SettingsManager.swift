@@ -58,6 +58,12 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var strictModeEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(strictModeEnabled, forKey: "strictModeEnabled")
+        }
+    }
+
     private init() {
         // Load saved settings or use defaults
         let savedDuration = UserDefaults.standard.double(forKey: "unlockDuration")
@@ -91,6 +97,8 @@ class SettingsManager: ObservableObject {
         }
 
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
+        self.strictModeEnabled = UserDefaults.standard.bool(forKey: "strictModeEnabled")
 
         // Initial sync to App Group
         if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") {

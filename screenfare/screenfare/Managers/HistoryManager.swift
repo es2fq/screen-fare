@@ -12,23 +12,32 @@ import FamilyControls
 
 struct HistoryEvent: Codable, Identifiable {
     let id: UUID
-    let appTokenData: Data  // Encoded ApplicationToken
+    let appTokenData: Data?  // Encoded ApplicationToken (optional for categories)
+    let categoryTokenData: Data?  // Encoded ActivityCategoryToken (optional for apps)
     let timestamp: Date
     let eventType: EventType
     let duration: TimeInterval
+    let challengeType: String? // e.g., "Math", "Typing", "Memory"
 
     enum EventType: String, Codable {
-        case mathChallenge = "Unlocked · math solved"
-        case dismissed = "Block dismissed"
-        case blocked = "App blocked"
+        case farePaid = "Fare paid"
+        case walkedAway = "Walked away"
+        case challengeStarted = "Challenge started"
     }
 
     enum CodingKeys: String, CodingKey {
         case id
         case appTokenData
+        case categoryTokenData
         case timestamp
         case eventType
         case duration
+        case challengeType
+    }
+
+    // Helper computed property
+    var isCategory: Bool {
+        categoryTokenData != nil
     }
 }
 
@@ -46,15 +55,18 @@ class HistoryManager: ObservableObject {
         loadHistory()
     }
 
-    func recordEvent(appTokenData: Data?, eventType: HistoryEvent.EventType, duration: TimeInterval = 0) {
-        guard let appTokenData = appTokenData, !appTokenData.isEmpty else { return }
+    func recordEvent(appTokenData: Data? = nil, categoryTokenData: Data? = nil, eventType: HistoryEvent.EventType, duration: TimeInterval = 0, challengeType: String? = nil) {
+        // Must have either app or category data
+        guard (appTokenData != nil && !appTokenData!.isEmpty) || (categoryTokenData != nil && !categoryTokenData!.isEmpty) else { return }
 
         let event = HistoryEvent(
             id: UUID(),
             appTokenData: appTokenData,
+            categoryTokenData: categoryTokenData,
             timestamp: Date(),
             eventType: eventType,
-            duration: duration
+            duration: duration,
+            challengeType: challengeType
         )
 
         recentEvents.insert(event, at: 0)
@@ -66,11 +78,48 @@ class HistoryManager: ObservableObject {
 
         saveHistory()
 
-        // Record stats - only count fares paid for math challenges
+        // Record stats - only count fares paid
         // Time spent will be tracked when the unlock expires or is manually ended
-        if eventType == .mathChallenge {
+        if eventType == .farePaid {
             StatsManager.shared.recordChallengeSolved()
         }
+    }
+
+    func replaceChallengeStartedWithFarePaid(appTokenData: Data? = nil, categoryTokenData: Data? = nil, duration: TimeInterval, challengeType: String) {
+        // Must have either app or category data
+        guard (appTokenData != nil && !appTokenData!.isEmpty) || (categoryTokenData != nil && !categoryTokenData!.isEmpty) else { return }
+
+        // Find and remove the most recent challengeStarted event for this app/category
+        if let index = recentEvents.firstIndex(where: {
+            $0.eventType == .challengeStarted &&
+            (($0.appTokenData == appTokenData && appTokenData != nil) ||
+             ($0.categoryTokenData == categoryTokenData && categoryTokenData != nil))
+        }) {
+            recentEvents.remove(at: index)
+        }
+
+        // Add farePaid event
+        let event = HistoryEvent(
+            id: UUID(),
+            appTokenData: appTokenData,
+            categoryTokenData: categoryTokenData,
+            timestamp: Date(),
+            eventType: .farePaid,
+            duration: duration,
+            challengeType: challengeType
+        )
+
+        recentEvents.insert(event, at: 0)
+
+        // Keep only the most recent events
+        if recentEvents.count > maxEvents {
+            recentEvents = Array(recentEvents.prefix(maxEvents))
+        }
+
+        saveHistory()
+
+        // Record stats
+        StatsManager.shared.recordChallengeSolved()
     }
 
     func loadPendingEvents() {
