@@ -177,17 +177,14 @@ struct TodayView: View {
                 SectionHeader(title: "Recent")
                     .padding(.top, 22)
 
-                AppCard(padding: EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)) {
+                AppCard(padding: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)) {
                     if historyManager.recentEvents.isEmpty {
-                        // Empty state
-                        VStack(spacing: 8) {
-                            Text("Your recent activity will appear here")
-                                .font(.inter(13))
-                                .foregroundColor(.focusMuted)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        // Empty state - matches design from empty-states.jsx
+                        EmptyState(
+                            icon: EmptyStateIcons.recent(),
+                            title: Text("Nothing yet ") + Text("today.").font(.instrumentSerif(22, italic: true)),
+                            message: "Open or walk away from a blocked app and it'll show up here — with the time and what you chose."
+                        )
                     } else {
                         VStack(spacing: 0) {
                             ForEach(Array(historyManager.recentEvents.prefix(3).enumerated()), id: \.element.id) { index, event in
@@ -208,6 +205,7 @@ struct TodayView: View {
                                 }
                             }
                         }
+                        .padding(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                     }
                 }
 
@@ -554,7 +552,7 @@ struct UnlockedNowSection: View {
                     if let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: unlock.key) {
                         let duration = AppBlockingManager.shared.unlockDurations[unlock.key] ?? 300
                         UnlockedSessionCard(
-                            app: appToken,
+                            unlockType: .app(appToken),
                             expiryTime: unlock.value,
                             totalDuration: duration,
                             currentTime: currentTime,
@@ -567,8 +565,8 @@ struct UnlockedNowSection: View {
                 ForEach(sortedCategoryUnlocks, id: \.key) { unlock in
                     if let categoryToken = try? JSONDecoder().decode(ActivityCategoryToken.self, from: unlock.key) {
                         let duration = AppBlockingManager.shared.unlockDurations[unlock.key] ?? 300
-                        UnlockedCategorySessionCard(
-                            category: categoryToken,
+                        UnlockedSessionCard(
+                            unlockType: .category(categoryToken),
                             expiryTime: unlock.value,
                             totalDuration: duration,
                             currentTime: currentTime,
@@ -583,10 +581,15 @@ struct UnlockedNowSection: View {
     }
 }
 
-/// Individual unlocked session card
+/// Individual unlocked session card - handles both apps and categories
 /// Design specs: unlocked.jsx → UnlockedSession (lines 91-137)
 struct UnlockedSessionCard: View {
-    let app: ApplicationToken
+    enum UnlockType {
+        case app(ApplicationToken)
+        case category(ActivityCategoryToken)
+    }
+
+    let unlockType: UnlockType
     let expiryTime: Date
     let totalDuration: TimeInterval
     let currentTime: Date
@@ -606,23 +609,37 @@ struct UnlockedSessionCard: View {
         return max(0, min(1, remaining / total))
     }
 
+    private var isApp: Bool {
+        if case .app = unlockType { return true }
+        return false
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // App info row
+            // App/Category info row
             HStack(spacing: 14) {
-                Label(app)
-                    .labelStyle(.iconOnly)
-                    .scaleEffect(1.6) // Scale up the FamilyControls icon
-                    .frame(width: 52, height: 52) // Frame to contain the scaled icon
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                // Icon - works for both apps and categories
+                Group {
+                    switch unlockType {
+                    case .app(let token):
+                        Label(token)
+                            .labelStyle(.iconOnly)
+                    case .category(let token):
+                        Label(token)
+                            .labelStyle(.iconOnly)
+                    }
+                }
+                .scaleEffect(1.6)
+                .frame(width: 52, height: 52)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Unlocked App")
+                    Text(isWarning ? "Locking soon" : "Open now")
                         .font(.inter(15, weight: .semibold))
                         .foregroundColor(.focusInk)
                         .lineLimit(1)
 
-                    Text(isWarning ? "Locking soon" : "Open now")
+                    Text(isApp ? "App" : "Category")
                         .font(.inter(12.5, weight: isWarning ? .medium : .regular))
                         .foregroundColor(isWarning ? Color.focusWarn : Color.focusMuted)
                 }
@@ -704,132 +721,6 @@ struct UnlockedSessionCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 18)
                 .stroke(isWarning ? Color.focusWarn.opacity(0.22) : Color.focusLine, lineWidth: 1)
-        )
-        .cornerRadius(18)
-    }
-
-    private func formatTimeRemaining() -> String {
-        let minutes = remainingSeconds / 60
-        let seconds = remainingSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-}
-
-/// Individual unlocked category session card
-struct UnlockedCategorySessionCard: View {
-    let category: ActivityCategoryToken
-    let expiryTime: Date
-    let totalDuration: TimeInterval
-    let currentTime: Date
-    let onLock: () -> Void
-
-    private var remainingSeconds: Int {
-        max(0, Int(expiryTime.timeIntervalSince(currentTime)))
-    }
-
-    private var isWarning: Bool {
-        remainingSeconds <= 60
-    }
-
-    private var progress: Double {
-        let total = totalDuration
-        let remaining = expiryTime.timeIntervalSince(currentTime)
-        return max(0, min(1, remaining / total))
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Category info row
-            HStack(spacing: 14) {
-                Label(category)
-                    .labelStyle(.iconOnly)
-                    .scaleEffect(1.6)
-                    .frame(width: 52, height: 52)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Unlocked Category")
-                        .font(.inter(15, weight: .semibold))
-                        .foregroundColor(.focusInk)
-                        .lineLimit(1)
-
-                    Text(isWarning ? "Locking soon" : "Open now")
-                        .font(.inter(12.5, weight: isWarning ? .medium : .regular))
-                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusMuted)
-                }
-
-                Spacer(minLength: 0)
-
-                // Lock now button
-                Button(action: onLock) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 10))
-                        Text("Lock now")
-                            .font(.inter(12.5, weight: .semibold))
-                    }
-                    .foregroundColor(isWarning ? .white : .focusInk)
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 7)
-                    .background(isWarning ? Color.focusInk : Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(isWarning ? Color.clear : Color.focusLine, lineWidth: 1)
-                    )
-                    .cornerRadius(16)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-
-            // Timer and window info
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    Text(formatTimeRemaining())
-                        .font(.instrumentSerif(31))
-                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusInk)
-                        .monospacedDigit()
-                        .modifier(isWarning ? AnyViewModifier(WarningPulseModifier()) : AnyViewModifier(EmptyModifier()))
-
-                    Text(" left")
-                        .font(.instrumentSerif(15, italic: true))
-                        .foregroundColor(isWarning ? Color.focusWarn : Color.focusMuted)
-                        .padding(.leading, 7)
-                }
-
-                Spacer()
-
-                Text("\(Int(totalDuration / 60)) min window")
-                    .font(.inter(10.5))
-                    .foregroundColor(.focusMuted)
-                    .tracking(0.9)
-                    .textCase(.uppercase)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 15)
-
-            // Progress bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.focusLine)
-                        .frame(height: 4)
-
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(isWarning ? Color.focusWarn : Color.focusAccent)
-                        .frame(width: geometry.size.width * progress, height: 4)
-                }
-            }
-            .frame(height: 4)
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 16)
-        }
-        .background(Color.white)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(isWarning ? Color.focusWarn : Color.focusLine, lineWidth: isWarning ? 1.5 : 1)
         )
         .cornerRadius(18)
     }

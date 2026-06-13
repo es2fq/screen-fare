@@ -87,3 +87,97 @@ struct SectionTitle: View {
             .padding(.vertical, 8)
     }
 }
+
+// MARK: - Empty State
+
+/// Reusable empty state component matching design specs from empty-states.jsx
+/// Design: thin-stroke icon in a soft disc, Instrument Serif title, muted explanation
+struct EmptyState: View {
+    let icon: AnyView
+    let title: Text
+    let message: String
+    var padding: EdgeInsets = EdgeInsets(top: 36, leading: 22, bottom: 36, trailing: 22)
+
+    init(icon: AnyView, title: Text, message: String, padding: EdgeInsets = EdgeInsets(top: 36, leading: 22, bottom: 36, trailing: 22)) {
+        self.icon = icon
+        self.title = title
+        self.message = message
+        self.padding = padding
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Icon in circular background (52pt)
+            ZStack {
+                Circle()
+                    .fill(Color.focusInk.opacity(0.05))
+                    .frame(width: 52, height: 52)
+
+                icon
+            }
+            .padding(.bottom, 16)
+
+            // Title in Instrument Serif (22pt)
+            title
+                .font(.instrumentSerif(22))
+                .foregroundColor(.focusInk)
+                .tracking(22 * -0.01) // -0.01em letter-spacing
+                .lineSpacing(22 * 0.1) // 1.1 line height
+                .padding(.bottom, 7)
+
+            // Body text (13pt, muted)
+            Text(message)
+                .font(.inter(13))
+                .foregroundColor(.focusMuted)
+                .lineSpacing(13 * 0.5) // 1.5 line height
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 244)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(padding)
+    }
+}
+
+// MARK: - Empty State Icons
+
+/// Icon collection for empty states - thin stroke, monochrome design
+struct EmptyStateIcons {
+    /// Clock icon for "Recent" empty state
+    static func recent(color: Color = .focusInk) -> AnyView {
+        AnyView(
+            ZStack {
+                // Main clock circle with rotating arrow
+                Path { path in
+                    // Clock circle
+                    path.addArc(
+                        center: CGPoint(x: 12, y: 12),
+                        radius: 8.5,
+                        startAngle: .degrees(230),
+                        endAngle: .degrees(590),
+                        clockwise: false
+                    )
+                }
+                .stroke(color, lineWidth: 1.6)
+
+                // Arrow head at top left
+                Path { path in
+                    path.move(to: CGPoint(x: 5.5, y: 3.4))
+                    path.addLine(to: CGPoint(x: 5.5, y: 6.6))
+                    path.addLine(to: CGPoint(x: 8.7, y: 6.6))
+                }
+                .stroke(color, lineWidth: 1.6)
+
+                // Clock hands
+                Path { path in
+                    // Hour hand (pointing up)
+                    path.move(to: CGPoint(x: 12, y: 7.5))
+                    path.addLine(to: CGPoint(x: 12, y: 12))
+                    // Minute hand (pointing to 2 o'clock)
+                    path.addLine(to: CGPoint(x: 15, y: 13.8))
+                }
+                .stroke(color, lineWidth: 1.6)
+            }
+            .frame(width: 24, height: 24)
+        )
+    }
+}

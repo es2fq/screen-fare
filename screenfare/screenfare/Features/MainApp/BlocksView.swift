@@ -13,13 +13,44 @@ import ManagedSettings
 struct BlocksView: View {
     @StateObject private var blockingManager = AppBlockingManager.shared
     @StateObject private var settings = SettingsManager.shared
+    @StateObject private var scheduleManager = ScheduleManager.shared
     @State private var showingPicker = false
     @State private var isEditing = false
     @State private var showAll = false
+    @State private var showingScheduleEditor = false
 
     private let CAP = 11 // Show at most 11 apps before "show more"
 
     var body: some View {
+        ZStack {
+            // MAIN BLOCKS LAYER
+            mainBlocksLayer
+                .offset(x: showingScheduleEditor ? -90 : 0)
+                .brightness(showingScheduleEditor ? -0.03 : 0)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingScheduleEditor)
+
+            // SCHEDULE EDITOR LAYER
+            scheduleEditorLayer
+                .offset(x: showingScheduleEditor ? 0 : UIScreen.main.bounds.width)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingScheduleEditor)
+                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+        }
+        .familyActivityPicker(
+            isPresented: $showingPicker,
+            selection: $blockingManager.selectedApps
+        )
+        .onChange(of: blockingManager.selectedApps) { oldValue, newValue in
+            // When apps/categories are added or removed, reapply blocking if currently active
+            if blockingManager.isBlocking {
+                blockingManager.applyBlocking()
+                print("[BlocksView] 🔄 Selection changed, reapplying shields")
+            }
+        }
+    }
+
+    // MARK: - Main Blocks Layer
+
+    private var mainBlocksLayer: some View {
         ZStack {
             Color.focusBg
                 .ignoresSafeArea()
@@ -81,29 +112,32 @@ struct BlocksView: View {
                                     )
                             )
 
-                            // Schedule card
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("SCHEDULE")
-                                    .font(.inter(11))
-                                    .foregroundColor(.focusMuted)
-                                    .tracking(0.5)
+                            // Schedule card - tappable
+                            Button(action: { showingScheduleEditor = true }) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("SCHEDULE")
+                                        .font(.inter(11))
+                                        .foregroundColor(.focusMuted)
+                                        .tracking(0.5)
 
-                                Text("All day")
-                                    .font(.instrumentSerif(22, italic: true))
-                                    .foregroundColor(.focusInk)
+                                    Text(scheduleManager.scheduleSummaryShort())
+                                        .font(.instrumentSerif(22, italic: true))
+                                        .foregroundColor(.focusInk)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(minHeight: 60) // Match the Apps card height
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 18)
+                                        .stroke(Color.focusLine, lineWidth: 1)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 18)
+                                                .fill(Color.white)
+                                        )
+                                )
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .frame(minHeight: 60) // Match the Apps card height
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 18)
-                                    .stroke(Color.focusLine, lineWidth: 1)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 18)
-                                            .fill(Color.white)
-                                    )
-                            )
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding(.bottom, 18)
 
@@ -117,7 +151,7 @@ struct BlocksView: View {
                         )
 
                         // Schedule section
-                        ScheduleSection()
+                        ScheduleSection(scheduleManager: scheduleManager, showingScheduleEditor: $showingScheduleEditor)
                             .padding(.top, 22)
 
                         // Strict mode section
@@ -132,17 +166,15 @@ struct BlocksView: View {
             .safeAreaPadding(.top)
             .padding(.bottom, 90)
         }
-        .familyActivityPicker(
-            isPresented: $showingPicker,
-            selection: $blockingManager.selectedApps
+    }
+
+    // MARK: - Schedule Editor Layer
+
+    private var scheduleEditorLayer: some View {
+        ScheduleEditorSheet(
+            scheduleManager: scheduleManager,
+            onClose: { showingScheduleEditor = false }
         )
-        .onChange(of: blockingManager.selectedApps) { oldValue, newValue in
-            // When apps/categories are added or removed, reapply blocking if currently active
-            if blockingManager.isBlocking {
-                blockingManager.applyBlocking()
-                print("[BlocksView] 🔄 Selection changed, reapplying shields")
-            }
-        }
     }
 
     private var appCount: Int {
@@ -431,6 +463,9 @@ struct EmptyBlocksState: View {
 // MARK: - Schedule Section
 
 struct ScheduleSection: View {
+    @ObservedObject var scheduleManager: ScheduleManager
+    @Binding var showingScheduleEditor: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Section header
@@ -441,74 +476,60 @@ struct ScheduleSection: View {
                 .padding(.horizontal, 4)
                 .padding(.bottom, 10)
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)) {
-                VStack(spacing: 0) {
-                    // Active hours row
-                    HStack(spacing: 14) {
-                        // Icon
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.focusInk.opacity(0.06))
-                                .frame(width: 32, height: 32)
+            Button(action: { showingScheduleEditor = true }) {
+                AppCard(padding: EdgeInsets(top: 16, leading: 16, bottom: 14, trailing: 16)) {
+                    VStack(spacing: 14) {
+                        // Mode info header
+                        HStack(alignment: .center) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(scheduleManager.schedule.mode == .allday ? "Active all day" : "Scheduled hours")
+                                    .font(.inter(15, weight: .medium))
+                                    .foregroundColor(.focusInk)
 
-                            Image(systemName: "clock")
-                                .font(.system(size: 16))
-                                .foregroundColor(.focusInk)
-                        }
+                                Text(scheduleManager.schedule.mode == .allday ? "Every hour, every day" : "\(scheduleManager.schedule.windows.count) \(scheduleManager.schedule.windows.count == 1 ? "window" : "windows")")
+                                    .font(.inter(12.5))
+                                    .foregroundColor(.focusMuted)
+                            }
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Active hours")
-                                .font(.inter(15, weight: .medium))
-                                .foregroundColor(.focusInk)
+                            Spacer()
 
-                            Text("All day · Every day")
-                                .font(.inter(12.5))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 15, weight: .semibold))
                                 .foregroundColor(.focusMuted)
                         }
 
-                        Spacer()
+                        // Timeline
+                        TimelineBar(
+                            windows: scheduleManager.schedule.windows,
+                            allday: scheduleManager.schedule.mode == .allday,
+                            height: 34,
+                            showLabels: true,
+                            showNow: true
+                        )
 
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.focusMuted)
-                    }
-                    .padding(.vertical, 14)
+                        // Window details (only for scheduled mode)
+                        if scheduleManager.schedule.mode == .scheduled {
+                            VStack(spacing: 8) {
+                                ForEach(scheduleManager.schedule.windows) { window in
+                                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                                        Text("\(minToLabel(window.start)) – \(minToLabel(window.end))")
+                                            .font(.inter(13.5))
+                                            .foregroundColor(.focusInk)
+                                            .monospacedDigit()
 
-                    Divider()
-                        .background(Color.focusLine)
+                                        Spacer()
 
-                    // Days row
-                    HStack(spacing: 14) {
-                        // Icon
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.focusInk.opacity(0.06))
-                                .frame(width: 32, height: 32)
-
-                            Image(systemName: "calendar")
-                                .font(.system(size: 16))
-                                .foregroundColor(.focusInk)
+                                        Text(formatDays(window.days))
+                                            .font(.inter(12))
+                                            .foregroundColor(.focusMuted)
+                                    }
+                                }
+                            }
                         }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Days")
-                                .font(.inter(15, weight: .medium))
-                                .foregroundColor(.focusInk)
-
-                            Text("Mon – Sun")
-                                .font(.inter(12.5))
-                                .foregroundColor(.focusMuted)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.focusMuted)
                     }
-                    .padding(.vertical, 14)
                 }
             }
+            .buttonStyle(PlainButtonStyle())
         }
     }
 }

@@ -326,8 +326,8 @@ struct TypeIcon: View {
     private var iconName: String {
         switch type {
         case .math: return "plus.forwardslash.minus"
-        case .typing: return "textformat"
-        case .memory: return "grid"
+        case .typing: return "keyboard"
+        case .memory: return "brain.head.profile"
         }
     }
 }
