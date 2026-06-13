@@ -14,7 +14,12 @@ import UIKit
 class ShieldConfigurationExtension: ShieldConfigurationDataSource {
 
     override func configuration(shielding application: Application) -> ShieldConfiguration {
-        // Check if this app has an active temporary unlock
+        // 1. Check schedule FIRST - if outside blocking window, no shield
+        if !isBlockingCurrentlyActive() {
+            return ShieldConfiguration()
+        }
+
+        // 2. Check if this app has an active temporary unlock
         if isAppTemporarilyUnlocked(application) {
             // App is unlocked, don't show shield
             return ShieldConfiguration()
@@ -24,13 +29,17 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
     }
 
     override func configuration(shielding application: Application, in category: ActivityCategory) -> ShieldConfiguration {
-        // Apps blocked via category shield
-        // Check if the category itself is temporarily unlocked
+        // 1. Check schedule FIRST - if outside blocking window, no shield
+        if !isBlockingCurrentlyActive() {
+            return ShieldConfiguration()
+        }
+
+        // 2. Apps blocked via category shield - check if the category itself is temporarily unlocked
         if isCategoryTemporarilyUnlocked(category) {
             return ShieldConfiguration()
         }
 
-        // Check if this specific app has an active temporary unlock
+        // 3. Check if this specific app has an active temporary unlock
         if isAppTemporarilyUnlocked(application) {
             return ShieldConfiguration()
         }

@@ -636,7 +636,7 @@ struct UnlockedSessionCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(isWarning ? "Locking soon" : "Open now")
                         .font(.inter(15, weight: .semibold))
-                        .foregroundColor(.focusInk)
+                        .foregroundColor(isWarning ? .focusWarn : .focusInk)
                         .lineLimit(1)
 
                     Text(isApp ? "App" : "Category")

@@ -9,47 +9,6 @@
 import Foundation
 import Combine
 
-// MARK: - Data Models
-
-enum ScheduleMode: String, Codable {
-    case allday = "allday"
-    case scheduled = "scheduled"
-}
-
-struct BlockingWindow: Codable, Identifiable, Equatable {
-    let id: String
-    var start: Int  // minutes from midnight (0-1439)
-    var end: Int    // minutes from midnight (0-1439)
-    var days: [Int] // 0 = Sunday, 1 = Monday, etc.
-
-    init(id: String = UUID().uuidString, start: Int, end: Int, days: [Int]) {
-        self.id = id
-        self.start = start
-        self.end = end
-        self.days = days.sorted()
-    }
-}
-
-struct Schedule: Codable, Equatable {
-    var mode: ScheduleMode
-    var windows: [BlockingWindow]
-
-    static let `default` = Schedule(
-        mode: .allday,
-        windows: [
-            BlockingWindow(start: 9 * 60, end: 17 * 60, days: [1, 2, 3, 4, 5]) // Default 9am-5pm weekdays
-        ]
-    )
-
-    static let exampleScheduled = Schedule(
-        mode: .scheduled,
-        windows: [
-            BlockingWindow(start: 9 * 60, end: 17 * 60, days: [1, 2, 3, 4, 5]), // Weekdays 9am-5pm
-            BlockingWindow(start: 20 * 60, end: 23 * 60 + 30, days: [0, 1, 2, 3, 4, 5, 6]) // Every day 8pm-11:30pm
-        ]
-    )
-}
-
 // MARK: - Schedule Manager
 
 class ScheduleManager: ObservableObject {
@@ -58,26 +17,31 @@ class ScheduleManager: ObservableObject {
     @Published var schedule: Schedule {
         didSet {
             saveSchedule()
+            // Notify that schedule changed so AppBlockingManager can update monitors
+            NotificationCenter.default.post(name: .scheduleDidChange, object: nil)
         }
     }
 
     private let scheduleKey = "com.screenfare.schedule"
-    private let defaults = UserDefaults(suiteName: "group.com.screenfare.app")
+    private let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
 
     init() {
-        // Load from UserDefaults or use default
-        if let data = defaults?.data(forKey: scheduleKey),
+        // Load from shared UserDefaults or use default
+        if let data = sharedDefaults?.data(forKey: scheduleKey),
            let decoded = try? JSONDecoder().decode(Schedule.self, from: data) {
             self.schedule = decoded
         } else {
             self.schedule = .default
+            // Save default to shared storage
+            saveSchedule()
         }
     }
 
     private func saveSchedule() {
         if let encoded = try? JSONEncoder().encode(schedule) {
-            defaults?.set(encoded, forKey: scheduleKey)
-            print("[ScheduleManager] 💾 Saved schedule: \(schedule.mode)")
+            sharedDefaults?.set(encoded, forKey: scheduleKey)
+            sharedDefaults?.synchronize()
+            print("[ScheduleManager] 💾 Saved schedule to shared storage: \(schedule.mode)")
         }
     }
 
@@ -85,34 +49,7 @@ class ScheduleManager: ObservableObject {
 
     /// Check if blocking is currently active based on schedule
     func isBlockingActive() -> Bool {
-        if schedule.mode == .allday {
-            return true
-        }
-
-        let now = Date()
-        let calendar = Calendar.current
-        let currentDay = calendar.component(.weekday, from: now) - 1 // Convert to 0-6 (Sunday = 0)
-        let currentMinutes = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
-
-        // Check if current time falls within any window
-        for window in schedule.windows {
-            guard window.days.contains(currentDay) else { continue }
-
-            // Handle overnight windows
-            if window.end < window.start {
-                // Window spans midnight
-                if currentMinutes >= window.start || currentMinutes < window.end {
-                    return true
-                }
-            } else {
-                // Normal same-day window
-                if currentMinutes >= window.start && currentMinutes < window.end {
-                    return true
-                }
-            }
-        }
-
-        return false
+        return isWithinBlockingSchedule(schedule: schedule)
     }
 
     /// Get a one-line summary of the schedule

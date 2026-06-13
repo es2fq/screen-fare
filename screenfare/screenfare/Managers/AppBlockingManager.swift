@@ -25,6 +25,7 @@ class AppBlockingManager: ObservableObject {
     private let unlockDurationsKey = "com.screenfare.unlockDurations"
     private let blockedAppsKey = "com.screenfare.blockedApps"
     private var activeMonitors: [Data: DeviceActivityName] = [:] // Track active device activity monitors
+    private var activeScheduleMonitors: [DeviceActivityName] = [] // Track active schedule monitors
 
     @Published var isAuthorized = false
     @Published var selectedApps = FamilyActivitySelection()
@@ -90,6 +91,17 @@ class AppBlockingManager: ObservableObject {
 
         // Restart timers for any active unlocks
         restartExpiredTimers()
+
+        // Listen for schedule changes
+        NotificationCenter.default.addObserver(
+            forName: .scheduleDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.handleScheduleChange()
+            }
+        }
     }
 
     func checkAuthorizationStatus() {
@@ -257,6 +269,9 @@ class AppBlockingManager: ObservableObject {
         // Save blockedApps state to persist focus mode
         saveBlockedApps()
 
+        // Setup schedule monitors for auto-enable/disable
+        setupScheduleMonitoring()
+
         // Move all heavy work to background to keep UI responsive
         let appsToEncode = selectedApps.applicationTokens
         let categoriesToEncode = selectedApps.categoryTokens
@@ -275,8 +290,14 @@ class AppBlockingManager: ObservableObject {
 
             await self.sharedDefaults?.synchronize()
 
-            // Apply shields on main actor
-            await self.recalculateShields()
+            // Apply shields on main actor (only if within schedule)
+            await MainActor.run {
+                if ScheduleManager.shared.isBlockingActive() {
+                    self.recalculateShields()
+                } else {
+                    print("[AppBlockingManager] Outside schedule, shields will apply at next window start")
+                }
+            }
         }
     }
 
@@ -347,6 +368,9 @@ class AppBlockingManager: ObservableObject {
             activityCenter.stopMonitoring([activityName])
         }
         activeMonitors.removeAll()
+
+        // Stop schedule monitors
+        stopScheduleMonitoring()
 
         // Clear all shields
         store.shield.applications = nil
@@ -595,5 +619,153 @@ class AppBlockingManager: ObservableObject {
             return nil
         }
         return expiryTime.timeIntervalSince(Date())
+    }
+
+    // MARK: - Schedule Monitoring
+
+    func setupScheduleMonitoring() {
+        let schedule = ScheduleManager.shared.schedule
+
+        // Only setup monitors if in scheduled mode
+        guard schedule.mode == .scheduled else {
+            print("[AppBlockingManager] Schedule mode is 'all day', no monitors needed")
+            return
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+
+        for window in schedule.windows {
+            // Convert minutes to hour/minute components
+            let startHour = window.start / 60
+            let startMinute = window.start % 60
+            let endHour = window.end / 60
+            let endMinute = window.end % 60
+
+            // Check if this is an overnight window (e.g., 10 PM - 2 AM)
+            if window.end < window.start {
+                // Split into two monitors:
+                // 1. Same-day portion: start time - 11:59 PM
+                // 2. Next-day portion: 12:00 AM - end time
+
+                // Monitor 1: start - 23:59
+                let activityName1 = DeviceActivityName("schedule.\(window.id).part1")
+                let start1 = DateComponents(hour: startHour, minute: startMinute)
+                let end1 = DateComponents(hour: 23, minute: 59)
+
+                let deviceSchedule1 = DeviceActivitySchedule(
+                    intervalStart: start1,
+                    intervalEnd: end1,
+                    repeats: true
+                )
+
+                do {
+                    try activityCenter.startMonitoring(activityName1, during: deviceSchedule1)
+                    activeScheduleMonitors.append(activityName1)
+                    print("[AppBlockingManager] ✅ Schedule monitor created (part 1): \(window.id) (\(startHour):\(String(format: "%02d", startMinute)) - 23:59)")
+                } catch {
+                    print("[AppBlockingManager] ⚠️ Failed to create schedule monitor part 1: \(error)")
+                }
+
+                // Monitor 2: 00:00 - end time
+                let activityName2 = DeviceActivityName("schedule.\(window.id).part2")
+                let start2 = DateComponents(hour: 0, minute: 0)
+                let end2 = DateComponents(hour: endHour, minute: endMinute)
+
+                let deviceSchedule2 = DeviceActivitySchedule(
+                    intervalStart: start2,
+                    intervalEnd: end2,
+                    repeats: true
+                )
+
+                do {
+                    try activityCenter.startMonitoring(activityName2, during: deviceSchedule2)
+                    activeScheduleMonitors.append(activityName2)
+                    print("[AppBlockingManager] ✅ Schedule monitor created (part 2): \(window.id) (00:00 - \(endHour):\(String(format: "%02d", endMinute)))")
+                } catch {
+                    print("[AppBlockingManager] ⚠️ Failed to create schedule monitor part 2: \(error)")
+                }
+            } else {
+                // Normal same-day window
+                let activityName = DeviceActivityName("schedule.\(window.id)")
+                let start = DateComponents(hour: startHour, minute: startMinute)
+                let end = DateComponents(hour: endHour, minute: endMinute)
+
+                let deviceSchedule = DeviceActivitySchedule(
+                    intervalStart: start,
+                    intervalEnd: end,
+                    repeats: true
+                )
+
+                do {
+                    try activityCenter.startMonitoring(activityName, during: deviceSchedule)
+                    activeScheduleMonitors.append(activityName)
+                    print("[AppBlockingManager] ✅ Schedule monitor created: \(window.id) (\(startHour):\(String(format: "%02d", startMinute)) - \(endHour):\(String(format: "%02d", endMinute)))")
+                } catch {
+                    print("[AppBlockingManager] ⚠️ Failed to create schedule monitor: \(error)")
+                }
+            }
+        }
+    }
+
+    func stopScheduleMonitoring() {
+        // Stop all tracked schedule monitors (handles deleted/changed windows)
+        if !activeScheduleMonitors.isEmpty {
+            activityCenter.stopMonitoring(activeScheduleMonitors)
+            print("[AppBlockingManager] 🛑 Stopped \(activeScheduleMonitors.count) schedule monitors")
+            activeScheduleMonitors.removeAll()
+        }
+    }
+
+    private func handleScheduleChange() {
+        // Only handle schedule changes if we have apps selected to block
+        guard !selectedApps.applicationTokens.isEmpty || !selectedApps.categoryTokens.isEmpty else {
+            return
+        }
+
+        print("[AppBlockingManager] Schedule changed, recreating monitors")
+
+        // Stop old monitors first to avoid duplicates
+        stopScheduleMonitoring()
+
+        // Create new monitors with updated schedule
+        setupScheduleMonitoring()
+
+        // If currently outside schedule window, clear shields
+        if !ScheduleManager.shared.isBlockingActive() {
+            store.shield.applications = nil
+            store.shield.applicationCategories = nil
+            print("[AppBlockingManager] Outside schedule, cleared shields")
+        } else {
+            // Within schedule, ensure shields are applied
+            // First set blockedApps to enable blocking
+            blockedApps = selectedApps
+            saveBlockedApps()
+
+            // Save app/category tokens to shared storage so extensions can access them
+            let appsToEncode = selectedApps.applicationTokens
+            let categoriesToEncode = selectedApps.categoryTokens
+            Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else { return }
+
+                // Save selectedApps to shared storage
+                if let encoded = try? JSONEncoder().encode(appsToEncode) {
+                    await self.sharedDefaults?.set(encoded, forKey: "com.screenfare.selectedApps")
+                }
+
+                // Save selectedCategories to shared storage
+                if let encoded = try? JSONEncoder().encode(categoriesToEncode) {
+                    await self.sharedDefaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
+                }
+
+                await self.sharedDefaults?.synchronize()
+
+                // Apply shields on main actor after data is saved
+                await MainActor.run {
+                    self.recalculateShields()
+                    print("[AppBlockingManager] Inside schedule, applied shields")
+                }
+            }
+        }
     }
 }

@@ -233,8 +233,8 @@ struct ScheduleEditorSheet: View {
     private func addWindow() {
         let newWindow = BlockingWindow(
             id: UUID().uuidString,
-            start: 18 * 60, // 6 PM
-            end: 20 * 60,   // 8 PM
+            start: 9 * 60,  // 9 AM
+            end: 17 * 60,   // 5 PM
             days: [1, 2, 3, 4, 5] // Weekdays
         )
         withAnimation {

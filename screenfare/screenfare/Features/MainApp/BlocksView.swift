@@ -88,18 +88,18 @@ struct BlocksView: View {
                     VStack(spacing: 0) {
                         // Two-card summary row
                         HStack(spacing: 10) {
-                            // Apps count card
+                            // Apps count card (fixed width)
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("APPS")
-                                    .font(.inter(11))
+                                    .font(.inter(11, weight: .semibold))
                                     .foregroundColor(.focusMuted)
-                                    .tracking(0.5)
+                                    .tracking(0.6)
 
                                 Text("\(appCount)")
                                     .font(.instrumentSerif(32))
                                     .foregroundColor(.focusInk)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(width: 100, alignment: .leading)
                             .frame(minHeight: 60) // Match card heights
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
@@ -112,17 +112,19 @@ struct BlocksView: View {
                                     )
                             )
 
-                            // Schedule card - tappable
+                            // Schedule card - tappable (expands to fill remaining space)
                             Button(action: { showingScheduleEditor = true }) {
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("SCHEDULE")
-                                        .font(.inter(11))
+                                        .font(.inter(11, weight: .semibold))
                                         .foregroundColor(.focusMuted)
-                                        .tracking(0.5)
+                                        .tracking(0.6)
 
                                     Text(scheduleManager.scheduleSummaryShort())
-                                        .font(.instrumentSerif(22, italic: true))
+                                        .font(.instrumentSerif(32, italic: true))
                                         .foregroundColor(.focusInk)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .frame(minHeight: 60) // Match the Apps card height

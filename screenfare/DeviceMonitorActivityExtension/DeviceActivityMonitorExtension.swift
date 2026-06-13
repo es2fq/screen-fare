@@ -19,13 +19,29 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func intervalDidStart(for activity: DeviceActivityName) {
         super.intervalDidStart(for: activity)
         print("[DeviceMonitor] intervalDidStart: \(activity.rawValue)")
-        // intervalDidStart not used in current implementation
+
+        // Handle schedule window start
+        if activity.rawValue.starts(with: "schedule.") {
+            print("[DeviceMonitor] 🟢 Schedule window started, enabling Focus")
+            enableFocus()
+            return
+        }
+
+        // intervalDidStart not used for unlock monitoring
         // Re-locking handled by intervalWillEndWarning (short timers) and intervalDidEnd (long timers)
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
         super.intervalDidEnd(for: activity)
         print("[DeviceMonitor] intervalDidEnd: \(activity.rawValue)")
+
+        // Handle schedule window end
+        if activity.rawValue.starts(with: "schedule.") {
+            print("[DeviceMonitor] 🔴 Schedule window ended, disabling Focus")
+            disableFocus()
+            clearAllTemporaryUnlocks()
+            return
+        }
 
         // For LONG timers (≥15 min), intervalDidEnd fires at actual expiry
         print("[DeviceMonitor] 🔒 Long timer expired (interval ended), re-locking app")
@@ -189,6 +205,92 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
+    }
+
+    // MARK: - Schedule Management
+
+    private func enableFocus() {
+        // Load selected apps from shared storage
+        guard let selectedAppsData = sharedDefaults?.data(forKey: "com.screenfare.selectedApps"),
+              let selectedAppTokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: selectedAppsData) else {
+            print("[DeviceMonitor] ⚠️ Could not load selected apps for Focus enable")
+            return
+        }
+
+        // Load selected categories
+        var selectedCategoryTokens: Set<ActivityCategoryToken> = []
+        if let selectedCategoriesData = sharedDefaults?.data(forKey: "com.screenfare.selectedCategories"),
+           let categoryTokens = try? JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: selectedCategoriesData) {
+            selectedCategoryTokens = categoryTokens
+        }
+
+        // Respect existing temporary unlocks
+        let unlocks = loadTemporaryUnlocks() ?? [:]
+        let now = Date()
+        var blockedApps = selectedAppTokens
+
+        // Remove apps with active temporary unlocks
+        for (appTokenData, expiryTime) in unlocks {
+            if now < expiryTime, let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) {
+                blockedApps.remove(appToken)
+            }
+        }
+
+        // Load temporary category unlocks
+        var temporaryCategoryUnlocks: [Data: Date] = [:]
+        if let data = sharedDefaults?.data(forKey: "com.screenfare.temporaryCategoryUnlocks"),
+           let unlocks = try? JSONDecoder().decode([Data: Date].self, from: data) {
+            temporaryCategoryUnlocks = unlocks
+        }
+
+        var blockedCategories = selectedCategoryTokens
+
+        // Remove categories with active temporary unlocks
+        for (categoryTokenData, expiryTime) in temporaryCategoryUnlocks {
+            if now < expiryTime, let categoryToken = try? JSONDecoder().decode(ActivityCategoryToken.self, from: categoryTokenData) {
+                blockedCategories.remove(categoryToken)
+            }
+        }
+
+        // Apply shields (respecting temporary unlocks)
+        store.shield.applications = blockedApps
+        if !blockedCategories.isEmpty {
+            store.shield.applicationCategories = .specific(blockedCategories)
+        }
+
+        // Set Focus enabled flag
+        sharedDefaults?.set(true, forKey: "com.screenfare.blockedApps")
+        sharedDefaults?.synchronize()
+
+        print("[DeviceMonitor] ✅ Focus enabled: \(blockedApps.count) apps, \(blockedCategories.count) categories (respecting \(unlocks.count) app unlocks, \(temporaryCategoryUnlocks.count) category unlocks)")
+    }
+
+    private func disableFocus() {
+        // Clear all shields
+        store.shield.applications = nil
+        store.shield.applicationCategories = nil
+        store.shield.webDomains = nil
+
+        // Set Focus disabled flag
+        sharedDefaults?.set(false, forKey: "com.screenfare.blockedApps")
+        sharedDefaults?.synchronize()
+
+        print("[DeviceMonitor] ✅ Focus disabled")
+    }
+
+    private func clearAllTemporaryUnlocks() {
+        // Clear all temporary app unlocks
+        sharedDefaults?.set(try? JSONEncoder().encode([Data: Date]()), forKey: "com.screenfare.temporaryUnlocks")
+
+        // Clear all temporary category unlocks
+        sharedDefaults?.set(try? JSONEncoder().encode([Data: Date]()), forKey: "com.screenfare.temporaryCategoryUnlocks")
+
+        // Clear unlock durations
+        sharedDefaults?.set(try? JSONEncoder().encode([Data: TimeInterval]()), forKey: "com.screenfare.unlockDurations")
+
+        sharedDefaults?.synchronize()
+
+        print("[DeviceMonitor] 🧹 Cleared all temporary unlocks")
     }
 }
 
