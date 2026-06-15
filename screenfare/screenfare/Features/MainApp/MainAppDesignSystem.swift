@@ -39,7 +39,6 @@ struct AppScreen<Content: View>: View {
                 ScrollView {
                     content
                         .padding(.horizontal, 22)
-                        .padding(.bottom, 24)
                 }
             }
             .safeAreaPadding(.top) // Use actual safe area for status bar

@@ -64,6 +64,57 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    // MARK: - Account Settings
+    @Published var userName: String {
+        didSet {
+            UserDefaults.standard.set(userName, forKey: "userName")
+        }
+    }
+
+    @Published var userEmail: String {
+        didSet {
+            UserDefaults.standard.set(userEmail, forKey: "userEmail")
+        }
+    }
+
+    @Published var iCloudSyncEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(iCloudSyncEnabled, forKey: "iCloudSyncEnabled")
+        }
+    }
+
+    // MARK: - Strict Mode Protection Settings
+    @Published var strictProtectOff: Bool {
+        didSet {
+            UserDefaults.standard.set(strictProtectOff, forKey: "strictProtectOff")
+        }
+    }
+
+    @Published var strictProtectRemove: Bool {
+        didSet {
+            UserDefaults.standard.set(strictProtectRemove, forKey: "strictProtectRemove")
+        }
+    }
+
+    @Published var strictProtectShorten: Bool {
+        didSet {
+            UserDefaults.standard.set(strictProtectShorten, forKey: "strictProtectShorten")
+        }
+    }
+
+    // MARK: - Permissions
+    @Published var screenTimePermission: PermissionStatus {
+        didSet {
+            UserDefaults.standard.set(screenTimePermission.rawValue, forKey: "screenTimePermission")
+        }
+    }
+
+    @Published var healthPermission: PermissionStatus {
+        didSet {
+            UserDefaults.standard.set(healthPermission.rawValue, forKey: "healthPermission")
+        }
+    }
+
     private init() {
         // Load saved settings or use defaults
         let savedDuration = UserDefaults.standard.double(forKey: "unlockDuration")
@@ -99,6 +150,31 @@ class SettingsManager: ObservableObject {
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
         self.strictModeEnabled = UserDefaults.standard.bool(forKey: "strictModeEnabled")
+
+        // Account settings
+        self.userName = UserDefaults.standard.string(forKey: "userName") ?? "Focus User"
+        self.userEmail = UserDefaults.standard.string(forKey: "userEmail") ?? "user@example.com"
+        self.iCloudSyncEnabled = UserDefaults.standard.bool(forKey: "iCloudSyncEnabled")
+
+        // Strict mode protections (default to true when strict mode enabled)
+        self.strictProtectOff = UserDefaults.standard.object(forKey: "strictProtectOff") as? Bool ?? true
+        self.strictProtectRemove = UserDefaults.standard.object(forKey: "strictProtectRemove") as? Bool ?? true
+        self.strictProtectShorten = UserDefaults.standard.object(forKey: "strictProtectShorten") as? Bool ?? true
+
+        // Permissions
+        if let savedScreenTime = UserDefaults.standard.string(forKey: "screenTimePermission"),
+           let permission = PermissionStatus(rawValue: savedScreenTime) {
+            self.screenTimePermission = permission
+        } else {
+            self.screenTimePermission = .granted
+        }
+
+        if let savedHealth = UserDefaults.standard.string(forKey: "healthPermission"),
+           let permission = PermissionStatus(rawValue: savedHealth) {
+            self.healthPermission = permission
+        } else {
+            self.healthPermission = .notDetermined
+        }
 
         // Initial sync to App Group
         if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") {
@@ -150,6 +226,20 @@ enum UnlockDurationOption: CaseIterable, Identifiable {
         case .fifteenMinutes: return "Short session"
         case .thirtyMinutes: return "Medium session"
         case .oneHour: return "Extended session"
+        }
+    }
+}
+
+enum PermissionStatus: String, CaseIterable {
+    case granted = "granted"
+    case notDetermined = "notDetermined"
+    case denied = "denied"
+
+    var displayText: String {
+        switch self {
+        case .granted: return "Granted"
+        case .notDetermined: return "Allow"
+        case .denied: return "Denied"
         }
     }
 }
