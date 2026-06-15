@@ -30,11 +30,11 @@ class StatsManager: ObservableObject {
     @Published private(set) var todayStats: DailyStats
 
     private let storageKey = "com.screenfare.dailyStats"
-    private let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
+    private let sharedDefaults = UserDefaults.appGroup
 
     private init() {
         // Load or create today's stats
-        let today = Self.todayDateString()
+        let today = Date.todayDateString()
 
         if let data = sharedDefaults?.data(forKey: storageKey),
            let decoded = try? JSONDecoder().decode(DailyStats.self, from: data),
@@ -61,7 +61,7 @@ class StatsManager: ObservableObject {
 
     /// Reload stats from shared storage (called when extensions update them)
     func reloadStats() {
-        let today = Self.todayDateString()
+        let today = Date.todayDateString()
 
         if let data = sharedDefaults?.data(forKey: storageKey),
            let decoded = try? JSONDecoder().decode(DailyStats.self, from: data),
@@ -111,24 +111,7 @@ class StatsManager: ObservableObject {
     }
 
     var timeSpent: String {
-        formatTime(todayStats.timeSpentSeconds)
-    }
-
-    private func formatTime(_ seconds: Int) -> String {
-        if seconds < 60 {
-            return "\(seconds)s"
-        } else if seconds < 3600 {
-            let minutes = seconds / 60
-            return "\(minutes)m"
-        } else {
-            let hours = seconds / 3600
-            let minutes = (seconds % 3600) / 60
-            if minutes == 0 {
-                return "\(hours)h"
-            } else {
-                return "\(hours)h \(minutes)m"
-            }
-        }
+        TimeInterval(todayStats.timeSpentSeconds).formattedTimeSpent()
     }
 
     // MARK: - Persistence
@@ -136,22 +119,15 @@ class StatsManager: ObservableObject {
     private func saveStats() {
         if let encoded = try? JSONEncoder().encode(todayStats) {
             sharedDefaults?.set(encoded, forKey: storageKey)
-            sharedDefaults?.synchronize()
         }
     }
 
     private func checkAndResetIfNewDay() {
-        let today = Self.todayDateString()
+        let today = Date.todayDateString()
         if todayStats.date != today {
             // New day! Reset stats
             todayStats = DailyStats(date: today)
             saveStats()
         }
-    }
-
-    private static func todayDateString() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
     }
 }

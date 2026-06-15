@@ -76,8 +76,6 @@ class ShieldActionExtension: ShieldActionDelegate {
 
         // Clear any category request since this is an app-specific request
         sharedDefaults.removeObject(forKey: "com.screenfare.requestedCategoryToken")
-
-        sharedDefaults.synchronize()
     }
 
     private func markCategoryUnlockRequested(for category: ActivityCategoryToken) {
@@ -95,8 +93,6 @@ class ShieldActionExtension: ShieldActionDelegate {
 
         // Clear any app request since this is a category request
         sharedDefaults.removeObject(forKey: "com.screenfare.requestedAppToken")
-
-        sharedDefaults.synchronize()
     }
 
     private func sendUnlockNotification() {
@@ -134,7 +130,7 @@ class ShieldActionExtension: ShieldActionDelegate {
         }
 
         let storageKey = "com.screenfare.dailyStats"
-        let today = todayDateString()
+        let today = Date.todayDateString()
         var stats: DailyStats
 
         // Read existing stats
@@ -152,14 +148,7 @@ class ShieldActionExtension: ShieldActionDelegate {
         // Save back to UserDefaults
         if let encoded = try? JSONEncoder().encode(stats) {
             sharedDefaults.set(encoded, forKey: storageKey)
-            sharedDefaults.synchronize()
         }
-    }
-
-    private func todayDateString() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
     }
 
     private func recordWalkedAwayEvent(for application: ApplicationToken) {
@@ -204,7 +193,6 @@ class ShieldActionExtension: ShieldActionDelegate {
         // Save back to shared storage
         if let encoded = try? JSONEncoder().encode(pendingEvents) {
             sharedDefaults.set(encoded, forKey: storageKey)
-            sharedDefaults.synchronize()
         }
     }
 

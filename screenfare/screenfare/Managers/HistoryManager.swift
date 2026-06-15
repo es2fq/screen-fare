@@ -123,7 +123,7 @@ class HistoryManager: ObservableObject {
     }
 
     func loadPendingEvents() {
-        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
+        guard let sharedDefaults = UserDefaults.appGroup,
               let data = sharedDefaults.data(forKey: sharedStorageKey),
               let pendingEvents = try? JSONDecoder().decode([HistoryEvent].self, from: data),
               !pendingEvents.isEmpty else {
@@ -144,7 +144,6 @@ class HistoryManager: ObservableObject {
 
         // Clear pending events from shared storage
         sharedDefaults.removeObject(forKey: sharedStorageKey)
-        sharedDefaults.synchronize()
     }
 
     private func saveHistory() {

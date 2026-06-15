@@ -18,17 +18,15 @@ struct screenfareApp: App {
 
         // SYNCHRONOUS re-block check (safety net #3)
         // Check if unlock timer expired while app was closed
-        let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
-        if let expiryTimestamp = sharedDefaults?.double(forKey: "quotaEndTimestamp"),
-           sharedDefaults?.bool(forKey: "isCurrentlyUnlocked") == true {
+        if let expiryTimestamp = UserDefaults.appGroup?.double(forKey: "quotaEndTimestamp"),
+           UserDefaults.appGroup?.bool(forKey: "isCurrentlyUnlocked") == true {
             let expiryTime = Date(timeIntervalSince1970: expiryTimestamp)
             let now = Date()
 
             if now >= expiryTime {
                 print("[App Init] ⏰ Unlock expired, re-locking synchronously")
                 // Re-block immediately before any async work
-                sharedDefaults?.set(false, forKey: "isCurrentlyUnlocked")
-                sharedDefaults?.synchronize()
+                UserDefaults.appGroup?.set(false, forKey: "isCurrentlyUnlocked")
                 // The blockingManager will recalculate shields on startup
             }
         }

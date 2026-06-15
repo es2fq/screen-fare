@@ -65,7 +65,6 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         // Clear unlock flag
         sharedDefaults?.set(false, forKey: "isCurrentlyUnlocked")
-        sharedDefaults?.synchronize()
 
         // RE-ADD apps to shield store - this will kick user out immediately
         reapplyShields()
@@ -84,7 +83,6 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     private func saveTemporaryUnlocks(_ unlocks: [Data: Date]) {
         guard let encoded = try? JSONEncoder().encode(unlocks) else { return }
         sharedDefaults?.set(encoded, forKey: "com.screenfare.temporaryUnlocks")
-        sharedDefaults?.synchronize()
     }
 
     private func reapplyShields() {
@@ -163,7 +161,6 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         // Clear unlock flag
         sharedDefaults?.set(false, forKey: "isCurrentlyUnlocked")
-        sharedDefaults?.synchronize()
 
         // RE-ADD apps to shield store - this will kick user out immediately
         reapplyShields()
@@ -177,7 +174,7 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
     private func recordTimeSpent(seconds: TimeInterval) {
         let storageKey = "com.screenfare.dailyStats"
-        let today = todayDateString()
+        let today = Date.todayDateString()
 
         var stats: DailyStats
 
@@ -196,15 +193,8 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         // Save back to UserDefaults
         if let encoded = try? JSONEncoder().encode(stats) {
             sharedDefaults?.set(encoded, forKey: storageKey)
-            sharedDefaults?.synchronize()
             print("[DeviceMonitor] 📊 Time spent recorded: \(stats.timeSpentSeconds)s total")
         }
-    }
-
-    private func todayDateString() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
     }
 
     // MARK: - Schedule Management
@@ -260,7 +250,6 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         // Set Focus enabled flag
         sharedDefaults?.set(true, forKey: "com.screenfare.blockedApps")
-        sharedDefaults?.synchronize()
 
         print("[DeviceMonitor] ✅ Focus enabled: \(blockedApps.count) apps, \(blockedCategories.count) categories (respecting \(unlocks.count) app unlocks, \(temporaryCategoryUnlocks.count) category unlocks)")
     }
@@ -273,7 +262,6 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         // Set Focus disabled flag
         sharedDefaults?.set(false, forKey: "com.screenfare.blockedApps")
-        sharedDefaults?.synchronize()
 
         print("[DeviceMonitor] ✅ Focus disabled")
     }
@@ -287,8 +275,6 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         // Clear unlock durations
         sharedDefaults?.set(try? JSONEncoder().encode([Data: TimeInterval]()), forKey: "com.screenfare.unlockDurations")
-
-        sharedDefaults?.synchronize()
 
         print("[DeviceMonitor] 🧹 Cleared all temporary unlocks")
     }

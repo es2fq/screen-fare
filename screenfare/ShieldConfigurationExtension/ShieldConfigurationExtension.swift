@@ -52,7 +52,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
         let sharedDefaults = UserDefaults.appGroup
         let unlockDuration = sharedDefaults?.double(forKey: "unlockDuration") ?? 1800 // Default 30 minutes
 
-        let durationText = formatDuration(unlockDuration)
+        let durationText = TimeInterval(unlockDuration).formatted()
         let subtitle = "Complete a challenge to unlock for \(durationText)"
 
         // Light, airy color palette
@@ -93,21 +93,6 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
                 color: secondaryColor
             )
         )
-    }
-
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration / 60)
-        if minutes < 60 {
-            return "\(minutes) min"
-        } else {
-            let hours = minutes / 60
-            let remainingMinutes = minutes % 60
-            if remainingMinutes == 0 {
-                return "\(hours) hr"
-            } else {
-                return "\(hours) hr \(remainingMinutes) min"
-            }
-        }
     }
 
     private func isAppTemporarilyUnlocked(_ application: Application) -> Bool {

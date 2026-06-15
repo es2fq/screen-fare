@@ -117,3 +117,54 @@ public func isBlockingCurrentlyActive() -> Bool {
 extension Notification.Name {
     public static let scheduleDidChange = Notification.Name("com.screenfare.scheduleDidChange")
 }
+
+// MARK: - Date/Time Formatting Utilities
+
+extension Date {
+    /// Returns today's date as "yyyy-MM-dd" string
+    /// Shared utility to avoid duplicate todayDateString() implementations
+    public static func todayDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
+    }
+}
+
+extension TimeInterval {
+    /// Formats time interval as a human-readable string
+    /// Examples: "5 min", "1 hr", "1 hr 30 min"
+    public func formatted() -> String {
+        let minutes = Int(self / 60)
+        if minutes < 60 {
+            return "\(minutes) min"
+        } else {
+            let hours = minutes / 60
+            let remainingMinutes = minutes % 60
+            if remainingMinutes == 0 {
+                return "\(hours) hr"
+            } else {
+                return "\(hours) hr \(remainingMinutes) min"
+            }
+        }
+    }
+
+    /// Formats time spent as a concise string
+    /// Examples: "5s", "2m", "1h", "1h 5m"
+    public func formattedTimeSpent() -> String {
+        let seconds = Int(self)
+        if seconds < 60 {
+            return "\(seconds)s"
+        } else if seconds < 3600 {
+            let minutes = seconds / 60
+            return "\(minutes)m"
+        } else {
+            let hours = seconds / 3600
+            let minutes = (seconds % 3600) / 60
+            if minutes == 0 {
+                return "\(hours)h"
+            } else {
+                return "\(hours)h \(minutes)m"
+            }
+        }
+    }
+}

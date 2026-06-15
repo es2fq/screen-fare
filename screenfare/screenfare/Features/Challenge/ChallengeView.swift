@@ -73,7 +73,7 @@ struct ChallengeView: View {
         _challengeType = State(initialValue: selectedType)
 
         // Load requested app token
-        if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") {
+        if let sharedDefaults = UserDefaults.appGroup {
             if let data = sharedDefaults.data(forKey: "com.screenfare.requestedAppToken"),
                let token = try? JSONDecoder().decode(ApplicationToken.self, from: data) {
                 _requestedApp = State(initialValue: token)

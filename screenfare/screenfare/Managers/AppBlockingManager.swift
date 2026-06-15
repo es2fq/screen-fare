@@ -156,7 +156,6 @@ class AppBlockingManager: ObservableObject {
         } else {
             sharedDefaults?.set(false, forKey: blockedAppsKey)
         }
-        sharedDefaults?.synchronize()
     }
 
     private func loadBlockedApps() {
@@ -184,8 +183,6 @@ class AppBlockingManager: ObservableObject {
         // Save durations
         guard let encodedDurations = try? JSONEncoder().encode(unlockDurations) else { return }
         sharedDefaults?.set(encodedDurations, forKey: unlockDurationsKey)
-
-        sharedDefaults?.synchronize()
     }
 
     func loadTemporaryUnlocks() {
@@ -287,8 +284,6 @@ class AppBlockingManager: ObservableObject {
             if let encoded = try? JSONEncoder().encode(categoriesToEncode) {
                 await self.sharedDefaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
             }
-
-            await self.sharedDefaults?.synchronize()
 
             // Apply shields on main actor (only if within schedule)
             await MainActor.run {
@@ -414,7 +409,6 @@ class AppBlockingManager: ObservableObject {
         // Store usage tracking info
         let usageEventName = DeviceActivityEvent.Name("usage.\(activityName.rawValue)")
         sharedDefaults?.set(usageEventName.rawValue, forKey: "deviceActivity.\(activityName.rawValue).usageEvent")
-        sharedDefaults?.synchronize()
 
         // Track this monitor
         activeMonitors[appTokenData] = activityName
@@ -757,8 +751,6 @@ class AppBlockingManager: ObservableObject {
                 if let encoded = try? JSONEncoder().encode(categoriesToEncode) {
                     await self.sharedDefaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
                 }
-
-                await self.sharedDefaults?.synchronize()
 
                 // Apply shields on main actor after data is saved
                 await MainActor.run {

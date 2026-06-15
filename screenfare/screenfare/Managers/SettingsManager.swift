@@ -15,10 +15,7 @@ class SettingsManager: ObservableObject {
         didSet {
             UserDefaults.standard.set(unlockDuration, forKey: "unlockDuration")
             // Also save to App Group for shield extensions
-            if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") {
-                sharedDefaults.set(unlockDuration, forKey: "unlockDuration")
-                sharedDefaults.synchronize()
-            }
+            UserDefaults.appGroup?.set(unlockDuration, forKey: "unlockDuration")
         }
     }
 
@@ -177,20 +174,11 @@ class SettingsManager: ObservableObject {
         }
 
         // Initial sync to App Group
-        if let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") {
-            sharedDefaults.set(unlockDuration, forKey: "unlockDuration")
-            sharedDefaults.synchronize()
-        }
+        UserDefaults.appGroup?.set(unlockDuration, forKey: "unlockDuration")
     }
 
     var unlockDurationText: String {
-        let minutes = Int(unlockDuration / 60)
-        if minutes < 60 {
-            return "\(minutes) min"
-        } else {
-            let hours = minutes / 60
-            return "\(hours) hr"
-        }
+        unlockDuration.formatted()
     }
 }
 

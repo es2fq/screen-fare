@@ -40,7 +40,6 @@ class ScheduleManager: ObservableObject {
     private func saveSchedule() {
         if let encoded = try? JSONEncoder().encode(schedule) {
             sharedDefaults?.set(encoded, forKey: scheduleKey)
-            sharedDefaults?.synchronize()
             print("[ScheduleManager] 💾 Saved schedule to shared storage: \(schedule.mode)")
         }
     }
