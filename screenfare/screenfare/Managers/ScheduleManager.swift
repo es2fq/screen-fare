@@ -23,7 +23,7 @@ class ScheduleManager: ObservableObject {
     }
 
     private let scheduleKey = "com.screenfare.schedule"
-    private let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
+    private let sharedDefaults = UserDefaults.appGroup
 
     init() {
         // Load from shared UserDefaults or use default
@@ -64,7 +64,7 @@ class ScheduleManager: ObservableObject {
 
         if schedule.windows.count == 1 {
             let w = schedule.windows[0]
-            return "\(minToCompact(w.start))–\(minToCompact(w.end)) · \(formatDays(w.days))"
+            return "\(Self.minToCompact(w.start))–\(Self.minToCompact(w.end)) · \(Self.formatDays(w.days))"
         }
 
         return "\(schedule.windows.count) windows"
@@ -81,56 +81,57 @@ class ScheduleManager: ObservableObject {
 
         if schedule.windows.count == 1 {
             let w = schedule.windows[0]
-            return "\(minToCompact(w.start))–\(minToCompact(w.end))"
+            return "\(Self.minToCompact(w.start))–\(Self.minToCompact(w.end))"
         }
 
         return "\(schedule.windows.count) windows"
     }
-}
 
-// MARK: - Time Formatting Helpers
+    // MARK: - Time Formatting Helpers
 
-func minToLabel(_ m: Int) -> String {
-    let normalized = ((m % 1440) + 1440) % 1440
-    let h = normalized / 60
-    let min = normalized % 60
-    let ap = h < 12 ? "AM" : "PM"
-    var h12 = h % 12
-    if h12 == 0 { h12 = 12 }
-    return String(format: "%d:%02d %@", h12, min, ap)
-}
-
-func minToCompact(_ m: Int) -> String {
-    let normalized = ((m % 1440) + 1440) % 1440
-    let h = normalized / 60
-    let min = normalized % 60
-    let ap = h < 12 ? "a" : "p"
-    var h12 = h % 12
-    if h12 == 0 { h12 = 12 }
-    return min == 0 ? "\(h12)\(ap)" : String(format: "%d:%02d%@", h12, min, ap)
-}
-
-func formatDays(_ days: [Int]) -> String {
-    let set = Set(days)
-    if set.count == 7 {
-        return "Every day"
-    }
-    if set.count == 0 {
-        return "No days"
-    }
-    if set.count == 5 && [1, 2, 3, 4, 5].allSatisfy(set.contains) {
-        return "Weekdays"
-    }
-    if set.count == 2 && set.contains(0) && set.contains(6) {
-        return "Weekends"
+    static func minToLabel(_ m: Int) -> String {
+        let normalized = ((m % 1440) + 1440) % 1440
+        let h = normalized / 60
+        let min = normalized % 60
+        let ap = h < 12 ? "AM" : "PM"
+        var h12 = h % 12
+        if h12 == 0 { h12 = 12 }
+        return String(format: "%d:%02d %@", h12, min, ap)
     }
 
-    let dayShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    return [1, 2, 3, 4, 5, 6, 0]
-        .filter { set.contains($0) }
-        .map { dayShort[$0] }
-        .joined(separator: ", ")
-}
+    static func minToCompact(_ m: Int) -> String {
+        let normalized = ((m % 1440) + 1440) % 1440
+        let h = normalized / 60
+        let min = normalized % 60
+        let ap = h < 12 ? "a" : "p"
+        var h12 = h % 12
+        if h12 == 0 { h12 = 12 }
+        return min == 0 ? "\(h12)\(ap)" : String(format: "%d:%02d%@", h12, min, ap)
+    }
 
-let dayPills: [(String, Int)] = [("M", 1), ("T", 2), ("W", 3), ("T", 4), ("F", 5), ("S", 6), ("S", 0)]
-let dayShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    static func formatDays(_ days: [Int]) -> String {
+        let set = Set(days)
+        if set.count == 7 {
+            return "Every day"
+        }
+        if set.count == 0 {
+            return "No days"
+        }
+        if set.count == 5 && [1, 2, 3, 4, 5].allSatisfy(set.contains) {
+            return "Weekdays"
+        }
+        if set.count == 2 && set.contains(0) && set.contains(6) {
+            return "Weekends"
+        }
+
+        return [1, 2, 3, 4, 5, 6, 0]
+            .filter { set.contains($0) }
+            .map { Self.dayNames[$0] }
+            .joined(separator: ", ")
+    }
+
+    // MARK: - Constants
+
+    static let dayPills: [(String, Int)] = [("M", 1), ("T", 2), ("W", 3), ("T", 4), ("F", 5), ("S", 6), ("S", 0)]
+    static let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+}

@@ -20,7 +20,7 @@ class AppBlockingManager: ObservableObject {
     let center = AuthorizationCenter.shared
     private let store = ManagedSettingsStore()
     private let activityCenter = DeviceActivityCenter()
-    private let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
+    private let sharedDefaults = UserDefaults.appGroup
     private let temporaryUnlocksKey = "com.screenfare.temporaryUnlocks"
     private let unlockDurationsKey = "com.screenfare.unlockDurations"
     private let blockedAppsKey = "com.screenfare.blockedApps"

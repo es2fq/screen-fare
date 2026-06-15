@@ -514,14 +514,14 @@ struct ScheduleSection: View {
                             VStack(spacing: 8) {
                                 ForEach(scheduleManager.schedule.windows) { window in
                                     HStack(alignment: .firstTextBaseline, spacing: 12) {
-                                        Text("\(minToLabel(window.start)) – \(minToLabel(window.end))")
+                                        Text("\(ScheduleManager.minToLabel(window.start)) – \(ScheduleManager.minToLabel(window.end))")
                                             .font(.inter(13.5))
                                             .foregroundColor(.focusInk)
                                             .monospacedDigit()
 
                                         Spacer()
 
-                                        Text(formatDays(window.days))
+                                        Text(ScheduleManager.formatDays(window.days))
                                             .font(.inter(12))
                                             .foregroundColor(.focusMuted)
                                     }

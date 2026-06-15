@@ -8,14 +8,6 @@
 
 import SwiftUI
 
-// MARK: - Colors
-
-extension Color {
-    static let transitGreen = Color(red: 0.55, green: 0.65, blue: 0.45) // oklch(0.55 0.1 150)
-    static let transitRed = Color(red: 0.7, green: 0.4, blue: 0.3) // oklch(0.58 0.16 25)
-    static let transitRedSoft = Color(red: 0.97, green: 0.955, blue: 0.95) // oklch(0.955 0.03 25)
-}
-
 // MARK: - Wordmark
 
 struct Wordmark: View {

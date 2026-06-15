@@ -22,7 +22,7 @@ struct WindowCard: View {
                 HStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 0) {
-                            Text(minToLabel(window.start))
+                            Text(ScheduleManager.minToLabel(window.start))
                                 .font(.instrumentSerif(23))
                                 .foregroundColor(.focusInk)
                                 .monospacedDigit()
@@ -31,7 +31,7 @@ struct WindowCard: View {
                                 .font(.instrumentSerif(23, italic: true))
                                 .foregroundColor(.focusMuted)
 
-                            Text(minToLabel(window.end))
+                            Text(ScheduleManager.minToLabel(window.end))
                                 .font(.instrumentSerif(23))
                                 .foregroundColor(.focusInk)
                                 .monospacedDigit()
@@ -44,7 +44,7 @@ struct WindowCard: View {
                             }
                         }
 
-                        Text(formatDays(window.days))
+                        Text(ScheduleManager.formatDays(window.days))
                             .font(.inter(12.5))
                             .foregroundColor(.focusMuted)
                     }

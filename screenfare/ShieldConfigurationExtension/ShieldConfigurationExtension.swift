@@ -49,7 +49,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
 
     private func createCustomShieldConfiguration() -> ShieldConfiguration {
         // Read unlock duration from App Group
-        let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
+        let sharedDefaults = UserDefaults.appGroup
         let unlockDuration = sharedDefaults?.double(forKey: "unlockDuration") ?? 1800 // Default 30 minutes
 
         let durationText = formatDuration(unlockDuration)
@@ -112,7 +112,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
 
     private func isAppTemporarilyUnlocked(_ application: Application) -> Bool {
         // Load temporary unlocks from shared storage
-        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
+        guard let sharedDefaults = UserDefaults.appGroup,
               let data = sharedDefaults.data(forKey: "com.screenfare.temporaryUnlocks"),
               let unlocks = try? JSONDecoder().decode([Data: Date].self, from: data) else {
             return false
@@ -130,7 +130,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
 
     private func isCategoryTemporarilyUnlocked(_ category: ActivityCategory) -> Bool {
         // Load temporary category unlocks from shared storage
-        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
+        guard let sharedDefaults = UserDefaults.appGroup,
               let data = sharedDefaults.data(forKey: "com.screenfare.temporaryCategoryUnlocks"),
               let unlocks = try? JSONDecoder().decode([Data: Date].self, from: data) else {
             return false

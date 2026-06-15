@@ -14,7 +14,7 @@ import Foundation
 // even when the user is actively using them
 class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     let store = ManagedSettingsStore()
-    let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
+    let sharedDefaults = UserDefaults.appGroup
 
     override func intervalDidStart(for activity: DeviceActivityName) {
         super.intervalDidStart(for: activity)

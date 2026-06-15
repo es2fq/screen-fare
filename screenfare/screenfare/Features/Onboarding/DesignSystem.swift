@@ -1,8 +1,8 @@
 //
-//  OnboardingDesignSystem.swift
+//  DesignSystem.swift
 //  screenfare
 //
-//  Design system for Focus NUX flow
+//  Unified design system for the entire app
 //  Matches the Anthropic design specifications exactly
 //
 
@@ -34,6 +34,17 @@ extension Color {
 
     /// oklch(0.585 0.16 28) - Warning color for ending sessions
     static let focusWarn = Color(hex: "C76A4A")
+
+    // MARK: - Transit/Challenge Colors
+
+    /// oklch(0.55 0.1 150) - Green for success states
+    static let transitGreen = Color(red: 0.55, green: 0.65, blue: 0.45)
+
+    /// oklch(0.58 0.16 25) - Red for error states
+    static let transitRed = Color(red: 0.7, green: 0.4, blue: 0.3)
+
+    /// oklch(0.955 0.03 25) - Soft red background for errors
+    static let transitRedSoft = Color(red: 0.97, green: 0.955, blue: 0.95)
 }
 
 // MARK: - Typography

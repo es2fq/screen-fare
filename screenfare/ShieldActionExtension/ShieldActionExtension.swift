@@ -61,7 +61,7 @@ class ShieldActionExtension: ShieldActionDelegate {
     }
 
     private func markUnlockRequested(for application: ApplicationToken) {
-        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
+        guard let sharedDefaults = UserDefaults.appGroup else {
             return
         }
 
@@ -81,7 +81,7 @@ class ShieldActionExtension: ShieldActionDelegate {
     }
 
     private func markCategoryUnlockRequested(for category: ActivityCategoryToken) {
-        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
+        guard let sharedDefaults = UserDefaults.appGroup else {
             return
         }
 
@@ -129,7 +129,7 @@ class ShieldActionExtension: ShieldActionDelegate {
     }
 
     private func recordBlockAttempt() {
-        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
+        guard let sharedDefaults = UserDefaults.appGroup else {
             return
         }
 
@@ -163,7 +163,7 @@ class ShieldActionExtension: ShieldActionDelegate {
     }
 
     private func recordWalkedAwayEvent(for application: ApplicationToken) {
-        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
+        guard let sharedDefaults = UserDefaults.appGroup,
               let appTokenData = try? JSONEncoder().encode(application) else {
             return
         }
@@ -212,7 +212,7 @@ class ShieldActionExtension: ShieldActionDelegate {
         // For category blocks, we don't have the specific app token
         // Just increment the walked away counter without recording to history
         // (since we can't show which specific app in the category was accessed)
-        guard let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared") else {
+        guard let sharedDefaults = UserDefaults.appGroup else {
             return
         }
 

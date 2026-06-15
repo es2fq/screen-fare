@@ -41,7 +41,7 @@ struct TimeStepper: View {
                 .buttonStyle(PlainButtonStyle())
 
                 // Time display
-                Text(minToLabel(value))
+                Text(ScheduleManager.minToLabel(value))
                     .font(.instrumentSerif(25))
                     .foregroundColor(.focusInk)
                     .monospacedDigit()
@@ -76,7 +76,7 @@ struct DayPicker: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            ForEach(dayPills, id: \.1) { letter, dayNum in
+            ForEach(ScheduleManager.dayPills, id: \.1) { letter, dayNum in
                 let isSelected = days.contains(dayNum)
 
                 Button(action: {

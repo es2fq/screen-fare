@@ -7,6 +7,19 @@
 
 import Foundation
 
+// MARK: - App Group Defaults
+
+extension UserDefaults {
+    /// The app group identifier shared between the app and all extensions
+    public static let appGroupSuiteName = "group.esong.screenfare.shared"
+
+    /// Shared UserDefaults instance for the app group
+    /// Returns nil if the app group is not configured correctly
+    public static var appGroup: UserDefaults? {
+        UserDefaults(suiteName: appGroupSuiteName)
+    }
+}
+
 // MARK: - Data Models
 
 public enum ScheduleMode: String, Codable {
@@ -82,7 +95,7 @@ public func isWithinBlockingSchedule(schedule: Schedule, at date: Date = Date())
 /// Load schedule from shared UserDefaults
 /// Returns nil if no schedule is saved
 public func loadScheduleFromSharedDefaults() -> Schedule? {
-    guard let defaults = UserDefaults(suiteName: "group.esong.screenfare.shared"),
+    guard let defaults = UserDefaults.appGroup,
           let data = defaults.data(forKey: "com.screenfare.schedule"),
           let schedule = try? JSONDecoder().decode(Schedule.self, from: data) else {
         return nil
