@@ -283,116 +283,114 @@ struct PermissionBullet: View {
 // MARK: - Screen Time Permission Prompt Mockup
 
 struct ScreenTimePermissionPrompt: View {
+    var onTap: (() -> Void)?
+
     var body: some View {
-        VStack(spacing: 0) {
-            // Mock iOS permission dialog
+        VStack(spacing: 14) {
+            // iOS permission alert with highlight ring
             VStack(spacing: 0) {
-                // Title
-                Text("\"Screen Fare\" Would Like to Access\nScreen Time")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 24)
-                    .padding(.horizontal, 20)
+                VStack(alignment: .leading, spacing: 8) {
+                    // Title
+                    Text("\u{201C}screenfare\u{201D} Would Like to Access Screen Time")
+                        .font(.system(size: 17, weight: .semibold, design: .default))
+                        .foregroundColor(.white.opacity(1))
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Description
-                Text("Providing \"Screen Fare\" access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.")
-                    .font(.system(size: 13))
-                    .foregroundColor(.white.opacity(0.6))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 8)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 24)
-
-                // Divider
-                Rectangle()
-                    .fill(Color.white.opacity(0.2))
-                    .frame(height: 0.5)
-
-                // Buttons
-                HStack(spacing: 0) {
-                    // Continue button
-                    Button(action: {}) {
-                        Text("Continue")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(Color(red: 0.04, green: 0.52, blue: 1.0)) // iOS blue
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                    }
-                    .disabled(true)
-
-                    Rectangle()
-                        .fill(Color.white.opacity(0.2))
-                        .frame(width: 0.5)
-
-                    // Don't allow button
-                    Button(action: {}) {
-                        Text("Don't allow")
-                            .font(.system(size: 17))
-                            .foregroundColor(.white.opacity(0.6))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                    }
-                    .disabled(true)
+                    // Description
+                    Text("Providing \u{201C}screenfare\u{201D} access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(.white.opacity(0.62))
+                        .lineSpacing(3)
+                        .frame(maxWidth:
+                                .infinity, alignment: .leading)
                 }
+                .padding(.top, 20)
+                .padding(.horizontal, 30)
+                .padding(.bottom, 20)
+
+                // Pill buttons
+                HStack(spacing: 10) {
+                    // Continue button
+                    Text("Continue")
+                        .font(.system(size: 16.5, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color(hex: "3A3A3C"))
+                        .cornerRadius(999)
+
+                    // Don't Allow button
+                    Text("Don't Allow")
+                        .font(.system(size: 16.5, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color(red: 0.04, green: 0.52, blue: 1.0))
+                        .cornerRadius(999)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(red: 0.18, green: 0.18, blue: 0.18)) // iOS dark dialog background
-            )
+            .frame(width: 320)
+            .background(Color(hex: "1C1C1E"))
+            .cornerRadius(32)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color(red: 0.04, green: 0.52, blue: 1.0), lineWidth: 3) // Blue highlight
+                RoundedRectangle(cornerRadius: 30)
+                    .stroke(Color(hex: "BF7F5F"), lineWidth: 2.5)
+                    .padding(-8)
             )
-            .padding(.horizontal, 20)
-
-            // Arrow pointing to Continue
-            HStack {
-                Spacer()
-                    .frame(width: 60)
-
-                ArrowShape()
-                    .stroke(Color(red: 0.04, green: 0.52, blue: 1.0), lineWidth: 3)
-                    .frame(width: 50, height: 50)
-                    .padding(.leading, -10)
-
-                Spacer()
+            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
+            .onTapGesture {
+                onTap?()
             }
-            .padding(.top, -8)
+
+            // Clean straight arrow pointing up at Continue + label
+            VStack(spacing: 6) {
+                // Straight arrow (SVG-like path)
+                ZStack {
+                    // Vertical line
+                    Rectangle()
+                        .fill(Color(hex: "BF7F5F"))
+                        .frame(width: 3.5, height: 46)
+                        .offset(y: 3)
+
+                    // Arrowhead
+                    ArrowHead()
+                        .fill(Color(hex: "BF7F5F"))
+                        .frame(width: 24, height: 18)
+                        .offset(y: -20)
+                }
+                .frame(height: 52)
+                .padding(.top, 2)
+
+                // Label
+                Text("Tap \"Continue\" to allow")
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundColor(Color(hex: "BF7F5F"))
+                    .tracking(0.01)
+            }
+            .offset(x: -70)
         }
     }
 }
 
-// MARK: - Arrow Shape
+// MARK: - Arrow Head Shape
 
-struct ArrowShape: Shape {
+struct ArrowHead: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
 
-        // Curved arrow pointing up and to the left (to Continue button)
-        let startX = rect.maxX
-        let startY = rect.maxY
-        let endX = rect.minX + 15
-        let endY = rect.minY + 10
+        // Triangle arrowhead pointing up
+        let centerX = rect.midX
+        let topY = rect.minY
+        let bottomY = rect.maxY
+        let leftX = rect.minX
+        let rightX = rect.maxX
 
-        // Curve control points
-        let control1X = rect.maxX - 10
-        let control1Y = rect.maxY - 20
-        let control2X = rect.minX + 30
-        let control2Y = rect.minY + 30
-
-        path.move(to: CGPoint(x: startX, y: startY))
-        path.addCurve(
-            to: CGPoint(x: endX, y: endY),
-            control1: CGPoint(x: control1X, y: control1Y),
-            control2: CGPoint(x: control2X, y: control2Y)
-        )
-
-        // Arrowhead
-        path.move(to: CGPoint(x: endX, y: endY))
-        path.addLine(to: CGPoint(x: endX - 5, y: endY + 10))
-        path.move(to: CGPoint(x: endX, y: endY))
-        path.addLine(to: CGPoint(x: endX + 10, y: endY + 5))
+        path.move(to: CGPoint(x: centerX, y: topY))
+        path.addLine(to: CGPoint(x: leftX, y: bottomY))
+        path.addLine(to: CGPoint(x: rightX, y: bottomY))
+        path.closeSubpath()
 
         return path
     }
