@@ -226,7 +226,7 @@ class SettingsManager: ObservableObject {
     func updateScreenTimePermission() {
         let center = AuthorizationCenter.shared
         switch center.authorizationStatus {
-        case .approved:
+        case .approved, .approvedWithDataAccess:
             self.screenTimePermission = .granted
         case .denied:
             self.screenTimePermission = .denied

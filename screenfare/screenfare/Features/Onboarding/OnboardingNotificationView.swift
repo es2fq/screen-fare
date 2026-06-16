@@ -19,7 +19,7 @@ struct OnboardingNotificationView: View {
             OnboardingScreen {
                 VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: 36)
+                        .frame(height: 24)
 
                     // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
                     (Text("Enable ")
@@ -52,19 +52,44 @@ struct OnboardingNotificationView: View {
                             checkPermissionStatusAndProceed()
                         }
                     }
-                    .padding(.bottom, 34)
+
+                    // Skip button (only shown when denied)
+                    if isDenied {
+                        Button(action: {
+                            // Skip and continue to next screen
+                            if !hasAdvanced {
+                                hasAdvanced = true
+                                onContinue()
+                            }
+                        }) {
+                            Text("Skip")
+                                .font(.inter(16, weight: .medium))
+                                .foregroundColor(.focusMuted)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                        }
+                        .padding(.top, 12)
+                    }
+
+                    Spacer()
+                        .frame(height: 34)
                 }
             }
 
-            // Notification prompt - positioned like iOS system alert
-            NotificationPermissionPrompt(onTap: {
-                if isDenied {
+            // Show different prompts based on permission status
+            if isDenied {
+                // Settings screen mockup when denied
+                SettingsScreenMockup(onTap: {
                     openSettings()
-                } else {
+                })
+                .offset(y: 0)
+            } else {
+                // Notification prompt - positioned like iOS system alert
+                NotificationPermissionPrompt(onTap: {
                     checkPermissionStatusAndProceed()
-                }
-            })
-            .offset(y: 27)
+                })
+                .offset(y: 30)
+            }
         }
         .onAppear {
             isVisible = true

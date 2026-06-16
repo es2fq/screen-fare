@@ -175,7 +175,7 @@ struct PaidStamp: View {
                 animateStamp()
             }
         }
-        .onChange(of: show) { newValue in
+        .onChange(of: show) { oldValue, newValue in
             if newValue {
                 animateStamp()
             }

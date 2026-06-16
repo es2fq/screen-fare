@@ -19,7 +19,7 @@ struct OnboardingScreenTimeView: View {
             OnboardingScreen {
                 VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: 36)
+                        .frame(height: 24)
 
                     // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
                     (Text("Allow ")

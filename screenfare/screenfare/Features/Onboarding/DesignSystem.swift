@@ -428,6 +428,129 @@ struct NotificationPermissionPrompt: View {
     }
 }
 
+// MARK: - Settings Screen Mockup for Denied Notifications
+
+struct SettingsScreenMockup: View {
+    var onTap: (() -> Void)?
+    @State private var isPressed = false
+
+    var body: some View {
+        // Settings screen mockup
+        VStack(spacing: 0) {
+            // Header
+            Text("Allow screenfare to Access")
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(Color(hex: "8B8680"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 8)
+
+            VStack(spacing: 0) {
+                // Search row
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white.opacity(0.6))
+                        .frame(width: 29, height: 29)
+                        .background(Color(hex: "48484A"))
+                        .cornerRadius(7)
+
+                    Text("Search")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.3))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
+                .background(Color(hex: "2C2C2E"))
+
+                // Notifications row
+                HStack(spacing: 12) {
+                    Image(systemName: "bell.badge.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                        .frame(width: 29, height: 29)
+                        .background(Color(hex: "FF3B30"))
+                        .cornerRadius(7)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Notifications")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white)
+                        Text("Off")
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.5))
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.3))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
+                .background(Color(hex: "2C2C2E"))
+
+                // Cellular Data row
+                HStack(spacing: 12) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                        .frame(width: 29, height: 29)
+                        .background(Color(hex: "34C759"))
+                        .cornerRadius(7)
+
+                    Text("Cellular Data")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
+
+                    Spacer()
+
+                    Toggle("", isOn: .constant(true))
+                        .labelsHidden()
+                        .disabled(true)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
+                .background(Color(hex: "2C2C2E"))
+            }
+            .cornerRadius(10)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+            .overlay(
+                // Border overlay around notifications row only
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(hex: "BF7F5F"), lineWidth: 2.5)
+                    .frame(height: 51)
+                    .offset(y: -8)
+                    .padding(.horizontal, 16)
+            )
+        }
+        .frame(maxWidth: 340)
+        .background(Color(hex: "1C1C1E"))
+        .cornerRadius(20)
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    isPressed = true
+                }
+                .onEnded { _ in
+                    isPressed = false
+                    onTap?()
+                }
+        )
+    }
+}
+
 // MARK: - Arrow Head Shape
 
 struct ArrowHead: Shape {

@@ -54,7 +54,7 @@ struct SettingsTabView: View {
             .presentationDetents([.height(380)])
             .presentationBackground(.clear)
         }
-        .onChange(of: showToast) { newValue in
+        .onChange(of: showToast) { oldValue, newValue in
             if newValue != nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
                     showToast = nil

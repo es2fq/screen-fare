@@ -98,8 +98,9 @@ class AppBlockingManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
-                self?.handleScheduleChange()
+                self.handleScheduleChange()
             }
         }
     }
@@ -272,21 +273,21 @@ class AppBlockingManager: ObservableObject {
         // Move all heavy work to background to keep UI responsive
         let appsToEncode = selectedApps.applicationTokens
         let categoriesToEncode = selectedApps.categoryTokens
-        Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return }
-
+        let defaults = sharedDefaults
+        Task.detached(priority: .userInitiated) {
             // Save selectedApps to shared storage (disk I/O on background thread)
             if let encoded = try? JSONEncoder().encode(appsToEncode) {
-                await self.sharedDefaults?.set(encoded, forKey: "com.screenfare.selectedApps")
+                defaults?.set(encoded, forKey: "com.screenfare.selectedApps")
             }
 
             // Save selectedCategories to shared storage
             if let encoded = try? JSONEncoder().encode(categoriesToEncode) {
-                await self.sharedDefaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
+                defaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
             }
 
             // Apply shields on main actor (only if within schedule)
-            await MainActor.run {
+            await MainActor.run { [weak self] in
+                guard let self = self else { return }
                 if ScheduleManager.shared.isBlockingActive() {
                     self.recalculateShields()
                 } else {
@@ -626,8 +627,8 @@ class AppBlockingManager: ObservableObject {
             return
         }
 
-        let calendar = Calendar.current
-        let now = Date()
+        _ = Calendar.current
+        _ = Date()
 
         for window in schedule.windows {
             // Convert minutes to hour/minute components
@@ -739,21 +740,21 @@ class AppBlockingManager: ObservableObject {
             // Save app/category tokens to shared storage so extensions can access them
             let appsToEncode = selectedApps.applicationTokens
             let categoriesToEncode = selectedApps.categoryTokens
-            Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else { return }
-
+            let defaults = sharedDefaults
+            Task.detached(priority: .userInitiated) {
                 // Save selectedApps to shared storage
                 if let encoded = try? JSONEncoder().encode(appsToEncode) {
-                    await self.sharedDefaults?.set(encoded, forKey: "com.screenfare.selectedApps")
+                    defaults?.set(encoded, forKey: "com.screenfare.selectedApps")
                 }
 
                 // Save selectedCategories to shared storage
                 if let encoded = try? JSONEncoder().encode(categoriesToEncode) {
-                    await self.sharedDefaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
+                    defaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
                 }
 
                 // Apply shields on main actor after data is saved
-                await MainActor.run {
+                await MainActor.run { [weak self] in
+                    guard let self = self else { return }
                     self.recalculateShields()
                     print("[AppBlockingManager] Inside schedule, applied shields")
                 }

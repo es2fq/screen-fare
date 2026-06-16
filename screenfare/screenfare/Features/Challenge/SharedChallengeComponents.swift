@@ -254,7 +254,7 @@ struct ShakeModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .offset(x: offset)
-            .onChange(of: trigger) { _ in
+            .onChange(of: trigger) { oldValue, newValue in
                 withAnimation(.linear(duration: 0.08)) {
                     offset = -9
                 }
