@@ -49,7 +49,7 @@ struct SettingsTabView: View {
         .sheet(item: $showGate) { data in
             ChallengeGate(
                 data: data,
-                difficulty: Int(settings.challengeDifficulty.rawValue) ?? 3
+                difficulty: settings.challengeDifficulty.numericLevel
             )
             .presentationDetents([.height(380)])
             .presentationBackground(.clear)
@@ -130,8 +130,8 @@ struct SettingsTabView: View {
                                 sub: permissionsSummary,
                                 right: AnyView(
                                     HStack(spacing: 8) {
-                                        if settings.healthPermission != .granted {
-                                            StatusPill(text: "1 to allow", tone: .warn)
+                                        if pendingPermissionsCount > 0 {
+                                            StatusPill(text: "\(pendingPermissionsCount) to allow", tone: .warn)
                                         }
                                         Chevron()
                                     }
@@ -254,8 +254,17 @@ struct SettingsTabView: View {
 
     private var permissionsSummary: String {
         let screenTime = settings.screenTimePermission == .granted ? "on" : "off"
-        let health = settings.healthPermission == .granted ? "on" : "off"
-        return "Screen Time \(screenTime) · Health \(health)"
+        let notifications = settings.notificationPermission == .granted ? "on" : "off"
+        return "Screen Time \(screenTime) · Notifications \(notifications)"
+    }
+
+    private var pendingPermissionsCount: Int {
+        var count = 0
+        if settings.screenTimePermission != .granted { count += 1 }
+        if settings.notificationPermission != .granted { count += 1 }
+        // TODO: Re-enable once we have a step challenge
+        // if settings.healthPermission != .granted { count += 1 }
+        return count
     }
 }
 

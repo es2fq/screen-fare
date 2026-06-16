@@ -279,3 +279,121 @@ struct PermissionBullet: View {
         }
     }
 }
+
+// MARK: - Screen Time Permission Prompt Mockup
+
+struct ScreenTimePermissionPrompt: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            // Mock iOS permission dialog
+            VStack(spacing: 0) {
+                // Title
+                Text("\"Screen Fare\" Would Like to Access\nScreen Time")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 24)
+                    .padding(.horizontal, 20)
+
+                // Description
+                Text("Providing \"Screen Fare\" access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 8)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
+
+                // Divider
+                Rectangle()
+                    .fill(Color.white.opacity(0.2))
+                    .frame(height: 0.5)
+
+                // Buttons
+                HStack(spacing: 0) {
+                    // Continue button
+                    Button(action: {}) {
+                        Text("Continue")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(Color(red: 0.04, green: 0.52, blue: 1.0)) // iOS blue
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                    }
+                    .disabled(true)
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: 0.5)
+
+                    // Don't allow button
+                    Button(action: {}) {
+                        Text("Don't allow")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white.opacity(0.6))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                    }
+                    .disabled(true)
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(red: 0.18, green: 0.18, blue: 0.18)) // iOS dark dialog background
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color(red: 0.04, green: 0.52, blue: 1.0), lineWidth: 3) // Blue highlight
+            )
+            .padding(.horizontal, 20)
+
+            // Arrow pointing to Continue
+            HStack {
+                Spacer()
+                    .frame(width: 60)
+
+                ArrowShape()
+                    .stroke(Color(red: 0.04, green: 0.52, blue: 1.0), lineWidth: 3)
+                    .frame(width: 50, height: 50)
+                    .padding(.leading, -10)
+
+                Spacer()
+            }
+            .padding(.top, -8)
+        }
+    }
+}
+
+// MARK: - Arrow Shape
+
+struct ArrowShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        // Curved arrow pointing up and to the left (to Continue button)
+        let startX = rect.maxX
+        let startY = rect.maxY
+        let endX = rect.minX + 15
+        let endY = rect.minY + 10
+
+        // Curve control points
+        let control1X = rect.maxX - 10
+        let control1Y = rect.maxY - 20
+        let control2X = rect.minX + 30
+        let control2Y = rect.minY + 30
+
+        path.move(to: CGPoint(x: startX, y: startY))
+        path.addCurve(
+            to: CGPoint(x: endX, y: endY),
+            control1: CGPoint(x: control1X, y: control1Y),
+            control2: CGPoint(x: control2X, y: control2Y)
+        )
+
+        // Arrowhead
+        path.move(to: CGPoint(x: endX, y: endY))
+        path.addLine(to: CGPoint(x: endX - 5, y: endY + 10))
+        path.move(to: CGPoint(x: endX, y: endY))
+        path.addLine(to: CGPoint(x: endX + 10, y: endY + 5))
+
+        return path
+    }
+}

@@ -43,10 +43,10 @@ struct CustomToggle: View {
         .frame(width: 44, height: 26)
         .contentShape(Rectangle()) // Make entire area tappable
         .onTapGesture {
-            // Call the toggle function if provided
-            if let onToggle = onToggle {
-                onToggle(!isOn)
-            }
+            // Toggle the binding
+            isOn.toggle()
+            // Also call the callback if provided
+            onToggle?(isOn)
         }
     }
 }

@@ -33,6 +33,17 @@ enum ChallengeDifficulty: String, CaseIterable {
     case medium = "Medium"
     case hard = "Hard"
     case veryHard = "Very Hard"
+
+    /// Numeric difficulty level (1-5) for challenge gates
+    var numericLevel: Int {
+        switch self {
+        case .veryEasy: return 1
+        case .easy: return 2
+        case .medium: return 3
+        case .hard: return 4
+        case .veryHard: return 5
+        }
+    }
 }
 
 enum TypingDifficulty: String, CaseIterable {

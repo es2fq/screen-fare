@@ -9,16 +9,23 @@ import SwiftUI
 
 struct ScheduleEditorSheet: View {
     @ObservedObject var scheduleManager: ScheduleManager
+    @StateObject private var settings = SettingsManager.shared
     let onClose: () -> Void
 
     @State private var draft: Schedule
     @State private var expandedWindowId: String?
+    @State private var originalSchedule: Schedule
+
+    // Strict mode gate
+    @State private var showGate: ChallengeGateData?
 
     init(scheduleManager: ScheduleManager, onClose: @escaping () -> Void) {
         self.scheduleManager = scheduleManager
         self.onClose = onClose
-        self._draft = State(initialValue: scheduleManager.schedule)
-        self._expandedWindowId = State(initialValue: scheduleManager.schedule.windows.first?.id)
+        let currentSchedule = scheduleManager.schedule
+        self._draft = State(initialValue: currentSchedule)
+        self._originalSchedule = State(initialValue: currentSchedule)
+        self._expandedWindowId = State(initialValue: currentSchedule.windows.first?.id)
     }
 
     var body: some View {
@@ -127,13 +134,75 @@ struct ScheduleEditorSheet: View {
                 }
             }
         }
+        .sheet(item: $showGate) { data in
+            ChallengeGate(
+                data: data,
+                difficulty: settings.challengeDifficulty.numericLevel
+            )
+            .presentationDetents([.height(380)])
+            .presentationBackground(.clear)
+        }
     }
 
     // MARK: - Commit (save and close)
 
     private func commit() {
+        // Check if strict mode protection is enabled and schedule is being shortened
+        if settings.strictModeEnabled && settings.strictProtectShorten && isScheduleShortened() {
+            // Show challenge gate
+            showGate = ChallengeGateData(
+                title: "Shortening your schedule",
+                onPass: {
+                    self.performCommit()
+                }
+            )
+        } else {
+            // No protection, or schedule not shortened - save immediately
+            performCommit()
+        }
+    }
+
+    private func performCommit() {
         scheduleManager.schedule = draft
         onClose()
+    }
+
+    /// Checks if the draft schedule is shorter than the original schedule
+    private func isScheduleShortened() -> Bool {
+        // If changing from scheduled to all day, that's an expansion (not shortening)
+        if originalSchedule.mode == .scheduled && draft.mode == .allday {
+            return false
+        }
+
+        // If changing from all day to scheduled, that's a shortening
+        if originalSchedule.mode == .allday && draft.mode == .scheduled {
+            return true
+        }
+
+        // Both are scheduled mode - compare total blocking time
+        if originalSchedule.mode == .scheduled && draft.mode == .scheduled {
+            let originalMinutes = calculateTotalBlockingMinutes(originalSchedule.windows)
+            let draftMinutes = calculateTotalBlockingMinutes(draft.windows)
+            return draftMinutes < originalMinutes
+        }
+
+        // Both all day - no change
+        return false
+    }
+
+    /// Calculates total blocking minutes from windows
+    private func calculateTotalBlockingMinutes(_ windows: [BlockingWindow]) -> Int {
+        windows.reduce(0) { total, window in
+            let duration: Int
+            if window.end < window.start {
+                // Overnight window: (1440 - start) + end
+                duration = (1440 - window.start) + window.end
+            } else {
+                // Normal window
+                duration = window.end - window.start
+            }
+            return total + duration
+        }
     }
 
     // MARK: - Scheduled Mode Content

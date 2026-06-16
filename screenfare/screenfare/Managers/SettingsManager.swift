@@ -7,6 +7,8 @@
 
 import Foundation
 import Combine
+import UserNotifications
+import FamilyControls
 
 class SettingsManager: ObservableObject {
     static let shared = SettingsManager()
@@ -46,6 +48,8 @@ class SettingsManager: ObservableObject {
     @Published var challengeType: ChallengeType {
         didSet {
             UserDefaults.standard.set(challengeType.rawValue, forKey: "challengeType")
+            // Also save to App Group for shield extensions
+            UserDefaults.appGroup?.set(challengeType.rawValue, forKey: "challengeType")
         }
     }
 
@@ -106,9 +110,16 @@ class SettingsManager: ObservableObject {
         }
     }
 
-    @Published var healthPermission: PermissionStatus {
+    // TODO: Re-enable once we have a step challenge
+    // @Published var healthPermission: PermissionStatus {
+    //     didSet {
+    //         UserDefaults.standard.set(healthPermission.rawValue, forKey: "healthPermission")
+    //     }
+    // }
+
+    @Published var notificationPermission: PermissionStatus {
         didSet {
-            UserDefaults.standard.set(healthPermission.rawValue, forKey: "healthPermission")
+            UserDefaults.standard.set(notificationPermission.rawValue, forKey: "notificationPermission")
         }
     }
 
@@ -166,19 +177,72 @@ class SettingsManager: ObservableObject {
             self.screenTimePermission = .granted
         }
 
-        if let savedHealth = UserDefaults.standard.string(forKey: "healthPermission"),
-           let permission = PermissionStatus(rawValue: savedHealth) {
-            self.healthPermission = permission
+        // TODO: Re-enable once we have a step challenge
+        // if let savedHealth = UserDefaults.standard.string(forKey: "healthPermission"),
+        //    let permission = PermissionStatus(rawValue: savedHealth) {
+        //     self.healthPermission = permission
+        // } else {
+        //     self.healthPermission = .notDetermined
+        // }
+
+        if let savedNotification = UserDefaults.standard.string(forKey: "notificationPermission"),
+           let permission = PermissionStatus(rawValue: savedNotification) {
+            self.notificationPermission = permission
         } else {
-            self.healthPermission = .notDetermined
+            self.notificationPermission = .notDetermined
         }
 
         // Initial sync to App Group
         UserDefaults.appGroup?.set(unlockDuration, forKey: "unlockDuration")
+        UserDefaults.appGroup?.set(challengeType.rawValue, forKey: "challengeType")
     }
 
     var unlockDurationText: String {
         unlockDuration.formatted()
+    }
+
+    // MARK: - Permission Status Checking
+
+    /// Updates notification permission status based on actual system authorization
+    func updateNotificationPermission() {
+        Task { @MainActor in
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+
+            switch settings.authorizationStatus {
+            case .authorized:
+                self.notificationPermission = .granted
+            case .denied:
+                self.notificationPermission = .denied
+            case .notDetermined, .provisional, .ephemeral:
+                self.notificationPermission = .notDetermined
+            @unknown default:
+                self.notificationPermission = .notDetermined
+            }
+        }
+    }
+
+    /// Updates screen time permission status based on actual system authorization
+    func updateScreenTimePermission() {
+        let center = AuthorizationCenter.shared
+        switch center.authorizationStatus {
+        case .approved:
+            self.screenTimePermission = .granted
+        case .denied:
+            self.screenTimePermission = .denied
+        case .notDetermined:
+            self.screenTimePermission = .notDetermined
+        @unknown default:
+            self.screenTimePermission = .notDetermined
+        }
+    }
+
+    /// Updates all permission statuses
+    func updateAllPermissions() {
+        updateNotificationPermission()
+        updateScreenTimePermission()
+        // TODO: Re-enable once we have a step challenge
+        // Health permission would go here if HealthKit is added
     }
 }
 
@@ -227,7 +291,7 @@ enum PermissionStatus: String, CaseIterable {
         switch self {
         case .granted: return "Granted"
         case .notDetermined: return "Allow"
-        case .denied: return "Denied"
+        case .denied: return "Enable"
         }
     }
 }

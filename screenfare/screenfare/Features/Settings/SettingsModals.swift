@@ -19,28 +19,30 @@ struct SettingsToast: View {
 
     var body: some View {
         if let toast = toast {
-            VStack {
-                Spacer()
+            GeometryReader { geometry in
+                VStack {
+                    Spacer()
 
-                Text(toast.message)
-                    .font(.inter(13.5, weight: .medium))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 11)
-                    .background(Color.focusInk)
-                    .cornerRadius(14)
-                    .shadow(color: Color.black.opacity(0.26), radius: 13, x: 0, y: 8)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 50)
-                    .padding(.bottom, 34)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .bottom).combined(with: .opacity),
-                        removal: .opacity
-                    ))
-                    .animation(.spring(response: 0.35, dampingFraction: 0.8), value: toast.id)
+                    Text(toast.message)
+                        .font(.inter(13.5, weight: .medium))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 11)
+                        .background(Color.focusInk)
+                        .cornerRadius(14)
+                        .shadow(color: Color.black.opacity(0.26), radius: 13, x: 0, y: 8)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 50)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom + 90)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity),
+                            removal: .opacity
+                        ))
+                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: toast.id)
+                }
+                .allowsHitTesting(false)
             }
-            .allowsHitTesting(false)
         }
     }
 }

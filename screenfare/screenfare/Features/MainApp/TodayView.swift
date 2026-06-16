@@ -19,6 +19,9 @@ struct TodayView: View {
     @State private var currentTime = Date()
     @Environment(\.selectedTab) private var selectedTab
 
+    // Strict mode gate
+    @State private var showGate: ChallengeGateData?
+
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -93,7 +96,7 @@ struct TodayView: View {
                                     if newValue {
                                         blockingManager.applyBlocking()
                                     } else {
-                                        blockingManager.removeBlocking()
+                                        handleTurnOffBlocking()
                                     }
                                 },
                                 trackColorOn: Color.white.opacity(0.3),
@@ -230,7 +233,35 @@ struct TodayView: View {
             // Also load pending events when app comes to foreground
             historyManager.loadPendingEvents()
         }
+        .sheet(item: $showGate) { data in
+            ChallengeGate(
+                data: data,
+                difficulty: settings.challengeDifficulty.numericLevel
+            )
+            .presentationDetents([.height(380)])
+            .presentationBackground(.clear)
+        }
     }
+
+    // MARK: - Strict Mode Protection
+
+    private func handleTurnOffBlocking() {
+        // Check if strict mode protection is enabled
+        if settings.strictModeEnabled && settings.strictProtectOff {
+            // Show challenge gate
+            showGate = ChallengeGateData(
+                title: "Turning off Screen Fare",
+                onPass: {
+                    blockingManager.removeBlocking()
+                }
+            )
+        } else {
+            // No protection, turn off immediately
+            blockingManager.removeBlocking()
+        }
+    }
+
+    // MARK: - Helpers
 
     private var challengeTypeName: String {
         switch settings.challengeType {

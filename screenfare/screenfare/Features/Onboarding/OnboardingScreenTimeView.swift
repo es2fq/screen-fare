@@ -54,6 +54,12 @@ struct OnboardingScreenTimeView: View {
 
                 Spacer()
 
+                // Permission prompt mockup
+                ScreenTimePermissionPrompt()
+                    .padding(.vertical, 20)
+
+                Spacer()
+
                 // Primary button
                 PrimaryButton(title: "Allow access") {
                     // Check if already authorized before requesting

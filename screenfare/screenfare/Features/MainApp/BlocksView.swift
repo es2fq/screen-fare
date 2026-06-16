@@ -189,11 +189,17 @@ struct BlocksView: View {
 
 struct BlockedAppsSection: View {
     @StateObject private var blockingManager = AppBlockingManager.shared
+    @StateObject private var settings = SettingsManager.shared
     @Binding var isEditing: Bool
     @Binding var showAll: Bool
     @Binding var showingPicker: Bool
     let appCount: Int
     let cap: Int
+
+    // Strict mode gate
+    @State private var showGate: ChallengeGateData?
+    @State private var pendingRemovalToken: Any?
+    @State private var pendingRemovalIsCategory = false
 
     var body: some View {
         let allApps = Array(blockingManager.selectedApps.applicationTokens)
@@ -304,15 +310,59 @@ struct BlockedAppsSection: View {
                 }
             }
         }
+        .sheet(item: $showGate) { data in
+            ChallengeGate(
+                data: data,
+                difficulty: settings.challengeDifficulty.numericLevel
+            )
+            .presentationDetents([.height(380)])
+            .presentationBackground(.clear)
+        }
     }
 
     private func removeApp<T>(token: T) where T: Hashable {
+        // Check if strict mode protection is enabled
+        if settings.strictModeEnabled && settings.strictProtectRemove {
+            // Store the token and show challenge gate
+            pendingRemovalToken = token
+            pendingRemovalIsCategory = false
+            showGate = ChallengeGateData(
+                title: "Removing blocked app",
+                onPass: {
+                    self.performRemoveApp(token: token)
+                }
+            )
+        } else {
+            // No protection, remove immediately
+            performRemoveApp(token: token)
+        }
+    }
+
+    private func performRemoveApp<T>(token: T) where T: Hashable {
         var updatedSelection = blockingManager.selectedApps
         updatedSelection.applicationTokens.remove(token as! ApplicationToken)
         blockingManager.selectedApps = updatedSelection
     }
 
     private func removeCategory<T>(token: T) where T: Hashable {
+        // Check if strict mode protection is enabled
+        if settings.strictModeEnabled && settings.strictProtectRemove {
+            // Store the token and show challenge gate
+            pendingRemovalToken = token
+            pendingRemovalIsCategory = true
+            showGate = ChallengeGateData(
+                title: "Removing blocked category",
+                onPass: {
+                    self.performRemoveCategory(token: token)
+                }
+            )
+        } else {
+            // No protection, remove immediately
+            performRemoveCategory(token: token)
+        }
+    }
+
+    private func performRemoveCategory<T>(token: T) where T: Hashable {
         var updatedSelection = blockingManager.selectedApps
         updatedSelection.categoryTokens.remove(token as! ActivityCategoryToken)
         blockingManager.selectedApps = updatedSelection
