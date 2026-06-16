@@ -82,14 +82,38 @@ struct OnboardingSummaryView: View {
                         // Summary card
                         VStack(spacing: 0) {
                             SummaryRow(
-                                label: "Apps blocked",
+                                label: "Blocking",
                                 value: AnyView(
                                     HStack(spacing: 8) {
-                                        AppFacepile(
-                                            orderedAppTokens: Array(selectedApps.applicationTokens).sorted(by: { $0.hashValue < $1.hashValue }),
-                                            orderedCategoryTokens: Array(selectedApps.categoryTokens).sorted(by: { $0.hashValue < $1.hashValue }),
-                                            totalCount: appCount
-                                        )
+                                        // Facepile of icons
+                                        HStack(spacing: -6) {
+                                            ForEach(Array(selectedApps.categoryTokens.prefix(4)).sorted(by: { $0.hashValue < $1.hashValue }), id: \.self) { token in
+                                                Label(token)
+                                                    .labelStyle(.iconOnly)
+                                                    .scaleEffect(1.4)
+                                                    .frame(width: 22, height: 22)
+                                                    .background(Color.focusCard)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 7))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 7)
+                                                            .stroke(Color.focusCard, lineWidth: 1.5)
+                                                    )
+                                            }
+
+                                            ForEach(Array(selectedApps.applicationTokens.prefix(max(0, 4 - selectedApps.categoryTokens.count))).sorted(by: { $0.hashValue < $1.hashValue }), id: \.self) { token in
+                                                Label(token)
+                                                    .labelStyle(.iconOnly)
+                                                    .scaleEffect(1.4)
+                                                    .frame(width: 22, height: 22)
+                                                    .background(Color.focusCard)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 7))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 7)
+                                                            .stroke(Color.focusCard, lineWidth: 1.5)
+                                                    )
+                                            }
+                                        }
+
                                         Text("\(appCount)")
                                             .font(.inter(13))
                                             .foregroundColor(.focusMuted)

@@ -65,88 +65,163 @@ struct OnboardingAppSelectionView: View {
                     .lineSpacing(32 * 0.05) // lineHeight 1.05 = 5% extra spacing
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 Spacer().frame(height: 8)
 
                 // Description: fontSize: 14.5
-                Text("Choose apps and categories Screen Fare will gently restrict.")
+                Text("Pick the apps that pull you in. Screen Fare restricts them through Screen Time.")
                     .font(.inter(14.5))
                     .foregroundColor(.focusMuted)
                     .fixedSize(horizontal: false, vertical: true)
+                    .lineSpacing(14.5 * 0.5) // lineHeight: 1.5
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 8)
-                
-                Spacer().frame(height: 8)
 
-                // Facepile Card
-                Group {
-                    if hasSelectedApps {
-                        AppFacepile(
-                            orderedAppTokens: orderedAppTokens,
-                            orderedCategoryTokens: orderedCategoryTokens,
-                            totalCount: appCount
-                        )
-                    } else {
-                        Text("No apps selected yet")
-                            .font(.inter(13))
-                            .foregroundColor(.focusMuted)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                    }
-                }
-                .frame(maxWidth: .infinity, minHeight: 60)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.focusLine, lineWidth: 1)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.focusCard)
-                        )
-                )
-                .padding(.top, 16)
+                Spacer().frame(height: 14)
 
-                Spacer()
-                    .frame(height: 24)
+                // Content area - fills available space
+                if hasSelectedApps {
+                    // Selected state
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Header with count
+                        HStack {
+                            Text("RESTRICTING")
+                                .font(.inter(11, weight: .semibold))
+                                .foregroundColor(.focusMuted)
+                                .tracking(0.6)
 
-                // Select apps button
-                Button(action: { showingPicker = true }) {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.focusInk.opacity(0.06))
-                                .frame(width: 32, height: 32)
+                            Spacer()
 
-                            Image(systemName: "plus")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.focusInk)
-                        }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(hasSelectedApps ? "Manage apps" : "Add apps")
-                                .font(.inter(14.5, weight: .semibold))
-                                .foregroundColor(.focusInk)
-
-                            Text(hasSelectedApps ? "\(appCount) selected · tap to manage" : "Browse all apps via Screen Time")
-                                .font(.inter(12))
+                            Text("\(appCount) \(appCount == 1 ? "selection" : "selections")")
+                                .font(.inter(13))
                                 .foregroundColor(.focusMuted)
                         }
 
-                        Spacer()
+                        // Apps grid - just icons like BlocksView
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8)
+                        ], spacing: 18) {
+                            // Display categories first
+                            ForEach(orderedCategoryTokens, id: \.self) { token in
+                                VStack {
+                                    Label(token)
+                                        .labelStyle(.iconOnly)
+                                        .frame(width: 42, height: 42)
+                                        .scaleEffect(1.5)
+                                }
+                                .frame(width: 60, height: 60)
+                                .background(Color.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.focusLine, lineWidth: 1)
+                                )
+                                .cornerRadius(16)
+                            }
 
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.focusMuted)
+                            // Display apps
+                            ForEach(orderedAppTokens, id: \.self) { token in
+                                VStack {
+                                    Label(token)
+                                        .labelStyle(.iconOnly)
+                                        .frame(width: 42, height: 42)
+                                        .scaleEffect(1.5)
+                                }
+                                .frame(width: 60, height: 60)
+                                .background(Color.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.focusLine, lineWidth: 1)
+                                )
+                                .cornerRadius(16)
+                            }
+                        }
+                        .padding(18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.focusCard)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.focusLine, lineWidth: 1)
+                        )
+
+                        // Edit selection button
+                        Button(action: { showingPicker = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 14, weight: .semibold))
+
+                                Text("Edit selection")
+                                    .font(.inter(14, weight: .semibold))
+                            }
+                            .foregroundColor(.focusInk)
+                            .padding(.vertical, 4)
+                        }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color.focusLine, lineWidth: 1)
+                } else {
+                    // Empty state - fills available vertical space
+                    Button(action: { showingPicker = true }) {
+                        VStack(spacing: 16) {
+                            Spacer()
+
+                            // App icon preview with real app glyphs
+                            HStack(spacing: -10) {
+                                // Instagram
+                                AppGlyphView(glyph: "IG", color: Color(red: 0.894, green: 0.251, blue: 0.373))
+
+                                // TikTok
+                                AppGlyphView(glyph: "TT", color: Color(red: 0.067, green: 0.067, blue: 0.067))
+
+                                // YouTube
+                                AppGlyphView(glyph: "YT", color: Color(red: 1.0, green: 0.0, blue: 0.0))
+                            }
+
+                            VStack(spacing: 6) {
+                                Text("Choose apps")
+                                    .font(.inter(17, weight: .semibold))
+                                    .foregroundColor(.focusInk)
+
+                                Text("Opens Screen Time's picker. Your choices stay on your device — Screen Fare only knows something is blocked, never what.")
+                                    .font(.inter(13))
+                                    .foregroundColor(.focusMuted)
+                                    .multilineTextAlignment(.center)
+                                    .lineSpacing(13 * 0.5)
+                                    .frame(maxWidth: 240)
+                            }
+
+                            HStack(spacing: 8) {
+                                Text("Open picker")
+                                    .font(.inter(14.5, weight: .semibold))
+
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 13, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 11)
                             .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(Color.focusCard)
+                                Capsule()
+                                    .fill(Color.focusInk)
                             )
-                    )
+
+                            Spacer()
+                        }
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 32)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(Color.focusCard)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 6]))
+                                .foregroundColor(Color.focusLine)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
 
                 Spacer()
@@ -171,58 +246,25 @@ struct OnboardingAppSelectionView: View {
     }
 }
 
-struct AppFacepile: View {
-    let orderedAppTokens: [ApplicationToken]
-    let orderedCategoryTokens: [ActivityCategoryToken]
-    let totalCount: Int
+// App icon glyph matching the HTML design
+struct AppGlyphView: View {
+    let glyph: String
+    let color: Color
 
     var body: some View {
-        HStack {
-            Spacer()
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(color)
+                .frame(width: 48, height: 48)
 
-            HStack(spacing: 10) {
-                let remainingCount = max(0, totalCount - 5)
-
-                // Show individual app icons (up to 5)
-                ForEach(Array(orderedAppTokens.prefix(min(5, orderedAppTokens.count)).enumerated()), id: \.element) { index, token in
-                    Label(token)
-                        .labelStyle(.iconOnly)
-                        .scaleEffect(2.0)
-                        .frame(width: 40, height: 40)
-                        .background(Color.focusCard)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-
-                // Show category icons (only if we have room left after apps)
-                if orderedAppTokens.count < 5 {
-                    let categoryLimit = 5 - orderedAppTokens.count
-                    ForEach(Array(orderedCategoryTokens.prefix(categoryLimit).enumerated()), id: \.element) { index, token in
-                        Label(token)
-                            .labelStyle(.iconOnly)
-                            .scaleEffect(2.0)
-                            .frame(width: 40, height: 40)
-                            .background(Color.focusCard)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                }
-
-                // Show +N box if there are more than 5 items total
-                if remainingCount > 0 {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.focusInk.opacity(0.06))
-                            .frame(width: 40, height: 40)
-
-                        Text("+\(remainingCount)")
-                            .font(.inter(12, weight: .semibold))
-                            .foregroundColor(.focusInk)
-                    }
-                }
-            }.frame(maxWidth: .infinity, alignment: .leading)
-
-            Spacer()
+            Text(glyph)
+                .font(.inter(19, weight: .bold))
+                .foregroundColor(color == Color(red: 1.0, green: 0.988, blue: 0.0) ? .black : .white)
         }
-        .padding(.horizontal, 16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.focusCard, lineWidth: 2)
+        )
     }
 }
 

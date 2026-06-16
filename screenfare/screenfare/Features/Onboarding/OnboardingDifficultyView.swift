@@ -37,7 +37,7 @@ struct OnboardingDifficultyView: View {
                 // Title: fontSize: 32, lineHeight: 1.05
                 (Text("The ")
                     .font(.instrumentSerif(32))
-                 + Text("pause")
+                 + Text("fare")
                     .font(.instrumentSerif(32, italic: true))
                  + Text("\nbefore you scroll.")
                     .font(.instrumentSerif(32)))
@@ -47,7 +47,7 @@ struct OnboardingDifficultyView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 // Description: fontSize: 14.5
-                Text("Solve a math problem to unlock a blocked app. Pick a difficulty.")
+                Text("Solve a math problem to unlock a blocked app. You may change this later.")
                     .font(.inter(14.5))
                     .foregroundColor(.focusMuted)
                     .fixedSize(horizontal: false, vertical: true)
