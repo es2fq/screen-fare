@@ -13,18 +13,18 @@ struct MainTabView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             // Tab content
-            Group {
-                switch selectedTab {
-                case 0:
+            ZStack {
+                if selectedTab == 0 {
                     TodayView()
-                case 1:
+                }
+                if selectedTab == 1 {
                     BlocksView()
-                case 2:
+                }
+                if selectedTab == 2 {
                     ChallengeTabView()
-                case 3:
+                }
+                if selectedTab == 3 {
                     SettingsTabView()
-                default:
-                    TodayView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

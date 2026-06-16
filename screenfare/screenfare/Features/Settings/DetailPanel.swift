@@ -58,6 +58,7 @@ struct DetailPanel<Content: View>: View {
                     .padding(.top, 4)
                     .padding(.bottom, 100)
                 }
+                .scrollIndicators(.hidden)
             }
         }
     }

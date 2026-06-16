@@ -134,7 +134,7 @@ struct ChallengeGate: View {
                             .foregroundColor(.focusInk)
                             .monospacedDigit()
 
-                        TextField("Answer", text: $userAnswer)
+                        TextField("", text: $userAnswer)
                             .font(.inter(22, weight: .semibold))
                             .foregroundColor(.focusInk)
                             .multilineTextAlignment(.center)

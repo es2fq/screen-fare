@@ -18,6 +18,7 @@ struct BlocksView: View {
     @State private var isEditing = false
     @State private var showAll = false
     @State private var showingScheduleEditor = false
+    @State private var dragOffset: CGFloat = 0
 
     private let CAP = 11 // Show at most 11 apps before "show more"
 
@@ -28,12 +29,17 @@ struct BlocksView: View {
                 .offset(x: showingScheduleEditor ? -90 : 0)
                 .brightness(showingScheduleEditor ? -0.03 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingScheduleEditor)
+                .animation(nil, value: dragOffset) // Don't animate background during drag
 
             // SCHEDULE EDITOR LAYER
             scheduleEditorLayer
-                .offset(x: showingScheduleEditor ? 0 : UIScreen.main.bounds.width)
+                .offset(x: showingScheduleEditor ? dragOffset : UIScreen.main.bounds.width)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingScheduleEditor)
+                .animation(.interactiveSpring(), value: dragOffset)
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .swipeBackGesture(isActive: showingScheduleEditor, dragOffset: $dragOffset, onDismiss: {
+                    showingScheduleEditor = false
+                })
         }
         .familyActivityPicker(
             isPresented: $showingPicker,
@@ -164,6 +170,7 @@ struct BlocksView: View {
                     }
                     .padding(.horizontal, 22)
                 }
+                .scrollIndicators(.hidden)
             }
             .safeAreaPadding(.top)
             .padding(.bottom, 90)

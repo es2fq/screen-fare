@@ -12,6 +12,7 @@ struct ChallengeTabView: View {
     @StateObject private var settings = SettingsManager.shared
     @State private var view: ViewState = .list
     @State private var selectedType: ChallengeType = .math
+    @State private var dragOffset: CGFloat = 0
     @FocusState private var isAnyFieldFocused: Bool
     @State private var configViewCount = 0 // Track config view appearances
 
@@ -49,12 +50,18 @@ struct ChallengeTabView: View {
                 .offset(x: view == .config ? -90 : 0)
                 .brightness(view == .config ? -0.03 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: view)
+                .animation(nil, value: dragOffset) // Don't animate background during drag
 
             // CONFIG LAYER
             configLayer
-                .offset(x: view == .config ? 0 : UIScreen.main.bounds.width)
+                .offset(x: view == .config ? dragOffset : UIScreen.main.bounds.width)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: view)
+                .animation(.interactiveSpring(), value: dragOffset)
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .swipeBackGesture(isActive: view == .config, dragOffset: $dragOffset, onDismiss: {
+                    isAnyFieldFocused = false
+                    view = .list
+                })
         }
     }
 
@@ -254,6 +261,7 @@ struct ChallengeTabView: View {
                         isAnyFieldFocused = false
                     }
                 }
+                .scrollIndicators(.hidden)
             }
         }
     }

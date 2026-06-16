@@ -132,6 +132,7 @@ struct ScheduleEditorSheet: View {
                     .padding(.top, 4)
                     .padding(.bottom, 100)
                 }
+                .scrollIndicators(.hidden)
             }
         }
         .sheet(item: $showGate) { data in

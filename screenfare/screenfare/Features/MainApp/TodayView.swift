@@ -216,6 +216,7 @@ struct TodayView: View {
             }
             .padding(.horizontal, 22)
                 }
+                .scrollIndicators(.hidden)
             }
             .safeAreaPadding(.top)
             .padding(.bottom, 90)
