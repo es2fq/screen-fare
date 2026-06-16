@@ -384,6 +384,109 @@ struct ScreenTimePermissionPrompt: View {
     }
 }
 
+// MARK: - Notification Permission Prompt Mockup
+
+struct NotificationPermissionPrompt: View {
+    var onTap: (() -> Void)?
+    @State private var isPressed = false
+
+    var body: some View {
+        VStack(spacing: 14) {
+            // iOS notification permission alert with highlight ring
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    // Title
+                    Text("\u{201C}screenfare\u{201D} Would Like to Send You Notifications")
+                        .font(.system(size: 17, weight: .semibold, design: .default))
+                        .foregroundColor(.white.opacity(1))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // Description
+                    Text("Notifications may include alerts, sounds, and icon badges. These can be configured in Settings.")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(.white.opacity(0.62))
+                        .lineSpacing(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.top, 20)
+                .padding(.horizontal, 30)
+                .padding(.bottom, 20)
+
+                // Pill buttons
+                HStack(spacing: 10) {
+                    // Don't Allow button
+                    Text("Don't Allow")
+                        .font(.system(size: 16.5, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color(hex: "3A3A3C"))
+                        .cornerRadius(999)
+
+                    // Allow button
+                    Text("Allow")
+                        .font(.system(size: 16.5, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color(hex: "3A3A3C"))
+                        .cornerRadius(999)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+            .frame(width: 320)
+            .background(Color(hex: "1C1C1E"))
+            .cornerRadius(32)
+            .overlay(
+                RoundedRectangle(cornerRadius: 30)
+                    .stroke(Color(hex: "BF7F5F"), lineWidth: 2.5)
+                    .padding(-8)
+            )
+            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
+            .scaleEffect(isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        isPressed = true
+                    }
+                    .onEnded { _ in
+                        isPressed = false
+                        onTap?()
+                    }
+            )
+
+            // Clean straight arrow pointing up at Allow + label
+            VStack(spacing: 6) {
+                // Straight arrow (SVG-like path)
+                ZStack {
+                    // Vertical line
+                    Rectangle()
+                        .fill(Color(hex: "BF7F5F"))
+                        .frame(width: 3.5, height: 46)
+                        .offset(y: 3)
+
+                    // Arrowhead
+                    ArrowHead()
+                        .fill(Color(hex: "BF7F5F"))
+                        .frame(width: 24, height: 18)
+                        .offset(y: -20)
+                }
+                .frame(height: 52)
+                .padding(.top, 2)
+
+                // Label
+                Text("Tap \"Allow\" to enable")
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundColor(Color(hex: "BF7F5F"))
+                    .tracking(0.01)
+            }
+            .offset(x: 75)
+        }
+    }
+}
+
 // MARK: - Arrow Head Shape
 
 struct ArrowHead: Shape {

@@ -15,56 +15,56 @@ struct OnboardingNotificationView: View {
     let onContinue: () -> Void
 
     var body: some View {
-        OnboardingScreen {
-            VStack(spacing: 0) {
-                Spacer()
-                    .frame(height: 36)
+        ZStack {
+            OnboardingScreen {
+                VStack(spacing: 0) {
+                    Spacer()
+                        .frame(height: 36)
 
-                // Icon - left aligned
-                PermissionIcon(kind: .notification)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
+                    (Text("Enable ")
+                        .font(.instrumentSerif(36))
+                     + Text("notifications.")
+                        .font(.instrumentSerif(36, italic: true)))
+                        .foregroundColor(.focusInk)
+                        .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 28)
 
-                // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
-                (Text("Enable\n")
-                    .font(.instrumentSerif(36))
-                 + Text("notifications.")
-                    .font(.instrumentSerif(36, italic: true)))
-                    .foregroundColor(.focusInk)
-                    .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 28)
+                    // Description: fontSize: 15.5, lineHeight: 1.5, margin: 0 0 28px
+                    Text("Screen Time sends a notification you can tap to pay a fare.")
+                        .font(.inter(16))
+                        .foregroundColor(.focusMuted)
+                        .lineSpacing(16 * 0.5) // lineHeight 1.5 = 50% extra spacing
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 14)
 
-                // Description: fontSize: 15.5, lineHeight: 1.5, margin: 0 0 28px
-                Text("When you tap a blocked app, iOS shows its block screen. Focus sends a notification you can tap to come back here and complete a challenge.")
-                    .font(.inter(15.5))
-                    .foregroundColor(.focusMuted)
-                    .lineSpacing(15.5 * 0.5) // lineHeight 1.5 = 50% extra spacing
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 14)
+                    Spacer()
 
-                // Bullets
-                VStack(spacing: 14) {
-                    PermissionBullet(text: "A bridge from the iOS block screen back to Focus")
-                    PermissionBullet(text: "Tap the notification → complete challenge → unlock")
-                    PermissionBullet(text: "No marketing pings, ever")
-                }
-                .padding(.top, 28)
-
-                Spacer()
-
-                // Primary button - changes based on permission status
-                PrimaryButton(title: isDenied ? "Open Settings" : "Allow access") {
-                    if isDenied {
-                        openSettings()
-                    } else {
-                        // Check if already authorized before requesting
-                        checkPermissionStatusAndProceed()
+                    // Primary button - changes based on permission status
+                    PrimaryButton(title: isDenied ? "Open Settings" : "Allow access") {
+                        if isDenied {
+                            openSettings()
+                        } else {
+                            // Check if already authorized before requesting
+                            checkPermissionStatusAndProceed()
+                        }
                     }
+                    .padding(.bottom, 34)
                 }
-                .padding(.bottom, 34)
             }
+
+            // Notification prompt - positioned like iOS system alert
+            NotificationPermissionPrompt(onTap: {
+                if isDenied {
+                    openSettings()
+                } else {
+                    checkPermissionStatusAndProceed()
+                }
+            })
+            .offset(y: 27)
         }
         .onAppear {
             isVisible = true

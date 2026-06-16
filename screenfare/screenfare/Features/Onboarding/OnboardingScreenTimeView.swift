@@ -21,10 +21,6 @@ struct OnboardingScreenTimeView: View {
                     Spacer()
                         .frame(height: 36)
 
-                    // Icon - left aligned
-    //                PermissionIcon(kind: .time)
-    //                    .frame(maxWidth: .infinity, alignment: .leading)
-
                     // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
                     (Text("Allow ")
                         .font(.instrumentSerif(36))
