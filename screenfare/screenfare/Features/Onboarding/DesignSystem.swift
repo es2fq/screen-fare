@@ -280,9 +280,16 @@ struct PermissionBullet: View {
     }
 }
 
-// MARK: - Screen Time Permission Prompt Mockup
+// MARK: - Shared Permission Prompt Component
 
-struct ScreenTimePermissionPrompt: View {
+struct PermissionPrompt: View {
+    let title: String
+    let description: String
+    let leftButtonText: String
+    let rightButtonText: String
+    let rightButtonIsBlue: Bool
+    let arrowLabel: String
+    let arrowOffset: CGFloat
     var onTap: (() -> Void)?
     @State private var isPressed = false
 
@@ -292,18 +299,17 @@ struct ScreenTimePermissionPrompt: View {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
                     // Title
-                    Text("\u{201C}screenfare\u{201D} Would Like to Access Screen Time")
+                    Text(title)
                         .font(.system(size: 17, weight: .semibold, design: .default))
                         .foregroundColor(.white.opacity(1))
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     // Description
-                    Text("Providing \u{201C}screenfare\u{201D} access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.")
+                    Text(description)
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(.white.opacity(0.62))
                         .lineSpacing(3)
-                        .frame(maxWidth:
-                                .infinity, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.top, 20)
                 .padding(.horizontal, 30)
@@ -311,8 +317,8 @@ struct ScreenTimePermissionPrompt: View {
 
                 // Pill buttons
                 HStack(spacing: 10) {
-                    // Continue button
-                    Text("Continue")
+                    // Left button
+                    Text(leftButtonText)
                         .font(.system(size: 16.5, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -320,13 +326,13 @@ struct ScreenTimePermissionPrompt: View {
                         .background(Color(hex: "3A3A3C"))
                         .cornerRadius(999)
 
-                    // Don't Allow button
-                    Text("Don't Allow")
+                    // Right button
+                    Text(rightButtonText)
                         .font(.system(size: 16.5, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color(red: 0.04, green: 0.52, blue: 1.0))
+                        .background(rightButtonIsBlue ? Color(red: 0.04, green: 0.52, blue: 1.0) : Color(hex: "3A3A3C"))
                         .cornerRadius(999)
                 }
                 .padding(.horizontal, 16)
@@ -354,7 +360,7 @@ struct ScreenTimePermissionPrompt: View {
                     }
             )
 
-            // Clean straight arrow pointing up at Continue + label
+            // Clean straight arrow pointing up + label
             VStack(spacing: 6) {
                 // Straight arrow (SVG-like path)
                 ZStack {
@@ -374,13 +380,32 @@ struct ScreenTimePermissionPrompt: View {
                 .padding(.top, 2)
 
                 // Label
-                Text("Tap \"Continue\" to allow")
+                Text(arrowLabel)
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundColor(Color(hex: "BF7F5F"))
                     .tracking(0.01)
             }
-            .offset(x: -70)
+            .offset(x: arrowOffset)
         }
+    }
+}
+
+// MARK: - Screen Time Permission Prompt Mockup
+
+struct ScreenTimePermissionPrompt: View {
+    var onTap: (() -> Void)?
+
+    var body: some View {
+        PermissionPrompt(
+            title: "\u{201C}screenfare\u{201D} Would Like to Access Screen Time",
+            description: "Providing \u{201C}screenfare\u{201D} access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.",
+            leftButtonText: "Continue",
+            rightButtonText: "Don't Allow",
+            rightButtonIsBlue: true,
+            arrowLabel: "Tap \"Continue\" to allow",
+            arrowOffset: -70,
+            onTap: onTap
+        )
     }
 }
 
@@ -388,102 +413,18 @@ struct ScreenTimePermissionPrompt: View {
 
 struct NotificationPermissionPrompt: View {
     var onTap: (() -> Void)?
-    @State private var isPressed = false
 
     var body: some View {
-        VStack(spacing: 14) {
-            // iOS notification permission alert with highlight ring
-            VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 8) {
-                    // Title
-                    Text("\u{201C}screenfare\u{201D} Would Like to Send You Notifications")
-                        .font(.system(size: 17, weight: .semibold, design: .default))
-                        .foregroundColor(.white.opacity(1))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    // Description
-                    Text("Notifications may include alerts, sounds, and icon badges. These can be configured in Settings.")
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(.white.opacity(0.62))
-                        .lineSpacing(3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.top, 20)
-                .padding(.horizontal, 30)
-                .padding(.bottom, 20)
-
-                // Pill buttons
-                HStack(spacing: 10) {
-                    // Don't Allow button
-                    Text("Don't Allow")
-                        .font(.system(size: 16.5, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color(hex: "3A3A3C"))
-                        .cornerRadius(999)
-
-                    // Allow button
-                    Text("Allow")
-                        .font(.system(size: 16.5, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color(hex: "3A3A3C"))
-                        .cornerRadius(999)
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-            }
-            .frame(width: 320)
-            .background(Color(hex: "1C1C1E"))
-            .cornerRadius(32)
-            .overlay(
-                RoundedRectangle(cornerRadius: 30)
-                    .stroke(Color(hex: "BF7F5F"), lineWidth: 2.5)
-                    .padding(-8)
-            )
-            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
-            .scaleEffect(isPressed ? 0.97 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        isPressed = true
-                    }
-                    .onEnded { _ in
-                        isPressed = false
-                        onTap?()
-                    }
-            )
-
-            // Clean straight arrow pointing up at Allow + label
-            VStack(spacing: 6) {
-                // Straight arrow (SVG-like path)
-                ZStack {
-                    // Vertical line
-                    Rectangle()
-                        .fill(Color(hex: "BF7F5F"))
-                        .frame(width: 3.5, height: 46)
-                        .offset(y: 3)
-
-                    // Arrowhead
-                    ArrowHead()
-                        .fill(Color(hex: "BF7F5F"))
-                        .frame(width: 24, height: 18)
-                        .offset(y: -20)
-                }
-                .frame(height: 52)
-                .padding(.top, 2)
-
-                // Label
-                Text("Tap \"Allow\" to enable")
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundColor(Color(hex: "BF7F5F"))
-                    .tracking(0.01)
-            }
-            .offset(x: 75)
-        }
+        PermissionPrompt(
+            title: "\u{201C}screenfare\u{201D} Would Like to Send You Notifications",
+            description: "Notifications may include alerts, sounds, and icon badges. These can be configured in Settings.",
+            leftButtonText: "Don't Allow",
+            rightButtonText: "Allow",
+            rightButtonIsBlue: false,
+            arrowLabel: "Tap \"Allow\" to enable",
+            arrowOffset: 75,
+            onTap: onTap
+        )
     }
 }
 
