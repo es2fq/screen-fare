@@ -1,6 +1,6 @@
 //
 //  StrictModeDetailView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Strict Mode settings detail screen
 //

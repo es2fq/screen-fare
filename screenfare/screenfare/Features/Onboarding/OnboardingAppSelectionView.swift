@@ -1,6 +1,6 @@
 //
 //  OnboardingAppSelectionView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Created by Erik Song on 5/3/26.
 //
@@ -69,7 +69,7 @@ struct OnboardingAppSelectionView: View {
                 Spacer().frame(height: 8)
 
                 // Description: fontSize: 14.5
-                Text("Choose apps and categories Focus will gently restrict.")
+                Text("Choose apps and categories Screen Fare will gently restrict.")
                     .font(.inter(14.5))
                     .foregroundColor(.focusMuted)
                     .fixedSize(horizontal: false, vertical: true)

@@ -1,6 +1,6 @@
 //
 //  WindowCard.swift
-//  screenfare
+//  Screen Fare
 //
 //  Editable blocking window card with expand/collapse
 //

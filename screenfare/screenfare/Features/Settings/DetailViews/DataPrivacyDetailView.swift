@@ -1,6 +1,6 @@
 //
 //  DataPrivacyDetailView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Data & Privacy settings detail screen
 //

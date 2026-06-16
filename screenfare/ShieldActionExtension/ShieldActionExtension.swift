@@ -31,6 +31,11 @@ class ShieldActionExtension: ShieldActionDelegate {
             recordWalkedAwayEvent(for: application)
             completionHandler(.close)
 
+        case .firstSecondarySubmenuItemPressed,
+             .secondSecondarySubmenuItemPressed,
+             .thirdSecondarySubmenuItemPressed:
+            completionHandler(.close)
+
         @unknown default:
             completionHandler(.close)
         }
@@ -53,6 +58,11 @@ class ShieldActionExtension: ShieldActionDelegate {
         case .secondaryButtonPressed:
             // User clicked "Not Now" - record walked away event
             recordWalkedAwayForCategory(for: category)
+            completionHandler(.close)
+
+        case .firstSecondarySubmenuItemPressed,
+             .secondSecondarySubmenuItemPressed,
+             .thirdSecondarySubmenuItemPressed:
             completionHandler(.close)
 
         @unknown default:
@@ -200,7 +210,7 @@ class ShieldActionExtension: ShieldActionDelegate {
         // For category blocks, we don't have the specific app token
         // Just increment the walked away counter without recording to history
         // (since we can't show which specific app in the category was accessed)
-        guard let sharedDefaults = UserDefaults.appGroup else {
+        guard UserDefaults.appGroup != nil else {
             return
         }
 

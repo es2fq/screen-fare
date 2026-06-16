@@ -1,6 +1,6 @@
 //
 //  ChallengeView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Ticket-themed challenge implementation
 //  Design specs: challenge-ticket.jsx and challenge-ticket-pro.jsx

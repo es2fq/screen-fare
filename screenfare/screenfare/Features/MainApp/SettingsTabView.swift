@@ -1,6 +1,6 @@
 //
 //  SettingsTabView.swift
-//  screenfare
+//  Screen Fare
 //
 //  App settings and preferences
 //

@@ -1,6 +1,6 @@
 //
 //  TimelineBar.swift
-//  screenfare
+//  Screen Fare
 //
 //  24-hour timeline visualization for blocking schedules
 //

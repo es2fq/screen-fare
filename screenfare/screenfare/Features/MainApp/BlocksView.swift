@@ -1,6 +1,6 @@
 //
 //  BlocksView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Manage blocked apps, schedules, and strict mode
 //  Design specs: app.jsx → BlocksScreen (lines 280-504)

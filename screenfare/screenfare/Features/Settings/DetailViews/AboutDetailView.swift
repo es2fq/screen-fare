@@ -1,6 +1,6 @@
 //
 //  AboutDetailView.swift
-//  screenfare
+//  Screen Fare
 //
 //  About & Support detail screen
 //

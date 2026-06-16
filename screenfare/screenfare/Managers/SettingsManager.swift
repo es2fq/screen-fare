@@ -1,6 +1,6 @@
 //
 //  SettingsManager.swift
-//  screenfare
+//  Screen Fare
 //
 //  Created by Erik Song on 5/3/26.
 //
@@ -160,7 +160,7 @@ class SettingsManager: ObservableObject {
         self.strictModeEnabled = UserDefaults.standard.bool(forKey: "strictModeEnabled")
 
         // Account settings
-        self.userName = UserDefaults.standard.string(forKey: "userName") ?? "Focus User"
+        self.userName = UserDefaults.standard.string(forKey: "userName") ?? "Screen Fare User"
         self.userEmail = UserDefaults.standard.string(forKey: "userEmail") ?? "user@example.com"
         self.iCloudSyncEnabled = UserDefaults.standard.bool(forKey: "iCloudSyncEnabled")
 

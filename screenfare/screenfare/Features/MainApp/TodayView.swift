@@ -1,6 +1,6 @@
 //
 //  TodayView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Main "Today" tab - pixel-perfect implementation from handoff
 //  Design specs: app.jsx → HomeScreen (lines 149-273)

@@ -1,6 +1,6 @@
 //
 //  SettingsComponents.swift
-//  screenfare
+//  Screen Fare
 //
 //  Reusable UI components for the Settings screen
 //

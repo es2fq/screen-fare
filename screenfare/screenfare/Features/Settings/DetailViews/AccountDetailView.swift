@@ -1,6 +1,6 @@
 //
 //  AccountDetailView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Account settings detail screen
 //

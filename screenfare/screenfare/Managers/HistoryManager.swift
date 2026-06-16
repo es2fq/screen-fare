@@ -1,6 +1,6 @@
 //
 //  HistoryManager.swift
-//  screenfare
+//  Screen Fare
 //
 //  Tracks app interaction events for displaying in Recent activity
 //

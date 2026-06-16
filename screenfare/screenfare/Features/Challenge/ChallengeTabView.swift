@@ -1,6 +1,6 @@
 //
 //  ChallengeTabView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Configure challenge type with drill-in pattern
 //  Design: challenge-config-patterns.jsx → DrillInChallenge

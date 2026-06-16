@@ -1,8 +1,8 @@
 //
 //  MainAppDesignSystem.swift
-//  screenfare
+//  Screen Fare
 //
-//  Design system for Focus main app screens
+//  Design system for Screen Fare main app screens
 //  Matches the Anthropic design specifications exactly
 //
 

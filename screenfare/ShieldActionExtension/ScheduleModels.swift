@@ -1,6 +1,6 @@
 //
 //  ScheduleModels.swift
-//  screenfare
+//  Screen Fare
 //
 //  Shared schedule models and logic accessible to app and extensions
 //

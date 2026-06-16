@@ -1,6 +1,6 @@
 //
 //  OnboardingScreenTimeView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Created by Erik Song on 5/3/26.
 //
@@ -33,7 +33,7 @@ struct OnboardingScreenTimeView: View {
                         .padding(.top, 28)
 
                     // Description: fontSize: 15.5, lineHeight: 1.5, margin: 0 0 28px
-                    Text("Focus needs Screen Time to monitor and gently restrict your selected apps.")
+                    Text("Screen Fare needs Screen Time to monitor and gently restrict your selected apps.")
                         .font(.inter(16))
                         .foregroundColor(.focusMuted)
                         .lineSpacing(16 * 0.5) // lineHeight 1.5 = 50% extra spacing

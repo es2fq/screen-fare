@@ -1,6 +1,6 @@
 //
 //  Challenges.swift
-//  screenfare
+//  Screen Fare
 //
 //  Challenge type system and implementations for Math, Typing, and Memory challenges
 //

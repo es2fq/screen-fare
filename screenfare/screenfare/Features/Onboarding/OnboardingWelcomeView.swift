@@ -1,6 +1,6 @@
 //
 //  OnboardingWelcomeView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Created by Erik Song on 5/3/26.
 //
@@ -13,42 +13,45 @@ struct OnboardingWelcomeView: View {
     var body: some View {
         OnboardingScreen {
             VStack(spacing: 0) {
-                // paddingTop: 80px from design
+                // paddingTop: 76px from design
                 Spacer()
-                    .frame(height: 80)
+                    .frame(height: 76)
 
-                // Brand mark: 64x64, borderRadius: 17.92 (64 * 0.28), left aligned
-                BrandMark(size: 64)
+                // Brand icon: 72x72
+                BrandMark(size: 72)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Title: fontSize: 44, lineHeight: 1.02, margin: 32px 0 16px
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Focus, by")
-                        .font(.instrumentSerif(44))
-                        .foregroundColor(.focusInk)
-                        .tracking(-0.88) // letterSpacing: -0.02em = -0.88px at 44px
+                // App name label: fontSize: 11, uppercase, letterSpacing: 0.18em, margin: 34px 0 14px
+                Text("SCREEN FARE")
+                    .font(.inter(11, weight: .medium))
+                    .foregroundColor(.focusMuted)
+                    .tracking(11 * 0.18) // letterSpacing: 0.18em
+                    .padding(.top, 34)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Text("design.")
-                        .font(.instrumentSerif(44, italic: true))
-                        .foregroundColor(.focusInk)
-                        .tracking(-0.88)
-                }
-                .lineSpacing(44 * 0.02) // lineHeight 1.02 = 2% extra spacing
-                .padding(.top, 32)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                // Title: fontSize: 46, lineHeight: 1.0, margin: 0 0 18px
+                (Text("Pay the fare\nto ")
+                    .font(.instrumentSerif(46))
+                 + Text("pass.")
+                    .font(.instrumentSerif(46, italic: true)))
+                    .foregroundColor(.focusInk)
+                    .lineSpacing(46 * 0.0) // lineHeight 1.0 = no extra spacing
+                    .tracking(-0.92) // letterSpacing: -0.02em = -0.92px at 46px
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 14)
 
-                // Description: fontSize: 16, lineHeight: 1.5, maxWidth: 300, left aligned
+                // Description: fontSize: 16, lineHeight: 1.55, maxWidth: 308, margin: 0
                 HStack {
-                    Text("Block the apps that pull you in. Open them only after a brief, intentional pause.")
+                    Text("A gate in front of the apps that pull you in. Clear a short, deliberate pause to get through — so every open is a choice, not a reflex.")
                         .font(.inter(16))
                         .foregroundColor(.focusMuted)
-                        .lineSpacing(16 * 0.5) // lineHeight 1.5 = 50% extra spacing
+                        .lineSpacing(16 * 0.55) // lineHeight 1.55 = 55% extra spacing
                         .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 300, alignment: .leading)
+                        .frame(maxWidth: 308, alignment: .leading)
 
                     Spacer(minLength: 0)
                 }
-                .padding(.top, 16)
+                .padding(.top, 18)
 
                 Spacer()
 

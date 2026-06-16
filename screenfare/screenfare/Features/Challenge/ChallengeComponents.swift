@@ -1,6 +1,6 @@
 //
 //  ChallengeComponents.swift
-//  screenfare
+//  Screen Fare
 //
 //  Specialized challenge components for Typing and Memory challenges
 //

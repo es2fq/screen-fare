@@ -1,6 +1,6 @@
 //
 //  DarwinNotificationManager.swift
-//  screenfare
+//  Screen Fare
 //
 //  Handles Darwin Notifications for cross-process communication
 //  Used by ShieldActionExtension to trigger challenge in main app

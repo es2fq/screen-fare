@@ -1,6 +1,6 @@
 //
 //  ScheduleComponents.swift
-//  screenfare
+//  Screen Fare
 //
 //  Reusable components for schedule editing: time steppers and day pickers
 //

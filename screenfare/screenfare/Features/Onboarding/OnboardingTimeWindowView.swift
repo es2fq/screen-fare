@@ -1,6 +1,6 @@
 //
 //  OnboardingTimeWindowView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Created by Erik Song on 5/3/26.
 //

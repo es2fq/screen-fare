@@ -1,6 +1,6 @@
 //
 //  DetailPanel.swift
-//  screenfare
+//  Screen Fare
 //
 //  Sliding detail panel container for settings screens
 //

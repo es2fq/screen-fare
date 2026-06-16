@@ -1,6 +1,6 @@
 //
 //  SettingsModals.swift
-//  screenfare
+//  Screen Fare
 //
 //  Modal overlays for Settings: Toast, ChallengeGate, ConfirmDialog
 //

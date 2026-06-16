@@ -1,6 +1,6 @@
 //
 //  SharedChallengeComponents.swift
-//  screenfare
+//  Screen Fare
 //
 //  Shared, reusable challenge components used in both previews and actual challenges
 //

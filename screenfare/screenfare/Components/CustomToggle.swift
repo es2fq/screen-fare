@@ -1,6 +1,6 @@
 //
 //  CustomToggle.swift
-//  screenfare
+//  Screen Fare
 //
 //  Custom toggle component matching design handoff specs
 //  Provides instant visual feedback with optimistic state updates

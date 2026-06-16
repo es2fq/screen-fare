@@ -1,6 +1,6 @@
 //
 //  DesignSystem.swift
-//  screenfare
+//  Screen Fare
 //
 //  Unified design system for the entire app
 //  Matches the Anthropic design specifications exactly
@@ -69,21 +69,16 @@ extension Font {
 
 // MARK: - Shared Components
 
-/// Brand mark component - "f" in italic Instrument Serif
+/// Brand mark component - Screen Fare app icon
 struct BrandMark: View {
     var size: CGFloat = 56
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28)
-                .fill(Color.focusInk)
-
-            Text("f")
-                .font(.instrumentSerif(size * 0.62, italic: true))
-                .foregroundColor(.white)
-                .offset(y: size * 0.02)
-        }
-        .frame(width: size, height: size)
+        Image("BrandIcon")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.28))
     }
 }
 
@@ -397,8 +392,8 @@ struct ScreenTimePermissionPrompt: View {
 
     var body: some View {
         PermissionPrompt(
-            title: "\u{201C}screenfare\u{201D} Would Like to Access Screen Time",
-            description: "Providing \u{201C}screenfare\u{201D} access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.",
+            title: "\u{201C}Screen Fare\u{201D} Would Like to Access Screen Time",
+            description: "Providing \u{201C}Screen Fare\u{201D} access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.",
             leftButtonText: "Continue",
             rightButtonText: "Don't Allow",
             rightButtonIsBlue: true,
@@ -416,7 +411,7 @@ struct NotificationPermissionPrompt: View {
 
     var body: some View {
         PermissionPrompt(
-            title: "\u{201C}screenfare\u{201D} Would Like to Send You Notifications",
+            title: "\u{201C}Screen Fare\u{201D} Would Like to Send You Notifications",
             description: "Notifications may include alerts, sounds, and icon badges. These can be configured in Settings.",
             leftButtonText: "Don't Allow",
             rightButtonText: "Allow",
@@ -438,7 +433,7 @@ struct SettingsScreenMockup: View {
         // Settings screen mockup
         VStack(spacing: 0) {
             // Header
-            Text("Allow screenfare to Access")
+            Text("Allow Screen Fare to Access")
                 .font(.system(size: 15, weight: .regular))
                 .foregroundColor(Color(hex: "8B8680"))
                 .frame(maxWidth: .infinity, alignment: .leading)

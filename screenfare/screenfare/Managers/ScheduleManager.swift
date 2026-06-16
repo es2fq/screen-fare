@@ -1,6 +1,6 @@
 //
 //  ScheduleManager.swift
-//  screenfare
+//  Screen Fare
 //
 //  Manages blocking schedules: when blocks are active.
 //  Users can choose "all day" or define custom time windows with specific days.

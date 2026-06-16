@@ -1,6 +1,6 @@
 //
 //  ShieldCommunicationManager.swift
-//  screenfare
+//  Screen Fare
 //
 //  Handles communication between Shield extensions and main app
 //  Checks for unlock requests when app becomes active

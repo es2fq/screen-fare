@@ -1,6 +1,6 @@
 //
 //  StatsManager.swift
-//  screenfare
+//  Screen Fare
 //
 //  Tracks daily statistics: blocks, challenges solved, and time saved
 //

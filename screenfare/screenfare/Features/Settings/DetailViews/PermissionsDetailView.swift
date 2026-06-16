@@ -1,6 +1,6 @@
 //
 //  PermissionsDetailView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Permissions settings detail screen
 //

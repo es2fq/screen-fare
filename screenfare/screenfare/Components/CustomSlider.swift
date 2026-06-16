@@ -1,6 +1,6 @@
 //
 //  CustomSlider.swift
-//  screenfare
+//  Screen Fare
 //
 //  Custom slider component using pure SwiftUI DragGesture
 //  Supports any range and step size, with snap-while-dragging behavior

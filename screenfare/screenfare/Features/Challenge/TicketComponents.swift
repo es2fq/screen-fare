@@ -1,6 +1,6 @@
 //
 //  TicketComponents.swift
-//  screenfare
+//  Screen Fare
 //
 //  Reusable components for the ticket-themed challenge UI
 //  Based on challenge-ticket.jsx from the design handoff

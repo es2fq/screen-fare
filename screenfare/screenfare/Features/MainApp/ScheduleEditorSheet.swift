@@ -1,6 +1,6 @@
 //
 //  ScheduleEditorSheet.swift
-//  screenfare
+//  Screen Fare
 //
 //  Drill-in view for editing blocking schedules (matches ChallengeTabView pattern)
 //

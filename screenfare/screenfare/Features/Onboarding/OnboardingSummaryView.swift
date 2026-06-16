@@ -1,6 +1,6 @@
 //
 //  OnboardingSummaryView.swift
-//  screenfare
+//  Screen Fare
 //
 //  Created by Erik Song on 5/3/26.
 //
@@ -145,7 +145,7 @@ struct OnboardingSummaryView: View {
 
                             VStack(spacing: 10) {
                                 HowItWorksStep(number: 1, text: "Tap a blocked app → iOS shows the block screen")
-                                HowItWorksStep(number: 2, text: "Focus sends a notification → tap it")
+                                HowItWorksStep(number: 2, text: "Screen Fare sends a notification → tap it")
                                 HowItWorksStep(number: 3, text: "Solve a \(difficultyLabel.lowercased()) math problem")
                                 HowItWorksStep(number: 4, text: "App unlocks for \(durationFormatted)")
                             }
@@ -165,7 +165,7 @@ struct OnboardingSummaryView: View {
                     .frame(height: 14)
 
                 // Primary button
-                PrimaryButton(title: "Activate Focus", action: onComplete)
+                PrimaryButton(title: "Activate Screen Fare", action: onComplete)
                     .padding(.bottom, 34)
             }
         }
