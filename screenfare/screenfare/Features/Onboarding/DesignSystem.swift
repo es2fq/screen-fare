@@ -284,6 +284,7 @@ struct PermissionBullet: View {
 
 struct ScreenTimePermissionPrompt: View {
     var onTap: (() -> Void)?
+    @State private var isPressed = false
 
     var body: some View {
         VStack(spacing: 14) {
@@ -340,9 +341,18 @@ struct ScreenTimePermissionPrompt: View {
                     .padding(-8)
             )
             .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
-            .onTapGesture {
-                onTap?()
-            }
+            .scaleEffect(isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        isPressed = true
+                    }
+                    .onEnded { _ in
+                        isPressed = false
+                        onTap?()
+                    }
+            )
 
             // Clean straight arrow pointing up at Continue + label
             VStack(spacing: 6) {
