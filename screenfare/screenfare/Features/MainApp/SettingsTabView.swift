@@ -146,6 +146,7 @@ struct SettingsTabView: View {
                                 }
                             )
                         }
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
                     }
 
                     Spacer()

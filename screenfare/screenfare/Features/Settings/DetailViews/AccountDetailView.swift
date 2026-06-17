@@ -46,7 +46,7 @@ struct AccountDetailView: View {
             // Profile section
             SectionTitle(text: "Profile")
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                 VStack(spacing: 0) {
                     SettingsRow(
                         label: "Name",
@@ -76,12 +76,13 @@ struct AccountDetailView: View {
                         }
                     )
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
             // Backup section
             SectionTitle(text: "Backup")
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                 ToggleRow(
                     icon: SettIcon(path: "M6 10a5 5 0 019.6-1.8A4 4 0 1116 17H7a4 4 0 01-1-7z"),
                     label: "iCloud sync",
@@ -89,12 +90,13 @@ struct AccountDetailView: View {
                     value: $settings.iCloudSyncEnabled,
                     last: true
                 )
+                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
             // Session section
             SectionTitle(text: "Session")
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                 SettingsRow(
                     icon: SettIcon(path: "M13 4H6a2 2 0 00-2 2v10a2 2 0 002 2h7M9 11h9m0 0l-3-3m3 3l-3 3"),
                     label: "Sign out",
@@ -113,12 +115,13 @@ struct AccountDetailView: View {
                         )
                     }
                 )
+                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
             // Danger zone
             SectionTitle(text: "Danger zone")
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                 SettingsRow(
                     icon: SettIcon(path: "M5 6h12M9 6V4h4v2M7 6l1 12h6l1-12"),
                     label: "Delete account",
@@ -138,6 +141,7 @@ struct AccountDetailView: View {
                         )
                     }
                 )
+                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
             Spacer()

@@ -20,7 +20,7 @@ struct DataPrivacyDetailView: View {
             // Your data section
             SectionTitle(text: "Your data")
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                 VStack(spacing: 0) {
                     ToggleRow(
                         icon: SettIcon(path: "M6 10a5 5 0 019.6-1.8A4 4 0 1116 17H7a4 4 0 01-1-7z"),
@@ -40,12 +40,13 @@ struct DataPrivacyDetailView: View {
                         }
                     )
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
             // Reset section
             SectionTitle(text: "Reset")
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                 SettingsRow(
                     icon: SettIcon(path: "M5 8a6 6 0 1110.5 4M16 5v3h-3"),
                     label: "Reset statistics",
@@ -65,12 +66,13 @@ struct DataPrivacyDetailView: View {
                         )
                     }
                 )
+                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
             // Legal section
             SectionTitle(text: "Legal")
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                 VStack(spacing: 0) {
                     SettingsRow(
                         icon: SettIcon(path: "M11 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"),
@@ -91,6 +93,7 @@ struct DataPrivacyDetailView: View {
                         }
                     )
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
             Spacer()

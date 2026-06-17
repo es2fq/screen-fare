@@ -18,7 +18,7 @@ struct PermissionsDetailView: View {
             IntroNote(text: "Screen Fare runs on Apple's on-device APIs. It never sees which apps you open by name — only the tokens iOS hands it.")
 
             // Permissions
-            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                 VStack(spacing: 0) {
                     SettingsRow(
                         icon: SettIcon(path: "M4 6h14v9H4zM4 18h14M9 18v2h4v-2"),
@@ -76,6 +76,7 @@ struct PermissionsDetailView: View {
                     //     }
                     // )
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
             FootNote(text: "You can change any of these in the iOS Settings app at any time. Revoking Screen Time will pause all blocking.")
