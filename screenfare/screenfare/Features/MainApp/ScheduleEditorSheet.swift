@@ -166,17 +166,17 @@ struct ScheduleEditorSheet: View {
     // MARK: - Commit (save and close)
 
     private func commit() {
-        // Check if strict mode protection is enabled and schedule is being shortened
-        if settings.strictModeEnabled && settings.strictProtectShorten && isScheduleShortened() {
+        // Check if strict mode protection is enabled and schedule is being changed
+        if settings.strictModeEnabled && settings.strictProtectShorten && hasUnsavedChanges {
             // Show challenge gate
             showGate = ChallengeGateData(
-                title: "Shortening your schedule",
+                title: "Changing your schedule",
                 onPass: {
                     self.performCommit()
                 }
             )
         } else {
-            // No protection, or schedule not shortened - save immediately
+            // No protection, or schedule not changed - save immediately
             performCommit()
         }
     }
@@ -185,44 +185,6 @@ struct ScheduleEditorSheet: View {
         scheduleManager.schedule = draft
         originalSchedule = draft  // Update the baseline after save
         onClose()
-    }
-
-    /// Checks if the draft schedule is shorter than the original schedule
-    private func isScheduleShortened() -> Bool {
-        // If changing from scheduled to all day, that's an expansion (not shortening)
-        if originalSchedule.mode == .scheduled && draft.mode == .allday {
-            return false
-        }
-
-        // If changing from all day to scheduled, that's a shortening
-        if originalSchedule.mode == .allday && draft.mode == .scheduled {
-            return true
-        }
-
-        // Both are scheduled mode - compare total blocking time
-        if originalSchedule.mode == .scheduled && draft.mode == .scheduled {
-            let originalMinutes = calculateTotalBlockingMinutes(originalSchedule.windows)
-            let draftMinutes = calculateTotalBlockingMinutes(draft.windows)
-            return draftMinutes < originalMinutes
-        }
-
-        // Both all day - no change
-        return false
-    }
-
-    /// Calculates total blocking minutes from windows
-    private func calculateTotalBlockingMinutes(_ windows: [BlockingWindow]) -> Int {
-        windows.reduce(0) { total, window in
-            let duration: Int
-            if window.end < window.start {
-                // Overnight window: (1440 - start) + end
-                duration = (1440 - window.start) + window.end
-            } else {
-                // Normal window
-                duration = window.end - window.start
-            }
-            return total + duration
-        }
     }
 
     // MARK: - Scheduled Mode Content
