@@ -15,7 +15,7 @@ struct AccountDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Profile card
-            AppCard(padding: EdgeInsets(top: 18, leading: 16, bottom: 18, trailing: 16)) {
+            AppCard(padding: EdgeInsets(top: 18, leading: 18, bottom: 18, trailing: 18)) {
                 HStack(spacing: 14) {
                     // Avatar
                     ZStack {
@@ -46,7 +46,7 @@ struct AccountDetailView: View {
             // Profile section
             SectionTitle(text: "Profile")
 
-            AppCard {
+            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
                 VStack(spacing: 0) {
                     SettingsRow(
                         label: "Name",
@@ -81,7 +81,7 @@ struct AccountDetailView: View {
             // Backup section
             SectionTitle(text: "Backup")
 
-            AppCard {
+            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
                 ToggleRow(
                     icon: SettIcon(path: "M6 10a5 5 0 019.6-1.8A4 4 0 1116 17H7a4 4 0 01-1-7z"),
                     label: "iCloud sync",
@@ -94,7 +94,7 @@ struct AccountDetailView: View {
             // Session section
             SectionTitle(text: "Session")
 
-            AppCard {
+            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
                 SettingsRow(
                     icon: SettIcon(path: "M13 4H6a2 2 0 00-2 2v10a2 2 0 002 2h7M9 11h9m0 0l-3-3m3 3l-3 3"),
                     label: "Sign out",
@@ -118,7 +118,7 @@ struct AccountDetailView: View {
             // Danger zone
             SectionTitle(text: "Danger zone")
 
-            AppCard {
+            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
                 SettingsRow(
                     icon: SettIcon(path: "M5 6h12M9 6V4h4v2M7 6l1 12h6l1-12"),
                     label: "Delete account",

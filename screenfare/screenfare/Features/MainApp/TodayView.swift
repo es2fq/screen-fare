@@ -56,28 +56,38 @@ struct TodayView: View {
                 // Status hero card
                 ZStack {
                     RoundedRectangle(cornerRadius: 22)
-                        .fill(blockingManager.isBlocking ? Color.focusAccent : Color.white)
+                        .fill(blockingManager.isBlocking ? Color.focusAccent.opacity(0.07) : Color.white)
                         .overlay(
                             RoundedRectangle(cornerRadius: 22)
-                                .stroke(blockingManager.isBlocking ? Color.clear : Color.focusLine, lineWidth: 1)
+                                .stroke(blockingManager.isBlocking ? Color.focusAccent.opacity(0.32) : Color.focusLine, lineWidth: 1)
                         )
 
                     VStack(alignment: .leading, spacing: 0) {
                         // Top row: "Screen Fare is on/off" + Toggle
                         HStack(alignment: .top) {
                             VStack(alignment: .leading, spacing: 6) {
-                                Text("Screen Fare is")
-                                    .font(.inter(11))
-                                    .foregroundColor(blockingManager.isBlocking ? Color.white.opacity(0.6) : Color.focusInk.opacity(0.5))
-                                    .tracking(1.2)
-                                    .textCase(.uppercase)
+                                HStack(alignment: .center, spacing: 7) {
+                                    // Accent dot - only show when blocking
+                                    if blockingManager.isBlocking {
+                                        Circle()
+                                            .fill(Color.focusAccent)
+                                            .frame(width: 7, height: 7)
+                                    }
+
+                                    Text("Screen Fare is")
+                                        .font(.inter(11))
+                                        .foregroundColor(Color.focusInk.opacity(blockingManager.isBlocking ? 0.55 : 0.5))
+                                        .tracking(1.2)
+                                        .textCase(.uppercase)
+                                }
 
                                 if blockingManager.isBlocking {
                                     (Text("on")
                                         .font(.instrumentSerif(44))
+                                        .foregroundColor(.focusAccent)
                                      + Text(".")
-                                        .font(.instrumentSerif(44, italic: true)))
-                                        .foregroundColor(.white)
+                                        .font(.instrumentSerif(44, italic: true))
+                                        .foregroundColor(.focusAccent))
                                 } else {
                                     Text("off")
                                         .font(.instrumentSerif(44, italic: true))
@@ -93,7 +103,7 @@ struct TodayView: View {
                                 if settings.strictModeEnabled && settings.strictProtectOff && blockingManager.isBlocking {
                                     Image(systemName: "lock.fill")
                                         .font(.system(size: 15))
-                                        .foregroundColor(.white.opacity(0.7))
+                                        .foregroundColor(Color.focusInk.opacity(0.5))
                                         .modifier(ShakeModifier(trigger: lockShakeCount))
                                 }
 
@@ -110,22 +120,22 @@ struct TodayView: View {
                                             handleTurnOffBlocking()
                                         }
                                     },
-                                    trackColorOn: Color.white.opacity(0.3),
-                                    trackColorOff: .focusInk
+                                    trackColorOn: .focusInk,
+                                    trackColorOff: Color.focusInk.opacity(0.15)
                                 )
                             }
                         }
 
                         // Stats row
                         HStack(spacing: 0) {
-                            StatPill(value: statsManager.blocksToday, label: "Blocks", textColor: blockingManager.isBlocking ? .white : .focusInk)
-                            StatPill(value: statsManager.faresPaid, label: "Fares paid", textColor: blockingManager.isBlocking ? .white : .focusInk)
-                            StatPill(value: statsManager.timeSpent, label: "On blocked apps", textColor: blockingManager.isBlocking ? .white : .focusInk)
+                            StatPill(value: statsManager.blocksToday, label: "Blocks", textColor: .focusInk)
+                            StatPill(value: statsManager.faresPaid, label: "Fares paid", textColor: .focusInk)
+                            StatPill(value: statsManager.timeSpent, label: "On blocked apps", textColor: .focusInk)
                         }
                         .padding(.top, 22)
                         .overlay(
                             Rectangle()
-                                .fill(blockingManager.isBlocking ? Color.white.opacity(0.12) : Color.focusLine)
+                                .fill(Color.focusInk.opacity(blockingManager.isBlocking ? 0.08 : 0.08))
                                 .frame(height: 1),
                             alignment: .top
                         )
@@ -134,24 +144,24 @@ struct TodayView: View {
                     .padding(.bottom, 2)
                 }
 
-                // Active rule section
-                SectionHeader(title: "Active rule")
+                // Active fare section
+                SectionHeader(title: "Active fare")
                     .padding(.top, 22)
 
                 Button(action: {
                     // Navigate to Challenge tab (index 2)
                     selectedTab?.wrappedValue = 2
                 }) {
-                    AppCard {
+                    AppCard(padding: EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)) {
                         HStack(spacing: 14) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.focusInk.opacity(0.06))
+                                    .fill(Color.focusAccent)
                                     .frame(width: 36, height: 36)
 
                                 Image(systemName: challengeTypeIcon)
                                     .font(.system(size: 18))
-                                    .foregroundColor(.focusInk)
+                                    .foregroundColor(.white)
                             }
 
                             VStack(alignment: .leading, spacing: 2) {
@@ -394,13 +404,13 @@ struct RecentActivityRow: View {
                 Label(category)
                     .labelStyle(.iconOnly)
                     .frame(width: 34, height: 34)
-                    .scaleEffect(1.3)
+                    .scaleEffect(1.5)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             } else if let app = app {
                 Label(app)
                     .labelStyle(.iconOnly)
                     .frame(width: 34, height: 34)
-                    .scaleEffect(1.3)
+                    .scaleEffect(1.5)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
                 RoundedRectangle(cornerRadius: 8)
@@ -440,7 +450,7 @@ struct RecentActivityRow: View {
         if action == "Walked away" {
             return "Walked away"
         } else if action == "Challenge started" {
-            return "Challenge started"
+            return "Fare started"
         } else {
             return "Fare paid"
         }
@@ -452,8 +462,8 @@ struct RecentActivityRow: View {
         if action == "Walked away" {
             return "Closed blocked \(itemType)"
         } else if action == "Challenge started" {
-            // Show challenge type (e.g., "Math", "Typing", "Memory")
-            return challengeType ?? "Challenge"
+            // Show fare type (e.g., "Math", "Typing", "Memory")
+            return challengeType ?? "Fare"
         } else {
             // Format duration for fare paid
             let minutes = Int(duration / 60)

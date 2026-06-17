@@ -54,7 +54,7 @@ struct DetailPanel<Content: View>: View {
                     VStack(alignment: .leading, spacing: 0) {
                         content
                     }
-                    .padding(.horizontal, 22)
+                    .padding(.horizontal, 18)
                     .padding(.top, 4)
                     .padding(.bottom, 100)
                 }

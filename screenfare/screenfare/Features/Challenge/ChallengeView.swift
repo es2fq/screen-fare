@@ -69,13 +69,15 @@ struct ChallengeView: View {
 
     // Strict mode support
     @State private var isStrictMode: Bool = false
+    @State private var strictModeTitle: String = ""
     var onStrictModePass: (() -> Void)?
 
-    init(challengeType: ChallengeType? = nil, isStrictMode: Bool = false, onStrictModePass: (() -> Void)? = nil) {
+    init(challengeType: ChallengeType? = nil, isStrictMode: Bool = false, strictModeTitle: String? = nil, onStrictModePass: (() -> Void)? = nil) {
         let settings = SettingsManager.shared
         let selectedType = challengeType ?? settings.challengeType
         _challengeType = State(initialValue: selectedType)
         _isStrictMode = State(initialValue: isStrictMode)
+        _strictModeTitle = State(initialValue: strictModeTitle ?? "")
         self.onStrictModePass = onStrictModePass
 
         // Load requested app token (skip if strict mode)
@@ -122,7 +124,7 @@ struct ChallengeView: View {
                     }
                 }
                 .padding(.horizontal, 22)
-                .padding(.top, 60)
+                .padding(.top, 44)
                 .padding(.bottom, 4)
 
                 // Scrollable content area
@@ -215,15 +217,24 @@ struct ChallengeView: View {
                 // Dark header
                 HStack {
                     HStack(spacing: 8) {
-                        Image(systemName: "star")
-                            .font(.system(size: 13))
-                            .fontWeight(.medium)
-                            .foregroundColor(.white)
+                        if isStrictMode {
+                            LockMini(color: .white, size: 13)
 
-                        Text("SINGLE FARE")
-                            .font(.inter(10, weight: .semibold))
-                            .tracking(1.8)
-                            .foregroundColor(.white.opacity(0.85))
+                            Text("OVERRIDE FARE")
+                                .font(.inter(10, weight: .semibold))
+                                .tracking(1.8)
+                                .foregroundColor(.white.opacity(0.85))
+                        } else {
+                            Image(systemName: "star")
+                                .font(.system(size: 13))
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+
+                            Text("SINGLE FARE")
+                                .font(.inter(10, weight: .semibold))
+                                .tracking(1.8)
+                                .foregroundColor(.white.opacity(0.85))
+                        }
                     }
 
                     Spacer()
@@ -262,11 +273,13 @@ struct ChallengeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(isStrictMode ? "Strict Mode" : (requestedCategory != nil ? "Blocked Category" : "Blocked App"))
+                        Text(isStrictMode ? strictModeTitle : (requestedCategory != nil ? "Blocked Category" : "Blocked App"))
                             .font(.inter(15, weight: .semibold))
                             .foregroundColor(.focusInk)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                        Text(isStrictMode ? "Settings protection" : "Boarding · blocked")
+                        Text(isStrictMode ? "Protected change" : "Boarding · blocked")
                             .font(.inter(11.5))
                             .foregroundColor(.focusMuted)
                     }
@@ -274,12 +287,12 @@ struct ChallengeView: View {
                     Spacer()
 
                     VStack(alignment: .trailing, spacing: 1) {
-                        Text("VALID")
+                        Text(isStrictMode ? "SCOPE" : "VALID")
                             .font(.inter(9.5, weight: .medium))
                             .tracking(1.33)
                             .foregroundColor(.focusMuted)
 
-                        Text(settings.unlockDurationText)
+                        Text(isStrictMode ? "Once" : settings.unlockDurationText)
                             .font(.system(size: 14, weight: .semibold, design: .monospaced))
                             .foregroundColor(.focusInk)
                     }
@@ -335,14 +348,14 @@ struct ChallengeView: View {
     private var passStub: some View {
         VStack(spacing: 0) {
             if phase == .unlocked {
-                // Validated header (green)
+                // Validated/Authorized header (green)
                 HStack {
                     HStack(spacing: 7) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
 
-                        Text("VALIDATED")
+                        Text(isStrictMode ? "AUTHORIZED" : "VALIDATED")
                             .font(.inter(10, weight: .bold))
                             .tracking(1.8)
                             .foregroundColor(.white)
@@ -382,11 +395,13 @@ struct ChallengeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(isStrictMode ? "Strict Mode" : (requestedCategory != nil ? "Blocked Category" : "Blocked App"))
+                        Text(isStrictMode ? strictModeTitle : (requestedCategory != nil ? "Blocked Category" : "Blocked App"))
                             .font(.inter(15, weight: .semibold))
                             .foregroundColor(.focusInk)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                        Text(isStrictMode ? "Change approved" : "Access granted")
+                        Text(isStrictMode ? "Cleared to change" : "Access granted")
                             .font(.inter(11.5))
                             .foregroundColor(.focusMuted)
                     }
@@ -397,35 +412,63 @@ struct ChallengeView: View {
                 .padding(.top, 18)
                 .padding(.bottom, 8)
 
-                // Countdown
-                VStack(spacing: 4) {
-                    Text("EXPIRES IN")
-                        .font(.inter(10, weight: .medium))
-                        .tracking(1.8)
-                        .foregroundColor(.focusMuted)
+                // Countdown or Authorization message
+                if isStrictMode {
+                    // Authorization granted message
+                    VStack(spacing: 4) {
+                        Text("AUTHORIZATION")
+                            .font(.inter(10, weight: .medium))
+                            .tracking(1.8)
+                            .foregroundColor(.focusMuted)
 
-                    Text(formatCountdown())
-                        .font(.system(size: 46, weight: .semibold, design: .monospaced))
-                        .tracking(-1.38)
-                        .foregroundColor(.focusInk)
+                        Text("Granted")
+                            .font(.instrumentSerif(44))
+                            .tracking(-0.88)
+                            .foregroundColor(.focusInk)
+                            .padding(.vertical, 2)
+
+                        Text("This override applies to one change, this time only.")
+                            .font(.inter(12))
+                            .foregroundColor(.focusMuted)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(1.4)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+                } else {
+                    // Countdown timer
+                    VStack(spacing: 4) {
+                        Text("EXPIRES IN")
+                            .font(.inter(10, weight: .medium))
+                            .tracking(1.8)
+                            .foregroundColor(.focusMuted)
+
+                        Text(formatCountdown())
+                            .font(.system(size: 46, weight: .semibold, design: .monospaced))
+                            .tracking(-1.38)
+                            .foregroundColor(.focusInk)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
+                    .padding(.top, 2)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
-                .padding(.top, 2)
 
-                // Barcode and zone
+                // Barcode and zone/scope
                 HStack {
                     Barcode()
 
                     Spacer()
 
                     VStack(alignment: .trailing, spacing: 1) {
-                        Text("ZONE")
+                        Text(isStrictMode ? "SCOPE" : "ZONE")
                             .font(.inter(9.5, weight: .medium))
                             .tracking(1.33)
                             .foregroundColor(.focusMuted)
 
-                        Text("01")
+                        Text(isStrictMode ? "Once" : "01")
                             .font(.system(size: 14, weight: .semibold, design: .monospaced))
                             .foregroundColor(.focusInk)
                     }
@@ -590,7 +633,6 @@ struct ChallengeView: View {
         if phase == .unlocked {
             TicketBtn("Close") {
                 if isStrictMode {
-                    onStrictModePass?()
                     dismiss()
                 } else {
                     openUnlockedApp()
@@ -613,18 +655,26 @@ struct ChallengeView: View {
     // MARK: - Helpers
 
     private var ticketNumber: String {
-        let blockCount = StatsManager.shared.todayStats.blocksToday
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMdd"
-        let dateString = dateFormatter.string(from: Date())
-        return "No. \(blockCount)·\(dateString)"
+        if isStrictMode {
+            return "No. SM·0142"
+        } else {
+            let blockCount = StatsManager.shared.todayStats.blocksToday
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "MMdd"
+            let dateString = dateFormatter.string(from: Date())
+            return "No. \(blockCount)·\(dateString)"
+        }
     }
 
     private var ticketType: String {
-        switch challengeType {
-        case .math: return "MATH"
-        case .typing: return "TYPE"
-        case .memory: return "MEM"
+        if isStrictMode {
+            return "OVR"
+        } else {
+            switch challengeType {
+            case .math: return "MATH"
+            case .typing: return "TYPE"
+            case .memory: return "MEM"
+            }
         }
     }
 
@@ -657,7 +707,7 @@ struct ChallengeView: View {
     }
 
     private var payingLabel: String {
-        "Tearing your stub…"
+        isStrictMode ? "Stamping your override…" : "Tearing your stub…"
     }
 
     private var errorText: String {
@@ -844,8 +894,9 @@ struct ChallengeView: View {
     }
 
     private func unlockApp() {
-        // Skip unlocking for strict mode
+        // For strict mode, execute the protected change immediately
         if isStrictMode {
+            onStrictModePass?()
             return
         }
 
@@ -1037,7 +1088,7 @@ struct TypingField: View {
             } else if isCursor {
                 // Cursor position - highlight the next character to type
                 charString.foregroundColor = .focusInk
-                charString.backgroundColor = Color.focusAccent.opacity(0.2)
+                charString.backgroundColor = Color.focusInk.opacity(0.12)
             } else {
                 charString.foregroundColor = Color.focusInk.opacity(0.26)
             }

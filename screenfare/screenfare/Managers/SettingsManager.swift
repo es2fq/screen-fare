@@ -164,10 +164,10 @@ class SettingsManager: ObservableObject {
         self.userEmail = UserDefaults.standard.string(forKey: "userEmail") ?? "user@example.com"
         self.iCloudSyncEnabled = UserDefaults.standard.bool(forKey: "iCloudSyncEnabled")
 
-        // Strict mode protections (default to true when strict mode enabled)
+        // Strict mode protections (default to true for main protection, false for extras)
         self.strictProtectOff = UserDefaults.standard.object(forKey: "strictProtectOff") as? Bool ?? true
-        self.strictProtectRemove = UserDefaults.standard.object(forKey: "strictProtectRemove") as? Bool ?? true
-        self.strictProtectShorten = UserDefaults.standard.object(forKey: "strictProtectShorten") as? Bool ?? true
+        self.strictProtectRemove = UserDefaults.standard.object(forKey: "strictProtectRemove") as? Bool ?? false
+        self.strictProtectShorten = UserDefaults.standard.object(forKey: "strictProtectShorten") as? Bool ?? false
 
         // Permissions
         if let savedScreenTime = UserDefaults.standard.string(forKey: "screenTimePermission"),

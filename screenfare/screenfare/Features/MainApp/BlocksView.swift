@@ -18,6 +18,7 @@ struct BlocksView: View {
     @State private var isEditing = false
     @State private var showAll = false
     @State private var showingScheduleEditor = false
+    @State private var showingStrictModeEditor = false
     @State private var dragOffset: CGFloat = 0
 
     private let CAP = 11 // Show at most 11 apps before "show more"
@@ -26,9 +27,10 @@ struct BlocksView: View {
         ZStack {
             // MAIN BLOCKS LAYER
             mainBlocksLayer
-                .offset(x: showingScheduleEditor ? -90 : 0)
-                .brightness(showingScheduleEditor ? -0.03 : 0)
+                .offset(x: (showingScheduleEditor || showingStrictModeEditor) ? -90 : 0)
+                .brightness((showingScheduleEditor || showingStrictModeEditor) ? -0.03 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingScheduleEditor)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingStrictModeEditor)
                 .animation(nil, value: dragOffset) // Don't animate background during drag
 
             // SCHEDULE EDITOR LAYER
@@ -39,6 +41,16 @@ struct BlocksView: View {
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
                 .swipeBackGesture(isActive: showingScheduleEditor, dragOffset: $dragOffset, onDismiss: {
                     showingScheduleEditor = false
+                })
+
+            // STRICT MODE EDITOR LAYER
+            strictModeEditorLayer
+                .offset(x: showingStrictModeEditor ? dragOffset : UIScreen.main.bounds.width)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingStrictModeEditor)
+                .animation(.interactiveSpring(), value: dragOffset)
+                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .swipeBackGesture(isActive: showingStrictModeEditor, dragOffset: $dragOffset, onDismiss: {
+                    showingStrictModeEditor = false
                 })
         }
         .familyActivityPicker(
@@ -163,7 +175,7 @@ struct BlocksView: View {
                             .padding(.top, 22)
 
                         // Strict mode section
-                        StrictModeSection()
+                        StrictModeSection(showingStrictModeEditor: $showingStrictModeEditor)
                             .padding(.top, 22)
 
                         Spacer().frame(height: 24)
@@ -183,6 +195,15 @@ struct BlocksView: View {
         ScheduleEditorSheet(
             scheduleManager: scheduleManager,
             onClose: { showingScheduleEditor = false }
+        )
+    }
+
+    // MARK: - Strict Mode Editor Layer
+
+    private var strictModeEditorLayer: some View {
+        StrictModeEditorSheet(
+            settings: settings,
+            onClose: { showingStrictModeEditor = false }
         )
     }
 
@@ -596,6 +617,7 @@ struct ScheduleSection: View {
 
 struct StrictModeSection: View {
     @ObservedObject private var settings = SettingsManager.shared
+    @Binding var showingStrictModeEditor: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -607,39 +629,54 @@ struct StrictModeSection: View {
                 .padding(.horizontal, 4)
                 .padding(.bottom, 10)
 
-            AppCard(padding: EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)) {
-                HStack(spacing: 14) {
-                    // Icon
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.focusInk.opacity(0.06))
-                            .frame(width: 32, height: 32)
+            Button(action: { showingStrictModeEditor = true }) {
+                AppCard(padding: EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)) {
+                    HStack(spacing: 14) {
+                        // Icon
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.focusInk.opacity(0.06))
+                                .frame(width: 32, height: 32)
 
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.focusInk)
-                    }
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.focusInk)
+                        }
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Lock changes")
-                            .font(.inter(15, weight: .medium))
-                            .foregroundColor(.focusInk)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Lock changes")
+                                .font(.inter(15, weight: .medium))
+                                .foregroundColor(.focusInk)
 
-                        Text("Require challenge to remove apps")
-                            .font(.inter(12.5))
+                            Text(strictModeSummary)
+                                .font(.inter(12.5))
+                                .foregroundColor(.focusMuted)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(.focusMuted)
                     }
-
-                    Spacer()
-
-                    CustomToggle(
-                        isOn: $settings.strictModeEnabled,
-                        trackColorOn: .focusInk
-                    )
                 }
-                .padding(.vertical, 14)
             }
+            .buttonStyle(PlainButtonStyle())
         }
+    }
+
+    private var strictModeSummary: String {
+        if !settings.strictModeEnabled {
+            return "Off — blocks can be changed freely"
+        }
+
+        let protectionCount = [
+            settings.strictProtectOff,
+            settings.strictProtectRemove,
+            settings.strictProtectShorten
+        ].filter { $0 }.count
+
+        return "On — \(protectionCount) \(protectionCount == 1 ? "protection" : "protections") active"
     }
 }
 

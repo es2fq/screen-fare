@@ -33,7 +33,7 @@ class NotificationManager: NSObject, ObservableObject {
     func setupNotificationCategories() {
         let unlockAction = UNNotificationAction(
             identifier: "UNLOCK_ACTION",
-            title: "Complete Challenge",
+            title: "Pay Your Fare",
             options: [.foreground]
         )
 

@@ -118,7 +118,7 @@ class ShieldActionExtension: ShieldActionDelegate {
 
             let content = UNMutableNotificationContent()
             content.title = "App Unlock Requested"
-            content.body = "Open ScreenFare to complete the challenge"
+            content.body = "Open ScreenFare to pay your fare"
             content.sound = .default
             content.categoryIdentifier = "UNLOCK_CHALLENGE"
             content.userInfo = ["action": "unlock"]

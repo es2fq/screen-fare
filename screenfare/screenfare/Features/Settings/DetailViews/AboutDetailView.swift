@@ -45,7 +45,7 @@ struct AboutDetailView: View {
             // Support section
             SectionTitle(text: "Support")
 
-            AppCard {
+            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
                 VStack(spacing: 0) {
                     SettingsRow(
                         icon: SettIcon(path: "M11 16v0M8.5 8.5a2.5 2.5 0 014.6 1.3c0 1.7-2.1 1.9-2.1 3.2", circle: "11,11,8"),
@@ -73,7 +73,7 @@ struct AboutDetailView: View {
             // Spread the word section
             SectionTitle(text: "Spread the word")
 
-            AppCard {
+            AppCard(padding: EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18)) {
                 VStack(spacing: 0) {
                     SettingsRow(
                         icon: SettIcon(path: "M11 4l2.5 5 5.5.8-4 4 1 5.5-5-2.6-5 2.6 1-5.5-4-4 5.5-.8L11 4z"),

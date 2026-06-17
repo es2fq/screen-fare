@@ -51,7 +51,7 @@ struct SettingsToast: View {
 
 struct ChallengeGateData: Identifiable {
     let id = UUID()
-    let title: String
+    let title: String // Used for display in the strict mode ticket
     let onPass: () -> Void
 }
 
@@ -62,6 +62,7 @@ struct ChallengeGate: View {
     var body: some View {
         ChallengeView(
             isStrictMode: true,
+            strictModeTitle: data.title,
             onStrictModePass: data.onPass
         )
     }

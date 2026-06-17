@@ -78,12 +78,15 @@ struct SectionTitle: View {
 
     var body: some View {
         // fontSize: 11px, uppercase, letterSpacing: 0.12em
+        // HTML: padding: '0 4px 10px', marginTop: 22
         Text(text.uppercased())
             .font(.inter(11, weight: .medium))
             .foregroundColor(.focusMuted)
             .tracking(11 * 0.12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 4)
+            .padding(.bottom, 10)
+            .padding(.top, 22)
     }
 }
 

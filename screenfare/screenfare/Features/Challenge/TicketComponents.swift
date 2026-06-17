@@ -13,16 +13,11 @@ import SwiftUI
 struct Wordmark: View {
     var body: some View {
         HStack(spacing: 7) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.focusInk)
-                    .frame(width: 22, height: 22)
-
-                Text("f")
-                    .font(.instrumentSerif(14, italic: true))
-                    .foregroundColor(.white)
-                    .offset(y: -1)
-            }
+            Image("BrandIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 22, height: 22)
+                .cornerRadius(6)
 
             Text("SCREEN FARE")
                 .font(.inter(11, weight: .semibold))

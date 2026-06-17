@@ -53,7 +53,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
         let unlockDuration = sharedDefaults?.double(forKey: "unlockDuration") ?? 1800 // Default 30 minutes
 
         let durationText = TimeInterval(unlockDuration).formatted()
-        let subtitle = "Complete a challenge to unlock for \(durationText)"
+        let subtitle = "Pay a fare to unlock for \(durationText)"
 
         // Light, airy color palette
         // Very light, transparent background to let light through
@@ -84,7 +84,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
                 color: subtitleColor
             ),
             primaryButtonLabel: ShieldConfiguration.Label(
-                text: "Start Challenge",
+                text: "Pay fare",
                 color: .white
             ),
             primaryButtonBackgroundColor: buttonColor,

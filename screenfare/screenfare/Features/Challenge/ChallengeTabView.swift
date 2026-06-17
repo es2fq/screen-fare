@@ -70,7 +70,7 @@ struct ChallengeTabView: View {
     // ═══════════════════════════════════════════════════════════════
 
     private var listLayer: some View {
-        AppScreen(title: "Challenge") {
+        AppScreen(title: "Fare") {
             VStack(spacing: 0) {
                 // Description
                 Text("Choose what stands between you and a blocked app. Tap to set it up.")
@@ -82,7 +82,7 @@ struct ChallengeTabView: View {
                     .padding(.bottom, 18)
 
                 // Challenge type list
-                AppCard {
+                AppCard(padding: EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)) {
                     VStack(spacing: 0) {
                         ForEach(Array(ChallengeType.allCases.enumerated()), id: \.element) { index, type in
                             let isActive = settings.challengeType == type
@@ -182,7 +182,7 @@ struct ChallengeTabView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 14, weight: .medium))
-                            Text("Challenge")
+                            Text("Fare")
                                 .font(.inter(17, weight: .medium))
                         }
                         .foregroundColor(.focusInk)
@@ -204,7 +204,7 @@ struct ChallengeTabView: View {
                     VStack(spacing: 0) {
                         // Large header with icon + name
                         HStack(spacing: 13) {
-                            TypeIcon(type: selectedType, active: true, size: 46)
+                            TypeIcon(type: selectedType, active: settings.challengeType == selectedType, size: 46)
 
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 6) {

@@ -9,7 +9,6 @@ import SwiftUI
 
 enum SettingsDetailScreen {
     case account
-    case strictMode
     case permissions
     case dataPrivacy
     case about
@@ -104,31 +103,15 @@ struct SettingsTabView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
 
-                    // Protection section
-                    SectionTitle(text: "Protection")
-
-                    AppCard {
-                        SettingsRow(
-                            icon: SettIcon(path: "M5 9h12v9H5zM8 9V6a3 3 0 016 0v3"),
-                            label: "Strict Mode",
-                            sub: settings.strictModeEnabled ? "Locks the moves that undo your blocks" : "Off — blocks can be changed freely",
-                            right: AnyView(Chevron()),
-                            last: true,
-                            action: {
-                                activeDetail = .strictMode
-                            }
-                        )
-                    }
-
                     // System section
                     SectionTitle(text: "System")
 
-                    AppCard {
+                    AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
                         VStack(spacing: 0) {
                             SettingsRow(
                                 icon: SettIcon(path: "M4 6h14v9H4zM4 18h14M9 18v2h4v-2"),
                                 label: "Permissions",
-                                sub: permissionsSummary,
+                                sub: "Configure permissions",
                                 right: AnyView(
                                     HStack(spacing: 8) {
                                         if pendingPermissionsCount > 0 {
@@ -198,22 +181,6 @@ struct SettingsTabView: View {
             .animation(.interactiveSpring(), value: dragOffset)
             .shadow(color: Color.black.opacity(activeDetail == .account ? 0.06 : 0), radius: 15, x: -6, y: 0)
             .swipeBackGesture(isActive: activeDetail == .account, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
-
-            // Strict Mode detail
-            DetailPanel(
-                title: "Strict Mode",
-                onBack: { activeDetail = nil }
-            ) {
-                StrictModeDetailView(
-                    settings: settings,
-                    showGate: $showGate
-                )
-            }
-            .offset(x: activeDetail == .strictMode ? dragOffset : UIScreen.main.bounds.width)
-            .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
-            .animation(.interactiveSpring(), value: dragOffset)
-            .shadow(color: Color.black.opacity(activeDetail == .strictMode ? 0.06 : 0), radius: 15, x: -6, y: 0)
-            .swipeBackGesture(isActive: activeDetail == .strictMode, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
 
             // Permissions detail
             DetailPanel(

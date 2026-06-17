@@ -22,7 +22,7 @@ extension View {
         let gesture = DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { value in
                 // Only respond if gesture started from left edge and dragging right
-                if value.startLocation.x < 80 && value.translation.width > 0 {
+                if value.startLocation.x < 40 && value.translation.width > 0 {
                     dragOffset.wrappedValue = min(value.translation.width, UIScreen.main.bounds.width)
                 }
             }

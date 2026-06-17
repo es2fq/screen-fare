@@ -114,10 +114,11 @@ struct StatusPill: View {
 
 struct LockMini: View {
     var color: Color = .focusMuted
+    var size: CGFloat = 11
 
     var body: some View {
         Image(systemName: "lock.fill")
-            .font(.system(size: 11, weight: .medium))
+            .font(.system(size: size, weight: .medium))
             .foregroundColor(color)
     }
 }
@@ -209,7 +210,6 @@ struct SettingsRow: View {
 
         if !last {
             Divider()
-                .padding(.leading, icon != nil ? 60 : 16)
         }
     }
 }
@@ -267,7 +267,6 @@ struct ToggleRow: View {
 
         if !last {
             Divider()
-                .padding(.leading, icon != nil ? 60 : 16)
         }
     }
 }
