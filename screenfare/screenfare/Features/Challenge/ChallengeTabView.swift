@@ -10,8 +10,8 @@ import SwiftUI
 
 struct ChallengeTabView: View {
     @StateObject private var settings = SettingsManager.shared
-    @State private var view: ViewState = .list
-    @State private var selectedType: ChallengeType = .math
+    @Binding var viewState: ChallengeViewState
+    @Binding var selectedType: ChallengeType
     @State private var dragOffset: CGFloat = 0
     @FocusState private var isAnyFieldFocused: Bool
     @State private var configViewCount = 0 // Track config view appearances
@@ -21,12 +21,9 @@ struct ChallengeTabView: View {
     @State private var typingChallenge: TypingChallenge
     @State private var memoryChallenge: MemoryChallenge
 
-    enum ViewState {
-        case list
-        case config
-    }
-
-    init() {
+    init(viewState: Binding<ChallengeViewState> = .constant(.list), selectedType: Binding<ChallengeType> = .constant(.math)) {
+        _viewState = viewState
+        _selectedType = selectedType
         let settings = SettingsManager.shared
 
         // Pre-generate one challenge for each difficulty level
@@ -37,7 +34,6 @@ struct ChallengeTabView: View {
         self._previewChallenges = State(initialValue: challenges)
         self._typingChallenge = State(initialValue: TypingChallenge(difficulty: settings.typingDifficulty))
         self._memoryChallenge = State(initialValue: MemoryChallenge())
-        self._selectedType = State(initialValue: settings.challengeType)
     }
 
     var body: some View {
@@ -47,20 +43,20 @@ struct ChallengeTabView: View {
 
             // LIST LAYER
             listLayer
-                .offset(x: view == .config ? -90 : 0)
-                .brightness(view == .config ? -0.03 : 0)
-                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: view)
+                .offset(x: viewState == .config ? -90 : 0)
+                .brightness(viewState == .config ? -0.03 : 0)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: viewState)
                 .animation(nil, value: dragOffset) // Don't animate background during drag
 
             // CONFIG LAYER
             configLayer
-                .offset(x: view == .config ? dragOffset : UIScreen.main.bounds.width)
-                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: view)
+                .offset(x: viewState == .config ? dragOffset : UIScreen.main.bounds.width)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: viewState)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
-                .swipeBackGesture(isActive: view == .config, dragOffset: $dragOffset, onDismiss: {
+                .swipeBackGesture(isActive: viewState == .config, dragOffset: $dragOffset, onDismiss: {
                     isAnyFieldFocused = false
-                    view = .list
+                    viewState = .list
                 })
         }
     }
@@ -89,7 +85,7 @@ struct ChallengeTabView: View {
 
                             Button(action: {
                                 selectedType = type
-                                view = .config
+                                viewState = .config
                                 configViewCount += 1 // Increment to reset testers
                             }) {
                                 HStack(spacing: 13) {
@@ -109,9 +105,8 @@ struct ChallengeTabView: View {
                                         }
 
                                         Text(isActive ? summaryText(for: type) : descriptionFor(type))
-                                            .font(.inter(12.5))
+                                            .font(.inter(12.5, weight: isActive ? .medium : .regular))
                                             .foregroundColor(isActive ? .focusInk : .focusMuted)
-                                            .fontWeight(isActive ? .medium : .regular)
                                     }
 
                                     Spacer()
@@ -177,7 +172,7 @@ struct ChallengeTabView: View {
                 HStack(spacing: 0) {
                     Button(action: {
                         isAnyFieldFocused = false
-                        view = .list
+                        viewState = .list
                     }) {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
@@ -241,7 +236,7 @@ struct ChallengeTabView: View {
                         Button(action: {
                             isAnyFieldFocused = false
                             settings.challengeType = selectedType
-                            view = .list
+                            viewState = .list
                         }) {
                             Text(selectedType == settings.challengeType ? "Done" : "Select")
                                 .font(.inter(15, weight: .semibold))

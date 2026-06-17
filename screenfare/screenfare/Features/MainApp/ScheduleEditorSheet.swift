@@ -19,6 +19,11 @@ struct ScheduleEditorSheet: View {
     // Strict mode gate
     @State private var showGate: ChallengeGateData?
 
+    // Check if there are unsaved changes
+    private var hasUnsavedChanges: Bool {
+        draft != originalSchedule
+    }
+
     init(scheduleManager: ScheduleManager, onClose: @escaping () -> Void) {
         self.scheduleManager = scheduleManager
         self.onClose = onClose
@@ -36,7 +41,7 @@ struct ScheduleEditorSheet: View {
             VStack(spacing: 0) {
                 // Back button header
                 HStack(spacing: 0) {
-                    Button(action: commit) {
+                    Button(action: onClose) {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 14, weight: .medium))
@@ -127,6 +132,20 @@ struct ScheduleEditorSheet: View {
                         } else {
                             alldayContent
                         }
+
+                        // Save button (appears at bottom when there are unsaved changes)
+                        if hasUnsavedChanges {
+                            Button(action: commit) {
+                                Text("Save Changes")
+                                    .font(.inter(16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 52)
+                                    .background(Color.focusInk)
+                                    .cornerRadius(16)
+                            }
+                            .padding(.top, 24)
+                        }
                     }
                     .padding(.horizontal, 22)
                     .padding(.top, 4)
@@ -164,6 +183,7 @@ struct ScheduleEditorSheet: View {
 
     private func performCommit() {
         scheduleManager.schedule = draft
+        originalSchedule = draft  // Update the baseline after save
         onClose()
     }
 

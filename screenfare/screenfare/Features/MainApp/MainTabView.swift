@@ -7,8 +7,20 @@
 
 import SwiftUI
 
+// View state for challenge tab navigation
+enum ChallengeViewState {
+    case list
+    case config
+}
+
 struct MainTabView: View {
     @Binding var selectedTab: Int
+
+    // Track drill-in state for tabs
+    @State private var challengeViewState: ChallengeViewState = .list
+    @State private var challengeSelectedType: ChallengeType = .math
+    @State private var blocksScheduleShowing = false
+    @State private var blocksStrictModeShowing = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -18,10 +30,16 @@ struct MainTabView: View {
                     TodayView()
                 }
                 if selectedTab == 1 {
-                    BlocksView()
+                    BlocksView(
+                        showingScheduleEditor: $blocksScheduleShowing,
+                        showingStrictModeEditor: $blocksStrictModeShowing
+                    )
                 }
                 if selectedTab == 2 {
-                    ChallengeTabView()
+                    ChallengeTabView(
+                        viewState: $challengeViewState,
+                        selectedType: $challengeSelectedType
+                    )
                 }
                 if selectedTab == 3 {
                     SettingsTabView()
@@ -30,7 +48,12 @@ struct MainTabView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Custom tab bar
-            CustomTabBar(selectedTab: $selectedTab)
+            CustomTabBar(
+                selectedTab: $selectedTab,
+                challengeViewState: $challengeViewState,
+                blocksScheduleShowing: $blocksScheduleShowing,
+                blocksStrictModeShowing: $blocksStrictModeShowing
+            )
         }
         .ignoresSafeArea(.keyboard)
     }
@@ -39,6 +62,9 @@ struct MainTabView: View {
 /// Custom tab bar matching exact design specs
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
+    @Binding var challengeViewState: ChallengeViewState
+    @Binding var blocksScheduleShowing: Bool
+    @Binding var blocksStrictModeShowing: Bool
 
     private let tabs: [(icon: String, label: String)] = [
         ("clock", "Today"),
@@ -51,7 +77,17 @@ struct CustomTabBar: View {
         HStack(spacing: 0) {
             ForEach(0..<tabs.count, id: \.self) { index in
                 Button(action: {
-                    selectedTab = index
+                    if selectedTab == index {
+                        // Dismiss drill-in views when tapping active tab
+                        if index == 2 && challengeViewState != .list {
+                            challengeViewState = .list
+                        } else if index == 1 && (blocksScheduleShowing || blocksStrictModeShowing) {
+                            blocksScheduleShowing = false
+                            blocksStrictModeShowing = false
+                        }
+                    } else {
+                        selectedTab = index
+                    }
                 }) {
                     VStack(spacing: 3) {
                         // Icon: 22x22px

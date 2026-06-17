@@ -17,11 +17,16 @@ struct BlocksView: View {
     @State private var showingPicker = false
     @State private var isEditing = false
     @State private var showAll = false
-    @State private var showingScheduleEditor = false
-    @State private var showingStrictModeEditor = false
+    @Binding var showingScheduleEditor: Bool
+    @Binding var showingStrictModeEditor: Bool
     @State private var dragOffset: CGFloat = 0
 
     private let CAP = 11 // Show at most 11 apps before "show more"
+
+    init(showingScheduleEditor: Binding<Bool> = .constant(false), showingStrictModeEditor: Binding<Bool> = .constant(false)) {
+        _showingScheduleEditor = showingScheduleEditor
+        _showingStrictModeEditor = showingStrictModeEditor
+    }
 
     var body: some View {
         ZStack {
@@ -635,12 +640,12 @@ struct StrictModeSection: View {
                         // Icon
                         ZStack {
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.focusInk.opacity(0.06))
+                                .fill(settings.strictModeEnabled ? Color.focusAccent : Color.focusInk.opacity(0.06))
                                 .frame(width: 32, height: 32)
 
-                            Image(systemName: "lock.fill")
+                            Image(systemName: settings.strictModeEnabled ? "lock.fill" : "lock.open.fill")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.focusInk)
+                                .foregroundColor(settings.strictModeEnabled ? .white : .focusInk)
                         }
 
                         VStack(alignment: .leading, spacing: 2) {

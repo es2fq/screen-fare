@@ -226,8 +226,7 @@ struct ChallengeView: View {
                                 .foregroundColor(.white.opacity(0.85))
                         } else {
                             Image(systemName: "star")
-                                .font(.system(size: 13))
-                                .fontWeight(.medium)
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.white)
 
                             Text("SINGLE FARE")
