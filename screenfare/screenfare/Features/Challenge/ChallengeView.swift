@@ -67,13 +67,19 @@ struct ChallengeView: View {
     @State private var currentTime = Date()
     @State private var countdownTimer: Timer?
 
-    init(challengeType: ChallengeType? = nil) {
+    // Strict mode support
+    @State private var isStrictMode: Bool = false
+    var onStrictModePass: (() -> Void)?
+
+    init(challengeType: ChallengeType? = nil, isStrictMode: Bool = false, onStrictModePass: (() -> Void)? = nil) {
         let settings = SettingsManager.shared
         let selectedType = challengeType ?? settings.challengeType
         _challengeType = State(initialValue: selectedType)
+        _isStrictMode = State(initialValue: isStrictMode)
+        self.onStrictModePass = onStrictModePass
 
-        // Load requested app token
-        if let sharedDefaults = UserDefaults.appGroup {
+        // Load requested app token (skip if strict mode)
+        if !isStrictMode, let sharedDefaults = UserDefaults.appGroup {
             if let data = sharedDefaults.data(forKey: "com.screenfare.requestedAppToken"),
                let token = try? JSONDecoder().decode(ApplicationToken.self, from: data) {
                 _requestedApp = State(initialValue: token)
@@ -180,8 +186,8 @@ struct ChallengeView: View {
                 startMemoryCountdown()
             }
 
-            // Record challenge started event when the challenge view actually appears
-            if let appToken = requestedApp {
+            // Record challenge started event when the challenge view actually appears (skip for strict mode)
+            if !isStrictMode, let appToken = requestedApp {
                 let appTokenData = try? JSONEncoder().encode(appToken)
                 let challengeTypeName: String = {
                     switch challengeType {
@@ -234,8 +240,16 @@ struct ChallengeView: View {
 
                 // App info row
                 HStack(alignment: .center, spacing: 11) {
-                    // App or Category icon
-                    if let category = requestedCategory {
+                    // App, Category, or Lock icon (for strict mode)
+                    if isStrictMode {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.focusInk)
+                                .frame(width: 34, height: 34)
+
+                            LockMini(color: .white)
+                        }
+                    } else if let category = requestedCategory {
                         Label(category)
                             .labelStyle(.iconOnly)
                             .scaleEffect(1.35)
@@ -248,11 +262,11 @@ struct ChallengeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(requestedCategory != nil ? "Blocked Category" : "Blocked App")
+                        Text(isStrictMode ? "Strict Mode" : (requestedCategory != nil ? "Blocked Category" : "Blocked App"))
                             .font(.inter(15, weight: .semibold))
                             .foregroundColor(.focusInk)
 
-                        Text("Boarding · blocked")
+                        Text(isStrictMode ? "Settings protection" : "Boarding · blocked")
                             .font(.inter(11.5))
                             .foregroundColor(.focusMuted)
                     }
@@ -347,7 +361,15 @@ struct ChallengeView: View {
 
                 // App info
                 HStack(spacing: 11) {
-                    if let category = requestedCategory {
+                    if isStrictMode {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.focusInk)
+                                .frame(width: 34, height: 34)
+
+                            LockMini(color: .white)
+                        }
+                    } else if let category = requestedCategory {
                         Label(category)
                             .labelStyle(.iconOnly)
                             .scaleEffect(1.35)
@@ -360,11 +382,11 @@ struct ChallengeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(requestedCategory != nil ? "Blocked Category" : "Blocked App")
+                        Text(isStrictMode ? "Strict Mode" : (requestedCategory != nil ? "Blocked Category" : "Blocked App"))
                             .font(.inter(15, weight: .semibold))
                             .foregroundColor(.focusInk)
 
-                        Text("Access granted")
+                        Text(isStrictMode ? "Change approved" : "Access granted")
                             .font(.inter(11.5))
                             .foregroundColor(.focusMuted)
                     }
@@ -567,9 +589,14 @@ struct ChallengeView: View {
     private var footer: some View {
         if phase == .unlocked {
             TicketBtn("Close") {
-                openUnlockedApp()
-                selectedTab?.wrappedValue = 0 // Navigate to Today tab
-                dismiss()
+                if isStrictMode {
+                    onStrictModePass?()
+                    dismiss()
+                } else {
+                    openUnlockedApp()
+                    selectedTab?.wrappedValue = 0 // Navigate to Today tab
+                    dismiss()
+                }
             }
         } else {
             switch challengeType {
@@ -817,6 +844,11 @@ struct ChallengeView: View {
     }
 
     private func unlockApp() {
+        // Skip unlocking for strict mode
+        if isStrictMode {
+            return
+        }
+
         // Check if this is a category unlock or app unlock
         if let categoryToken = requestedCategory {
             // Unlock the entire category

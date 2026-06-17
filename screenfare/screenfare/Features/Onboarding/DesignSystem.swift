@@ -26,8 +26,8 @@ extension Color {
     /// #FFFFFF - Card background
     static let focusCard = Color.white
 
-    /// oklch(0.62 0.06 145) - Sage accent (converted to RGB)
-    static let focusAccent = Color(hex: "88A894")
+    /// oklch(0.585 0.125 40) - Orange/terracotta accent (converted to RGB)
+    static let focusAccent = Color(hex: "D8764A")
 
     /// Accent text color
     static let focusAccentInk = Color.white

@@ -322,7 +322,7 @@ struct TypeIcon: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(active ? Color.focusInk : Color.focusInk.opacity(0.06))
+                .fill(active ? Color.focusAccent : Color.focusInk.opacity(0.06))
                 .frame(width: size, height: size)
 
             Image(systemName: iconName)
@@ -880,10 +880,10 @@ struct AccessWindowCard: View {
                                 .frame(height: 32)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .stroke(selectedMinutes == preset ? Color.focusInk : Color.focusLine, lineWidth: 1)
+                                        .stroke(selectedMinutes == preset ? Color.focusAccent : Color.focusLine, lineWidth: 1)
                                         .background(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .fill(selectedMinutes == preset ? Color.focusInk : Color.focusCard)
+                                                .fill(selectedMinutes == preset ? Color.focusAccent : Color.focusCard)
                                         )
                                 )
                         }

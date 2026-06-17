@@ -40,6 +40,6 @@ extension View {
                 }
             }
 
-        return self.highPriorityGesture(isActive ? gesture : nil)
+        return self.simultaneousGesture(isActive ? gesture : nil)
     }
 }

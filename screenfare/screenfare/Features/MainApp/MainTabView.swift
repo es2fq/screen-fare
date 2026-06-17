@@ -41,10 +41,10 @@ struct CustomTabBar: View {
     @Binding var selectedTab: Int
 
     private let tabs: [(icon: String, label: String)] = [
-        ("house.fill", "Today"),
-        ("app.badge", "Blocks"),
-        ("brain", "Challenge"),
-        ("gearshape.fill", "Settings")
+        ("clock", "Today"),
+        ("shield", "Blocks"),
+        ("ticket", "Fare"),
+        ("gearshape", "Settings")
     ]
 
     var body: some View {

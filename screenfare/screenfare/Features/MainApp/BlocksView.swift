@@ -322,7 +322,6 @@ struct BlockedAppsSection: View {
                 data: data,
                 difficulty: settings.challengeDifficulty.numericLevel
             )
-            .presentationDetents([.height(380)])
             .presentationBackground(.clear)
         }
     }

@@ -53,7 +53,6 @@ struct SettingsTabView: View {
                 data: data,
                 difficulty: settings.challengeDifficulty.numericLevel
             )
-            .presentationDetents([.height(380)])
             .presentationBackground(.clear)
         }
         .onChange(of: showToast) { oldValue, newValue in

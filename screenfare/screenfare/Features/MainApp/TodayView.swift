@@ -21,6 +21,7 @@ struct TodayView: View {
 
     // Strict mode gate
     @State private var showGate: ChallengeGateData?
+    @State private var lockShakeCount = 0
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -55,7 +56,7 @@ struct TodayView: View {
                 // Status hero card
                 ZStack {
                     RoundedRectangle(cornerRadius: 22)
-                        .fill(blockingManager.isBlocking ? Color.focusInk : Color.white)
+                        .fill(blockingManager.isBlocking ? Color.focusAccent : Color.white)
                         .overlay(
                             RoundedRectangle(cornerRadius: 22)
                                 .stroke(blockingManager.isBlocking ? Color.clear : Color.focusLine, lineWidth: 1)
@@ -86,22 +87,33 @@ struct TodayView: View {
 
                             Spacer()
 
-                            // Custom toggle switch
-                            CustomToggleWithColors(
-                                isOn: Binding(
-                                    get: { blockingManager.isBlocking },
-                                    set: { _ in }
-                                ),
-                                onToggle: { newValue in
-                                    if newValue {
-                                        blockingManager.applyBlocking()
-                                    } else {
-                                        handleTurnOffBlocking()
-                                    }
-                                },
-                                trackColorOn: Color.white.opacity(0.3),
-                                trackColorOff: .focusInk
-                            )
+                            // Lock icon (strict mode protection) + Toggle
+                            HStack(spacing: 9) {
+                                // Lock icon - only show when strict mode guards the off switch
+                                if settings.strictModeEnabled && settings.strictProtectOff && blockingManager.isBlocking {
+                                    Image(systemName: "lock.fill")
+                                        .font(.system(size: 15))
+                                        .foregroundColor(.white.opacity(0.7))
+                                        .modifier(ShakeModifier(trigger: lockShakeCount))
+                                }
+
+                                // Custom toggle switch
+                                CustomToggleWithColors(
+                                    isOn: Binding(
+                                        get: { blockingManager.isBlocking },
+                                        set: { _ in }
+                                    ),
+                                    onToggle: { newValue in
+                                        if newValue {
+                                            blockingManager.applyBlocking()
+                                        } else {
+                                            handleTurnOffBlocking()
+                                        }
+                                    },
+                                    trackColorOn: Color.white.opacity(0.3),
+                                    trackColorOff: .focusInk
+                                )
+                            }
                         }
 
                         // Stats row
@@ -239,7 +251,6 @@ struct TodayView: View {
                 data: data,
                 difficulty: settings.challengeDifficulty.numericLevel
             )
-            .presentationDetents([.height(380)])
             .presentationBackground(.clear)
         }
     }
