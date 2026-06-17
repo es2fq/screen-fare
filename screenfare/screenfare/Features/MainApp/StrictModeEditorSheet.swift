@@ -55,7 +55,7 @@ struct StrictModeEditorSheet: View {
                             .padding(.horizontal, 22)
 
                         // Main toggle
-                        AppCard(padding: EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)) {
+                        AppCard(padding: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)) {
                             ToggleRow(
                                 icon: SettIcon(path: "M5 9h12v9H5zM8 9V6a3 3 0 016 0v3", viewBox: "22 22"),
                                 label: "Strict Mode",
@@ -78,6 +78,7 @@ struct StrictModeEditorSheet: View {
                                 ),
                                 last: true
                             )
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
                         }
                         .padding(.horizontal, 22)
 
@@ -114,7 +115,7 @@ struct StrictModeEditorSheet: View {
                             .padding(.top, 22)
                             .padding(.bottom, 10)
 
-                        AppCard(padding: EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)) {
+                        AppCard(padding: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)) {
                             VStack(spacing: 0) {
                                 ToggleRow(
                                     icon: SettIcon(path: "M5 7h12M5 15h12M9 4l-2 14M15 4l-2 14"),
@@ -161,6 +162,7 @@ struct StrictModeEditorSheet: View {
                                     last: true
                                 )
                             }
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
                         }
                         .padding(.horizontal, 22)
 
