@@ -21,7 +21,17 @@ struct ScheduleEditorSheet: View {
 
     // Check if there are unsaved changes
     private var hasUnsavedChanges: Bool {
-        draft != originalSchedule
+        // Mode changed
+        if draft.mode != originalSchedule.mode {
+            return true
+        }
+
+        // If in scheduled mode, check if windows changed
+        if draft.mode == .scheduled && draft.windows != originalSchedule.windows {
+            return true
+        }
+
+        return false
     }
 
     init(scheduleManager: ScheduleManager, onClose: @escaping () -> Void) {
@@ -152,6 +162,11 @@ struct ScheduleEditorSheet: View {
                     .padding(.bottom, 100)
                 }
                 .scrollIndicators(.hidden)
+            }
+            .onAppear {
+                // Reset draft mode to match the original saved schedule
+                // This ensures the editor always opens to the correct tab
+                draft.mode = originalSchedule.mode
             }
         }
         .sheet(item: $showGate) { data in

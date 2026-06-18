@@ -611,6 +611,7 @@ struct UnlockedNowSection: View {
                             currentTime: currentTime,
                             onLock: { onLock(unlock.key) }
                         )
+                        .transition(.opacity.combined(with: .scale))
                     }
                 }
 
@@ -627,6 +628,7 @@ struct UnlockedNowSection: View {
                                 AppBlockingManager.shared.relockCategory(categoryData: unlock.key)
                             }
                         )
+                        .transition(.opacity.combined(with: .scale))
                     }
                 }
             }
@@ -647,6 +649,8 @@ struct UnlockedSessionCard: View {
     let totalDuration: TimeInterval
     let currentTime: Date
     let onLock: () -> Void
+
+    @State private var isDismissing = false
 
     private var remainingSeconds: Int {
         max(0, Int(expiryTime.timeIntervalSince(currentTime)))
@@ -700,7 +704,16 @@ struct UnlockedSessionCard: View {
                 Spacer(minLength: 0)
 
                 // Lock now button
-                Button(action: onLock) {
+                Button(action: {
+                    withAnimation(.easeOut(duration: 0.35)) {
+                        isDismissing = true
+                    }
+
+                    // Call the actual lock action after animation completes
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        onLock()
+                    }
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 10))
@@ -718,6 +731,7 @@ struct UnlockedSessionCard: View {
                     .cornerRadius(16)
                 }
                 .buttonStyle(.plain)
+                .disabled(isDismissing)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -776,6 +790,8 @@ struct UnlockedSessionCard: View {
                 .stroke(isWarning ? Color.focusWarn.opacity(0.22) : Color.focusLine, lineWidth: 1)
         )
         .cornerRadius(18)
+        .opacity(isDismissing ? 0 : 1)
+        .scaleEffect(isDismissing ? 0.85 : 1)
     }
 
     private func formatTimeRemaining() -> String {

@@ -16,16 +16,7 @@ struct AboutDetailView: View {
             AppCard(padding: EdgeInsets(top: 20, leading: 18, bottom: 20, trailing: 18)) {
                 HStack(spacing: 14) {
                     // App icon
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(Color.focusInk)
-                            .frame(width: 52, height: 52)
-
-                        Text("f")
-                            .font(.instrumentSerif(32, italic: true))
-                            .foregroundColor(.white)
-                            .kerning(-1)
-                    }
+                    BrandMark(size: 40)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Screen Fare")

@@ -1,7 +1,19 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="1024" height="1024" fill="#B95F3F"></rect>
-  <circle cx="512" cy="512" r="332" fill="#E9E5DE"></circle>
-  <circle cx="512" cy="512" r="300" fill="none" stroke="#B95F3F" stroke-width="14" opacity="0.5"></circle>
-  <rect x="424" y="386" width="176" height="252" rx="46" fill="#B95F3F"></rect>
-  <rect x="481" y="602" width="62" height="12" rx="6" fill="#E9E5DE"></rect>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+    <defs>
+      <clipPath id="c"><rect x="0" y="0" width="1024" height="1024"></rect></clipPath>
+      <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.14"></stop>
+        <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"></stop>
+        <stop offset="0.6" stop-color="#000000" stop-opacity="0"></stop>
+        <stop offset="1" stop-color="#000000" stop-opacity="0.22"></stop>
+      </linearGradient>
+    </defs>
+    <g clip-path="url(#c)">
+      <rect x="0" y="0" width="1024" height="1024" fill="#B95F3F"></rect>
+      <circle cx="512" cy="512" r="332" fill="#E9E5DE"></circle>
+      <circle cx="512" cy="512" r="300" fill="none" stroke="#B95F3F" stroke-width="14" opacity="0.5"></circle>
+      <rect x="424" y="386" width="176" height="252" rx="46" fill="#B95F3F"></rect>
+      <rect x="481" y="602" width="62" height="12" rx="6" fill="#E9E5DE"></rect>
+      <rect x="0" y="0" width="1024" height="1024" fill="url(#sheen)"></rect>
+    </g>
+  </svg>

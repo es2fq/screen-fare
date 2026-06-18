@@ -23,29 +23,39 @@ struct MainTabView: View {
     @State private var blocksStrictModeShowing = false
 
     var body: some View {
+        let screenWidth = UIScreen.main.bounds.width
+
         ZStack(alignment: .bottom) {
-            // Tab content
+            // Tab content with slide animations
             ZStack {
-                if selectedTab == 0 {
-                    TodayView()
-                }
-                if selectedTab == 1 {
-                    BlocksView(
-                        showingScheduleEditor: $blocksScheduleShowing,
-                        showingStrictModeEditor: $blocksStrictModeShowing
-                    )
-                }
-                if selectedTab == 2 {
-                    ChallengeTabView(
-                        viewState: $challengeViewState,
-                        selectedType: $challengeSelectedType
-                    )
-                }
-                if selectedTab == 3 {
-                    SettingsTabView()
-                }
+                // Tab 0: Today
+                TodayView()
+                    .offset(x: offsetForTab(0, screenWidth: screenWidth))
+                    .zIndex(selectedTab == 0 ? 1 : 0)
+
+                // Tab 1: Blocks
+                BlocksView(
+                    showingScheduleEditor: $blocksScheduleShowing,
+                    showingStrictModeEditor: $blocksStrictModeShowing
+                )
+                .offset(x: offsetForTab(1, screenWidth: screenWidth))
+                .zIndex(selectedTab == 1 ? 1 : 0)
+
+                // Tab 2: Fare/Challenges
+                ChallengeTabView(
+                    viewState: $challengeViewState,
+                    selectedType: $challengeSelectedType
+                )
+                .offset(x: offsetForTab(2, screenWidth: screenWidth))
+                .zIndex(selectedTab == 2 ? 1 : 0)
+
+                // Tab 3: Settings
+                SettingsTabView()
+                    .offset(x: offsetForTab(3, screenWidth: screenWidth))
+                    .zIndex(selectedTab == 3 ? 1 : 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.spring(response: 0.36, dampingFraction: 0.88), value: selectedTab)
 
             // Custom tab bar
             CustomTabBar(
@@ -56,6 +66,17 @@ struct MainTabView: View {
             )
         }
         .ignoresSafeArea(.keyboard)
+    }
+
+    /// Calculate horizontal offset for tab based on its position relative to selectedTab
+    private func offsetForTab(_ tabIndex: Int, screenWidth: CGFloat) -> CGFloat {
+        if tabIndex == selectedTab {
+            return 0 // Selected tab is centered
+        } else if tabIndex < selectedTab {
+            return -screenWidth // Tabs to the left are offscreen left
+        } else {
+            return screenWidth // Tabs to the right are offscreen right
+        }
     }
 }
 

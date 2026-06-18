@@ -14,6 +14,8 @@ struct TimeStepper: View {
     @Binding var value: Int
     let step: Int = 15 // 15-minute increments
 
+    @State private var showPicker: Bool = false
+
     var body: some View {
         HStack(spacing: 12) {
             Text(label)
@@ -40,13 +42,74 @@ struct TimeStepper: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                // Time display
-                Text(ScheduleManager.minToLabel(value))
-                    .font(.instrumentSerif(25))
-                    .foregroundColor(.focusInk)
-                    .monospacedDigit()
-                    .frame(minWidth: 96)
-                    .multilineTextAlignment(.center)
+                // Time display - tappable to show picker
+                Button(action: {
+                    showPicker.toggle()
+                }) {
+                    Text(ScheduleManager.minToLabel(value))
+                        .font(.instrumentSerif(25))
+                        .foregroundColor(.focusInk)
+                        .monospacedDigit()
+                        .frame(minWidth: 96)
+                        .multilineTextAlignment(.center)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .popover(isPresented: $showPicker) {
+                    HStack(spacing: 0) {
+                        // Hour picker
+                        Picker("Hour", selection: Binding(
+                            get: { value / 60 },
+                            set: { newHour in
+                                let currentMinute = (value % 60) / 15 * 15
+                                value = newHour * 60 + currentMinute
+                            }
+                        )) {
+                            ForEach(0..<24, id: \.self) { hour in
+                                Text(String(format: "%d", hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour)))
+                                    .tag(hour)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(width: 70)
+
+                        // Minute picker (15-minute increments only)
+                        Picker("Minute", selection: Binding(
+                            get: { (value % 60) / 15 },
+                            set: { quarterIndex in
+                                let currentHour = value / 60
+                                value = currentHour * 60 + quarterIndex * 15
+                            }
+                        )) {
+                            ForEach(0..<4, id: \.self) { quarter in
+                                Text(String(format: "%02d", quarter * 15))
+                                    .tag(quarter)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(width: 70)
+
+                        // AM/PM picker
+                        Picker("Period", selection: Binding(
+                            get: { value / 60 >= 12 ? 1 : 0 },
+                            set: { period in
+                                let currentHour = value / 60
+                                let currentMinute = value % 60
+                                var newHour = currentHour % 12
+                                if period == 1 { // PM
+                                    newHour += 12
+                                }
+                                value = newHour * 60 + currentMinute
+                            }
+                        )) {
+                            Text("AM").tag(0)
+                            Text("PM").tag(1)
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(width: 70)
+                    }
+                    .padding()
+                    .presentationCompactAdaptation(.popover)
+                }
 
                 // Plus button
                 Button(action: {
