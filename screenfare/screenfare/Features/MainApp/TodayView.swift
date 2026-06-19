@@ -23,7 +23,7 @@ struct TodayView: View {
     @State private var showGate: ChallengeGateData?
     @State private var lockShakeCount = 0
 
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @State private var timerCancellable: AnyCancellable?
 
     var body: some View {
         ZStack {
@@ -243,14 +243,23 @@ struct TodayView: View {
             .safeAreaPadding(.top)
             .padding(.bottom, 90)
         }
-        .onReceive(timer) { _ in
-            currentTime = Date()
-        }
         .onAppear {
+            // Start timer for updating current time
+            timerCancellable = Timer.publish(every: 1, on: .main, in: .common)
+                .autoconnect()
+                .sink { _ in
+                    currentTime = Date()
+                }
+
             // Clean up any expired unlocks when user views Today tab
             blockingManager.cleanupExpiredUnlocks()
             // Load any pending history events from shield extension
             historyManager.loadPendingEvents()
+        }
+        .onDisappear {
+            // Cancel timer to prevent memory leak
+            timerCancellable?.cancel()
+            timerCancellable = nil
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             // Also load pending events when app comes to foreground

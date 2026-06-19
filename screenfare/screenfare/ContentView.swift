@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var showingOnboarding = false
     @State private var selectedTab = 0
     @State private var showingLaunchAnimation = false
+    @State private var lastChallengeRequestTime: Date?
 
     var body: some View {
         ZStack {
@@ -27,26 +28,14 @@ struct ContentView: View {
                             ChallengeView()
                                 .environment(\.selectedTab, $selectedTab)
                         }
-                        .onChange(of: notificationManager.shouldShowChallenge) { _, shouldShow in
-                            if shouldShow {
-                                showingChallenge = true
-                                notificationManager.shouldShowChallenge = false
-                            }
+                        .onChange(of: notificationManager.shouldShowChallenge) { _, _ in
+                            handleChallengeRequest(from: "NotificationManager")
                         }
-                        .onChange(of: darwinNotificationManager.shouldShowChallenge) { _, shouldShow in
-                            if shouldShow {
-                                showingChallenge = true
-                                darwinNotificationManager.shouldShowChallenge = false
-                            }
+                        .onChange(of: darwinNotificationManager.shouldShowChallenge) { _, _ in
+                            handleChallengeRequest(from: "DarwinNotificationManager")
                         }
-                        .onChange(of: shieldCommunicationManager.shouldShowChallenge) { _, shouldShow in
-                            print("[ContentView] shieldCommunicationManager.shouldShowChallenge changed to: \(shouldShow)")
-                            if shouldShow {
-                                print("[ContentView] Setting showingChallenge = true")
-                                showingChallenge = true
-                                shieldCommunicationManager.shouldShowChallenge = false
-                                print("[ContentView] Challenge sheet should now appear")
-                            }
+                        .onChange(of: shieldCommunicationManager.shouldShowChallenge) { _, _ in
+                            handleChallengeRequest(from: "ShieldCommunicationManager")
                         }
                 } else {
                     OnboardingContainerView {
@@ -89,6 +78,32 @@ struct ContentView: View {
                 .zIndex(999)
             }
         }
+    }
+
+    // MARK: - Helper Functions
+
+    /// Consolidated challenge request handler with deduplication
+    /// Prevents showing the same challenge multiple times when multiple sources trigger simultaneously
+    private func handleChallengeRequest(from source: String) {
+        let now = Date()
+
+        // Debounce: ignore if we just handled a challenge request within the last 0.5 seconds
+        if let lastRequest = lastChallengeRequestTime,
+           now.timeIntervalSince(lastRequest) < 0.5 {
+            print("[ContentView] Ignoring duplicate challenge request from \(source) (debounced)")
+            return
+        }
+
+        print("[ContentView] Handling challenge request from \(source)")
+
+        // Reset all notification flags
+        notificationManager.shouldShowChallenge = false
+        darwinNotificationManager.shouldShowChallenge = false
+        shieldCommunicationManager.shouldShowChallenge = false
+
+        // Show challenge
+        showingChallenge = true
+        lastChallengeRequestTime = now
     }
 }
 

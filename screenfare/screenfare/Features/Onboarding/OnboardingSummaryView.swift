@@ -57,9 +57,9 @@ struct OnboardingSummaryView: View {
                     .frame(height: 28)
 
                 // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 10px
-                (Text("Ready when\n")
+                (Text("Ready when")
                     .font(.instrumentSerif(36))
-                 + Text("you are.")
+                 + Text(" you are.")
                     .font(.instrumentSerif(36, italic: true)))
                     .foregroundColor(.focusInk)
                     .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
@@ -74,82 +74,78 @@ struct OnboardingSummaryView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 10)
 
-                Spacer()
-                    .frame(height: 22)
-
                 ScrollView {
-                    VStack(spacing: 14) {
-                        // Summary card
-                        VStack(spacing: 0) {
-                            SummaryRow(
-                                label: "Blocking",
-                                value: AnyView(
-                                    HStack(spacing: 8) {
-                                        // Facepile of icons
-                                        HStack(spacing: -6) {
-                                            ForEach(Array(selectedApps.categoryTokens.prefix(4)).sorted(by: { $0.hashValue < $1.hashValue }), id: \.self) { token in
-                                                Label(token)
-                                                    .labelStyle(.iconOnly)
-                                                    .scaleEffect(1.4)
-                                                    .frame(width: 22, height: 22)
-                                                    .background(Color.focusCard)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 7))
-                                                    .overlay(
-                                                        RoundedRectangle(cornerRadius: 7)
-                                                            .stroke(Color.focusCard, lineWidth: 1.5)
-                                                    )
-                                            }
+                    VStack(alignment: .leading, spacing: 0) {
+                        // "Your setup" section label
+                        SectionLabel(text: "Your setup")
+                            .padding(.top, 22)
+                            .padding(.bottom, 10)
+                            .padding(.horizontal, 4)
 
-                                            ForEach(Array(selectedApps.applicationTokens.prefix(max(0, 4 - selectedApps.categoryTokens.count))).sorted(by: { $0.hashValue < $1.hashValue }), id: \.self) { token in
-                                                Label(token)
-                                                    .labelStyle(.iconOnly)
-                                                    .scaleEffect(1.4)
-                                                    .frame(width: 22, height: 22)
-                                                    .background(Color.focusCard)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 7))
-                                                    .overlay(
-                                                        RoundedRectangle(cornerRadius: 7)
-                                                            .stroke(Color.focusCard, lineWidth: 1.5)
-                                                    )
-                                            }
+                        // Summary card with icon-led rows
+                        VStack(spacing: 0) {
+                            SummaryIconRow(
+                                icon: SUM_ICONS.blocks,
+                                label: "\(appCount) \(appCount == 1 ? "app" : "apps") blocked",
+                                sub: "Pay a fare to open",
+                                right: AnyView(
+                                    HStack(spacing: 0) {
+                                        // Facepile of icons (max 3)
+                                        ForEach(Array(selectedApps.categoryTokens.prefix(3)).sorted(by: { $0.hashValue < $1.hashValue }), id: \.self) { token in
+                                            Label(token)
+                                                .labelStyle(.iconOnly)
+                                                .scaleEffect(1.2)
+                                                .frame(width: 26, height: 26)
+                                                .background(Color.focusCard)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .stroke(Color.focusCard, lineWidth: 1.5)
+                                                )
+                                                .padding(.leading, token == selectedApps.categoryTokens.sorted(by: { $0.hashValue < $1.hashValue }).first ? 0 : -7)
                                         }
 
-                                        Text("\(appCount)")
-                                            .font(.inter(13))
-                                            .foregroundColor(.focusMuted)
+                                        ForEach(Array(selectedApps.applicationTokens.prefix(max(0, 3 - selectedApps.categoryTokens.count))).sorted(by: { $0.hashValue < $1.hashValue }), id: \.self) { token in
+                                            Label(token)
+                                                .labelStyle(.iconOnly)
+                                                .scaleEffect(1.2)
+                                                .frame(width: 26, height: 26)
+                                                .background(Color.focusCard)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .stroke(Color.focusCard, lineWidth: 1.5)
+                                                )
+                                                .padding(.leading, -7)
+                                        }
+
+                                        if appCount > 3 {
+                                            Text("+\(appCount - 3)")
+                                                .font(.inter(13))
+                                                .foregroundColor(.focusMuted)
+                                                .padding(.leading, 7)
+                                        }
                                     }
                                 )
                             )
 
-                            SummaryRow(
-                                label: "Challenge",
-                                value: AnyView(
-                                    Text("Math · \(difficultyLabel)")
-                                        .font(.inter(15, weight: .medium))
-                                        .foregroundColor(.focusInk)
-                                )
+                            SummaryIconRow(
+                                icon: SUM_ICONS.math,
+                                label: "Math · \(difficultyLabel)",
+                                sub: {
+                                    let challenge = MathChallenge(difficulty: difficulty)
+                                    return "Sample: \(challenge.questionText)"
+                                }()
                             )
 
-                            SummaryRow(
-                                label: "Sample",
-                                value: AnyView(
-                                    Text(sampleProblem)
-                                        .font(.instrumentSerif(17, italic: true))
-                                        .foregroundColor(.focusInk)
-                                )
-                            )
-
-                            SummaryRow(
-                                label: "Access window",
-                                value: AnyView(
-                                    Text(durationFormatted)
-                                        .font(.inter(15, weight: .medium))
-                                        .foregroundColor(.focusInk)
-                                ),
+                            SummaryIconRow(
+                                icon: SUM_ICONS.clock,
+                                label: "Unlocks for \(durationFormatted)",
+                                sub: "Then re-locks automatically",
                                 isLast: true
                             )
                         }
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, 16)
                         .padding(.vertical, 4)
                         .background(
                             RoundedRectangle(cornerRadius: 18)
@@ -160,28 +156,30 @@ struct OnboardingSummaryView: View {
                                 )
                         )
 
-                        // How it works card: borderRadius: 18, padding: 20px 20px 22px
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("HOW IT WORKS")
-                                .font(.inter(11, weight: .medium))
-                                .foregroundColor(.white.opacity(0.5))
-                                .tracking(11 * 0.12) // letterSpacing: 0.12em
+                        // "How it works" section label
+                        SectionLabel(text: "How it works")
+                            .padding(.top, 22)
+                            .padding(.bottom, 10)
+                            .padding(.horizontal, 4)
 
-                            VStack(spacing: 10) {
-                                HowItWorksStep(number: 1, text: "Tap a blocked app → iOS shows the block screen")
-                                HowItWorksStep(number: 2, text: "Screen Fare sends a notification → tap it")
-                                HowItWorksStep(number: 3, text: "Solve a \(difficultyLabel.lowercased()) math problem")
-                                HowItWorksStep(number: 4, text: "App unlocks for \(durationFormatted)")
-                            }
+                        // How it works card
+                        VStack(spacing: 13) {
+                            HowItWorksStep(number: 1, text: "Tap a blocked app — iOS shows the block screen")
+                            HowItWorksStep(number: 2, text: "Screen Fare sends a notification — tap it")
+                            HowItWorksStep(number: 3, text: "Solve a \(difficultyLabel.lowercased()) math problem")
+                            HowItWorksStep(number: 4, text: "The app unlocks for \(durationFormatted)")
                         }
                         .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 22)
+                        .padding(.top, 18)
+                        .padding(.bottom, 18)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
                             RoundedRectangle(cornerRadius: 18)
                                 .fill(Color.focusInk)
                         )
+
+                        Spacer()
+                            .frame(height: 4)
                     }
                 }
 
@@ -196,27 +194,62 @@ struct OnboardingSummaryView: View {
     }
 }
 
-struct SummaryRow: View {
+// MARK: - Section Label Component
+
+struct SectionLabel: View {
+    let text: String
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(.inter(11, weight: .semibold))
+            .foregroundColor(.focusMuted)
+            .tracking(11 * 0.06) // letterSpacing: 0.6em = 6% of font size
+    }
+}
+
+// MARK: - Summary Icon Row Component
+
+struct SummaryIconRow: View {
+    let icon: AnyView
     let label: String
-    let value: AnyView
+    var sub: String?
+    var right: AnyView?
     var isLast: Bool = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Text(label)
-                .font(.inter(13))
-                .foregroundColor(.focusMuted)
-                .padding(.top, 2)
-                .frame(maxWidth: 100, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .center, spacing: 14) {
+            // Icon container: 36x36 rounded square with subtle background
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.focusInk.opacity(0.06))
+                    .frame(width: 36, height: 36)
 
-            Spacer()
+                icon
+            }
+            .frame(width: 36, height: 36)
 
-            value
-                .frame(maxWidth: 200, alignment: .trailing)
-                .multilineTextAlignment(.trailing)
+            // Label and sublabel
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.inter(15, weight: .medium))
+                    .foregroundColor(.focusInk)
+                    .lineSpacing(15 * 0.2) // lineHeight 1.2
+
+                if let sub = sub {
+                    Text(sub)
+                        .font(.inter(12.5))
+                        .foregroundColor(.focusMuted)
+                        .lineSpacing(12.5 * 0.3) // lineHeight 1.3
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Right content (optional)
+            if let right = right {
+                right
+            }
         }
-        .padding(.vertical, 16)
+        .padding(.vertical, 14)
         .overlay(
             Rectangle()
                 .fill(isLast ? Color.clear : Color.focusLine)
@@ -226,27 +259,51 @@ struct SummaryRow: View {
     }
 }
 
+// MARK: - Summary Icons (using SF Symbols for consistency with main app)
+
+struct SUM_ICONS {
+    // Blocks icon - uses same SF Symbol as Blocks tab in MainTabView
+    static let blocks = AnyView(
+        Image(systemName: "shield")
+            .font(.system(size: 18))
+            .foregroundColor(.focusInk)
+    )
+
+    // Math icon - uses same SF Symbol as TodayView challenge type
+    static let math = AnyView(
+        Image(systemName: "plus.forwardslash.minus")
+            .font(.system(size: 18))
+            .foregroundColor(.focusInk)
+    )
+
+    // Clock icon - uses same SF Symbol as main app
+    static let clock = AnyView(
+        Image(systemName: "clock")
+            .font(.system(size: 18))
+            .foregroundColor(.focusInk)
+    )
+}
+
 struct HowItWorksStep: View {
     let number: Int
     let text: String
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .center, spacing: 12) {
             ZStack {
                 Circle()
                     .fill(Color.white.opacity(0.1))
-                    .frame(width: 18, height: 18)
+                    .frame(width: 22, height: 22)
 
                 Text("\(number)")
                     .font(.inter(11, weight: .semibold))
                     .foregroundColor(.white)
             }
-            .padding(.top, 1)
 
             Text(text)
                 .font(.inter(13.5))
-                .foregroundColor(.white.opacity(0.9))
-                .lineSpacing(6)
+                .foregroundColor(.white.opacity(0.92))
+                .lineSpacing(13.5 * 0.4) // lineHeight 1.4
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

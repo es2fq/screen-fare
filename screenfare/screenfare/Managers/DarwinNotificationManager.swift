@@ -14,8 +14,10 @@ class DarwinNotificationManager: ObservableObject {
     static let shared = DarwinNotificationManager()
 
     @Published var shouldShowChallenge = false
+    var onStatsUpdated: (() -> Void)?
 
-    private let notificationName = "com.screenfare.unlockChallenge" as CFString
+    private let challengeNotificationName = "com.screenfare.unlockChallenge" as CFString
+    private let statsNotificationName = "com.screenfare.statsUpdated" as CFString
 
     private init() {
         setupDarwinNotificationObserver()
@@ -25,6 +27,7 @@ class DarwinNotificationManager: ObservableObject {
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         let observer = Unmanaged.passUnretained(self).toOpaque()
 
+        // Listen for challenge requests
         CFNotificationCenterAddObserver(
             center,
             observer,
@@ -36,7 +39,24 @@ class DarwinNotificationManager: ObservableObject {
                     manager.shouldShowChallenge = true
                 }
             },
-            notificationName,
+            challengeNotificationName,
+            nil,
+            .deliverImmediately
+        )
+
+        // Listen for stats updates (replaces polling)
+        CFNotificationCenterAddObserver(
+            center,
+            observer,
+            { (center, observer, name, object, userInfo) in
+                guard let observer = observer else { return }
+                let manager = Unmanaged<DarwinNotificationManager>.fromOpaque(observer).takeUnretainedValue()
+
+                Task { @MainActor in
+                    manager.onStatsUpdated?()
+                }
+            },
+            statsNotificationName,
             nil,
             .deliverImmediately
         )

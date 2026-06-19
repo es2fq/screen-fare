@@ -12,6 +12,10 @@ import UIKit
 
 /// Defines the appearance of the shield shown when blocked apps are accessed
 class ShieldConfigurationExtension: ShieldConfigurationDataSource {
+    // Cache for decoded unlocks to avoid repeated JSON decoding
+    private var unlocksCache: (data: Data, unlocks: [Data: Date], timestamp: Date)?
+    private var categoryUnlocksCache: (data: Data, unlocks: [Data: Date], timestamp: Date)?
+    private let cacheExpirySeconds: TimeInterval = 1.0 // Cache for 1 second
 
     override func configuration(shielding application: Application) -> ShieldConfiguration {
         // 1. Check schedule FIRST - if outside blocking window, no shield
@@ -96,11 +100,27 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
     }
 
     private func isAppTemporarilyUnlocked(_ application: Application) -> Bool {
-        // Load temporary unlocks from shared storage
         guard let sharedDefaults = UserDefaults.appGroup,
-              let data = sharedDefaults.data(forKey: "com.screenfare.temporaryUnlocks"),
-              let unlocks = try? JSONDecoder().decode([Data: Date].self, from: data) else {
+              let data = sharedDefaults.data(forKey: "com.screenfare.temporaryUnlocks") else {
             return false
+        }
+
+        // Use cached unlocks if available and fresh
+        let unlocks: [Data: Date]
+        let now = Date()
+
+        if let cache = unlocksCache,
+           cache.data == data,
+           now.timeIntervalSince(cache.timestamp) < cacheExpirySeconds {
+            // Use cached data
+            unlocks = cache.unlocks
+        } else {
+            // Decode fresh data and cache it
+            guard let decoded = try? JSONDecoder().decode([Data: Date].self, from: data) else {
+                return false
+            }
+            unlocks = decoded
+            unlocksCache = (data, decoded, now)
         }
 
         // Check if this specific app has an active unlock
@@ -109,16 +129,31 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             return false
         }
 
-        let now = Date()
         return now < expiryTime
     }
 
     private func isCategoryTemporarilyUnlocked(_ category: ActivityCategory) -> Bool {
-        // Load temporary category unlocks from shared storage
         guard let sharedDefaults = UserDefaults.appGroup,
-              let data = sharedDefaults.data(forKey: "com.screenfare.temporaryCategoryUnlocks"),
-              let unlocks = try? JSONDecoder().decode([Data: Date].self, from: data) else {
+              let data = sharedDefaults.data(forKey: "com.screenfare.temporaryCategoryUnlocks") else {
             return false
+        }
+
+        // Use cached unlocks if available and fresh
+        let unlocks: [Data: Date]
+        let now = Date()
+
+        if let cache = categoryUnlocksCache,
+           cache.data == data,
+           now.timeIntervalSince(cache.timestamp) < cacheExpirySeconds {
+            // Use cached data
+            unlocks = cache.unlocks
+        } else {
+            // Decode fresh data and cache it
+            guard let decoded = try? JSONDecoder().decode([Data: Date].self, from: data) else {
+                return false
+            }
+            unlocks = decoded
+            categoryUnlocksCache = (data, decoded, now)
         }
 
         // Check if this specific category has an active unlock
@@ -127,7 +162,6 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             return false
         }
 
-        let now = Date()
         return now < expiryTime
     }
 }

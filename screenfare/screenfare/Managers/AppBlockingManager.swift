@@ -36,6 +36,13 @@ class AppBlockingManager: ObservableObject {
     @Published var unlockStartTimes: [Data: Date] = [:] // App/Category token data -> when unlock started
     @Published var temporaryCategoryUnlocks: [Data: Date] = [:] // Category token data -> expiry time
 
+    // Track active timer tasks to prevent memory leaks
+    private var activeTimerTasks: [Data: Task<Void, Never>] = [:]
+
+    // Cache for decoded tokens to avoid repeated JSON decoding
+    private var decodedAppTokenCache: [Data: ApplicationToken] = [:]
+    private var decodedCategoryTokenCache: [Data: ActivityCategoryToken] = [:]
+
     var isBlocking: Bool {
         blockedApps != nil
     }
@@ -49,9 +56,21 @@ class AppBlockingManager: ObservableObject {
         // Remove apps with active temporary unlocks
         let now = Date()
         for (appTokenData, expiryTime) in temporaryUnlocks {
-            if now < expiryTime,
-               let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) {
-                blocked.remove(appToken)
+            if now < expiryTime {
+                // Use cached token if available, otherwise decode and cache
+                let appToken: ApplicationToken?
+                if let cached = decodedAppTokenCache[appTokenData] {
+                    appToken = cached
+                } else if let decoded = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) {
+                    decodedAppTokenCache[appTokenData] = decoded
+                    appToken = decoded
+                } else {
+                    appToken = nil
+                }
+
+                if let token = appToken {
+                    blocked.remove(token)
+                }
             }
         }
 
@@ -67,9 +86,21 @@ class AppBlockingManager: ObservableObject {
         // Remove categories with active temporary unlocks
         let now = Date()
         for (categoryTokenData, expiryTime) in temporaryCategoryUnlocks {
-            if now < expiryTime,
-               let categoryToken = try? JSONDecoder().decode(ActivityCategoryToken.self, from: categoryTokenData) {
-                blocked.remove(categoryToken)
+            if now < expiryTime {
+                // Use cached token if available, otherwise decode and cache
+                let categoryToken: ActivityCategoryToken?
+                if let cached = decodedCategoryTokenCache[categoryTokenData] {
+                    categoryToken = cached
+                } else if let decoded = try? JSONDecoder().decode(ActivityCategoryToken.self, from: categoryTokenData) {
+                    decodedCategoryTokenCache[categoryTokenData] = decoded
+                    categoryToken = decoded
+                } else {
+                    categoryToken = nil
+                }
+
+                if let token = categoryToken {
+                    blocked.remove(token)
+                }
             }
         }
 
@@ -215,13 +246,17 @@ class AppBlockingManager: ObservableObject {
             let remaining = expiryTime.timeIntervalSince(now)
 
             if remaining > 0 {
-                // Unlock is still active, restart timer
-                Task {
+                // Cancel existing timer if any
+                activeTimerTasks[appTokenData]?.cancel()
+
+                // Unlock is still active, restart timer and track it
+                let task = Task {
                     try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
                     await MainActor.run {
                         self.removeTemporaryUnlock(appTokenData: appTokenData)
                     }
                 }
+                activeTimerTasks[appTokenData] = task
             } else {
                 // Already expired, remove immediately
                 temporaryUnlocks.removeValue(forKey: appTokenData)
@@ -234,13 +269,17 @@ class AppBlockingManager: ObservableObject {
             let remaining = expiryTime.timeIntervalSince(now)
 
             if remaining > 0 {
-                // Unlock is still active, restart timer
-                Task {
+                // Cancel existing timer if any
+                activeTimerTasks[categoryTokenData]?.cancel()
+
+                // Unlock is still active, restart timer and track it
+                let task = Task {
                     try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
                     await MainActor.run {
                         self.removeTemporaryCategoryUnlock(categoryTokenData: categoryTokenData)
                     }
                 }
+                activeTimerTasks[categoryTokenData] = task
             } else {
                 // Already expired, remove immediately
                 temporaryCategoryUnlocks.removeValue(forKey: categoryTokenData)
@@ -359,6 +398,16 @@ class AppBlockingManager: ObservableObject {
     }
 
     func removeBlocking() {
+        // Cancel all active timer tasks
+        for (_, task) in activeTimerTasks {
+            task.cancel()
+        }
+        activeTimerTasks.removeAll()
+
+        // Clear token caches
+        decodedAppTokenCache.removeAll()
+        decodedCategoryTokenCache.removeAll()
+
         // Stop all active device activity monitors
         for (_, activityName) in activeMonitors {
             activityCenter.stopMonitoring([activityName])
@@ -431,6 +480,13 @@ class AppBlockingManager: ObservableObject {
         // Note: Time tracking is now handled by DeviceActivityMonitor.eventDidReachThreshold()
         // which fires every minute the app is actually used
 
+        // Cancel and remove timer task
+        activeTimerTasks[appTokenData]?.cancel()
+        activeTimerTasks.removeValue(forKey: appTokenData)
+
+        // Clear cached decoded token
+        decodedAppTokenCache.removeValue(forKey: appTokenData)
+
         // Stop monitoring if active
         if let activityName = activeMonitors[appTokenData] {
             activityCenter.stopMonitoring([activityName])
@@ -472,13 +528,17 @@ class AppBlockingManager: ObservableObject {
 
         print("[AppBlockingManager] 🔓 Category unlock started: expiry=\(expiryTime), remaining=\(Int(duration))s")
 
-        // Schedule timer to remove unlock when it expires
-        Task {
+        // Cancel existing timer if any
+        activeTimerTasks[categoryTokenData]?.cancel()
+
+        // Schedule timer to remove unlock when it expires and track it
+        let task = Task {
             try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
             await MainActor.run {
                 self.removeTemporaryCategoryUnlock(categoryTokenData: categoryTokenData)
             }
         }
+        activeTimerTasks[categoryTokenData] = task
 
         // IMMEDIATELY update shields to remove this category
         recalculateShields()
@@ -487,6 +547,13 @@ class AppBlockingManager: ObservableObject {
     }
 
     private func removeTemporaryCategoryUnlock(categoryTokenData: Data) {
+        // Cancel and remove timer task
+        activeTimerTasks[categoryTokenData]?.cancel()
+        activeTimerTasks.removeValue(forKey: categoryTokenData)
+
+        // Clear cached decoded token
+        decodedCategoryTokenCache.removeValue(forKey: categoryTokenData)
+
         temporaryCategoryUnlocks.removeValue(forKey: categoryTokenData)
         unlockDurations.removeValue(forKey: categoryTokenData)
         unlockStartTimes.removeValue(forKey: categoryTokenData)

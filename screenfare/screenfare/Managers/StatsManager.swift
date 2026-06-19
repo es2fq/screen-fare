@@ -49,12 +49,11 @@ class StatsManager: ObservableObject {
             print("[StatsManager] Created fresh stats for \(today)")
         }
 
-        // Start a timer to periodically reload stats from shared storage
-        // (Extensions write to shared UserDefaults, we need to poll for changes)
-        Task { @MainActor in
-            while true {
-                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-                self.reloadStats()
+        // Listen for Darwin notifications from extensions instead of polling
+        // This is much more efficient than the previous 2-second polling loop
+        DarwinNotificationManager.shared.onStatsUpdated = { [weak self] in
+            Task { @MainActor in
+                self?.reloadStats()
             }
         }
     }

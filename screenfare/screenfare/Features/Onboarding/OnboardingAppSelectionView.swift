@@ -183,7 +183,7 @@ struct OnboardingAppSelectionView: View {
                                     .font(.inter(17, weight: .semibold))
                                     .foregroundColor(.focusInk)
 
-                                Text("Opens Screen Time's picker. Your choices stay on your device — Screen Fare only knows something is blocked, never what.")
+                                Text("Click to open Screen Time's picker. Choose the apps that distract you the most.")
                                     .font(.inter(13))
                                     .foregroundColor(.focusMuted)
                                     .multilineTextAlignment(.center)

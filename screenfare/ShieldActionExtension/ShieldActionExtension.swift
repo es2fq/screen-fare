@@ -159,6 +159,11 @@ class ShieldActionExtension: ShieldActionDelegate {
         if let encoded = try? JSONEncoder().encode(stats) {
             sharedDefaults.set(encoded, forKey: storageKey)
         }
+
+        // Notify main app that stats were updated (replaces polling)
+        let notificationName = "com.screenfare.statsUpdated" as CFString
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterPostNotification(center, CFNotificationName(notificationName), nil, nil, true)
     }
 
     private func recordWalkedAwayEvent(for application: ApplicationToken) {

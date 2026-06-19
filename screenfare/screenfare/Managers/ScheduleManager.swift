@@ -17,13 +17,18 @@ class ScheduleManager: ObservableObject {
     @Published var schedule: Schedule {
         didSet {
             saveSchedule()
-            // Notify that schedule changed so AppBlockingManager can update monitors
-            NotificationCenter.default.post(name: .scheduleDidChange, object: nil)
+            // Debounce schedule change notifications to avoid rapid recalculations
+            scheduleChangeDebounceTimer?.invalidate()
+            scheduleChangeDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                NotificationCenter.default.post(name: .scheduleDidChange, object: nil)
+                self?.scheduleChangeDebounceTimer = nil
+            }
         }
     }
 
     private let scheduleKey = "com.screenfare.schedule"
     private let sharedDefaults = UserDefaults.appGroup
+    private var scheduleChangeDebounceTimer: Timer?
 
     init() {
         // Load from shared UserDefaults or use default
