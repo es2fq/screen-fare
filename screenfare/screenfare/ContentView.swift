@@ -15,7 +15,7 @@ struct ContentView: View {
     @State private var showingChallenge = false
     @State private var showingOnboarding = false
     @State private var selectedTab = 0
-    @State private var showingLaunchAnimation = true // Always show on cold start
+    @State private var showingLaunchAnimation = false
 
     var body: some View {
         ZStack {
@@ -55,6 +55,21 @@ struct ContentView: View {
                 }
             }
             .opacity(showingLaunchAnimation ? 0 : 1)
+            .onAppear {
+                // Show animation if user hasn't completed onboarding, or if this was a cold start
+                if !settings.hasCompletedOnboarding {
+                    showingLaunchAnimation = true
+                } else if let launchTime = UserDefaults.standard.object(forKey: "appLaunchTime") as? TimeInterval {
+                    let launchScreenDuration = Date().timeIntervalSince1970 - launchTime
+                    print("[ContentView] Launch screen was visible for: \(launchScreenDuration) seconds")
+                    UserDefaults.standard.removeObject(forKey: "appLaunchTime")
+
+                    // Show animation only if launch took longer than 2 seconds (cold start)
+                    if launchScreenDuration > 2.0 {
+                        showingLaunchAnimation = true
+                    }
+                }
+            }
 
             // Launch animation overlay
             if showingLaunchAnimation {

@@ -13,6 +13,9 @@ struct screenfareApp: App {
     @StateObject private var blockingManager = AppBlockingManager.shared
 
     init() {
+        // Store launch time for animation timing
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "appLaunchTime")
+
         // Setup notification categories
         NotificationManager.shared.setupNotificationCategories()
 
