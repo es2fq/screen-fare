@@ -118,7 +118,7 @@ struct StrictModeEditorSheet: View {
                         AppCard(padding: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)) {
                             VStack(spacing: 0) {
                                 ToggleRow(
-                                    icon: SettIcon(path: "M5 7h12M5 15h12M9 4l-2 14M15 4l-2 14"),
+                                    icon: SettIcon(path: "M5 9h12v9H5zM8 9V6a3 3 0 016 0v3", viewBox: "22 22"),
                                     label: "Blocklist",
                                     sub: "Adding or removing apps",
                                     value: Binding(
@@ -162,8 +162,8 @@ struct StrictModeEditorSheet: View {
                                 )
 
                                 ToggleRow(
-                                    icon: SettIcon(path: "M7 10h8M7 14h4M5 4h12a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2"),
-                                    label: "Challenge",
+                                    icon: SettIcon(systemName: "ticket"),
+                                    label: "Fare",
                                     sub: "Changing type or difficulty",
                                     value: Binding(
                                         get: { settings.strictProtectChallenge },

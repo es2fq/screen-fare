@@ -10,14 +10,23 @@ import SwiftUI
 // MARK: - Settings Icon
 
 struct SettIcon: View {
-    let path: String
+    let path: String?
     let circle: String?
     let viewBox: String
+    let systemName: String?
 
     init(path: String, circle: String? = nil, viewBox: String = "22 22") {
         self.path = path
         self.circle = circle
         self.viewBox = viewBox
+        self.systemName = nil
+    }
+
+    init(systemName: String) {
+        self.path = nil
+        self.circle = nil
+        self.viewBox = "22 22"
+        self.systemName = systemName
     }
 
     var body: some View {
@@ -34,8 +43,16 @@ struct SettIcon: View {
 
     // Map path strings to SF Symbols
     private var iconName: String {
+        if let systemName = systemName {
+            return systemName
+        }
+
+        guard let path = path else {
+            return "gearshape.fill"
+        }
+
         if path.contains("M5 9h12v9H5") || path.contains("M8 9V6a3 3 0 016 0v3") {
-            return "lock.fill"
+            return "shield.fill"
         } else if path.contains("M6 10a5 5 0 019.6-1.8") {
             return "icloud.fill"
         } else if path.contains("M13 4H6a2 2 0 00-2 2v10") {

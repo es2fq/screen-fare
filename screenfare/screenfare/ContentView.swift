@@ -20,46 +20,31 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Group {
-                if settings.hasCompletedOnboarding {
-                    MainTabView(selectedTab: $selectedTab)
+            // Main app - always rendered at bottom
+            MainTabView(selectedTab: $selectedTab)
+                .environment(\.selectedTab, $selectedTab)
+                .sheet(isPresented: $showingChallenge) {
+                    ChallengeView()
                         .environment(\.selectedTab, $selectedTab)
-                        .sheet(isPresented: $showingChallenge) {
-                            ChallengeView()
-                                .environment(\.selectedTab, $selectedTab)
-                        }
-                        .onChange(of: notificationManager.shouldShowChallenge) { _, _ in
-                            handleChallengeRequest(from: "NotificationManager")
-                        }
-                        .onChange(of: darwinNotificationManager.shouldShowChallenge) { _, _ in
-                            handleChallengeRequest(from: "DarwinNotificationManager")
-                        }
-                        .onChange(of: shieldCommunicationManager.shouldShowChallenge) { _, _ in
-                            handleChallengeRequest(from: "ShieldCommunicationManager")
-                        }
-                        .transition(.opacity)
-                } else {
-                    OnboardingContainerView {
-                        // Onboarding complete - this will trigger a view update
-                    }
-                    .transition(.opacity)
                 }
-            }
-            .opacity(showingLaunchAnimation ? 0 : 1)
-            .onAppear {
-                // Show animation if user hasn't completed onboarding, or if this was a cold start
-                if !settings.hasCompletedOnboarding {
-                    showingLaunchAnimation = true
-                } else if let launchTime = UserDefaults.standard.object(forKey: "appLaunchTime") as? TimeInterval {
-                    let launchScreenDuration = Date().timeIntervalSince1970 - launchTime
-                    print("[ContentView] Launch screen was visible for: \(launchScreenDuration) seconds")
-                    UserDefaults.standard.removeObject(forKey: "appLaunchTime")
+                .onChange(of: notificationManager.shouldShowChallenge) { _, _ in
+                    handleChallengeRequest(from: "NotificationManager")
+                }
+                .onChange(of: darwinNotificationManager.shouldShowChallenge) { _, _ in
+                    handleChallengeRequest(from: "DarwinNotificationManager")
+                }
+                .onChange(of: shieldCommunicationManager.shouldShowChallenge) { _, _ in
+                    handleChallengeRequest(from: "ShieldCommunicationManager")
+                }
+                .opacity(showingLaunchAnimation ? 0 : 1)
 
-                    // Show animation only if launch took longer than 2 seconds (cold start)
-                    if launchScreenDuration > 2.0 {
-                        showingLaunchAnimation = true
-                    }
+            // Onboarding overlay - fades out when complete
+            if !settings.hasCompletedOnboarding {
+                OnboardingContainerView {
+                    // Onboarding complete - this will trigger a view update
                 }
+                .transition(.opacity)
+                .zIndex(1)
             }
 
             // Launch animation overlay
@@ -78,6 +63,21 @@ struct ContentView: View {
                 .ignoresSafeArea()
                 .transition(.opacity)
                 .zIndex(999)
+            }
+        }
+        .onAppear {
+            // Show animation if user hasn't completed onboarding, or if this was a cold start
+            if !settings.hasCompletedOnboarding {
+                showingLaunchAnimation = true
+            } else if let launchTime = UserDefaults.standard.object(forKey: "appLaunchTime") as? TimeInterval {
+                let launchScreenDuration = Date().timeIntervalSince1970 - launchTime
+                print("[ContentView] Launch screen was visible for: \(launchScreenDuration) seconds")
+                UserDefaults.standard.removeObject(forKey: "appLaunchTime")
+
+                // Show animation only if launch took longer than 2 seconds (cold start)
+                if launchScreenDuration > 2.0 {
+                    showingLaunchAnimation = true
+                }
             }
         }
     }

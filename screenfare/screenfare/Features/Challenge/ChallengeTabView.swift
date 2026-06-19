@@ -955,10 +955,10 @@ struct AccessWindowCard: View {
                                 .frame(height: 32)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .stroke(selectedMinutes == preset ? Color.focusAccent : Color.focusLine, lineWidth: 1)
+                                        .stroke(selectedMinutes == preset ? Color.focusInk : Color.focusLine, lineWidth: 1)
                                         .background(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .fill(selectedMinutes == preset ? Color.focusAccent : Color.focusCard)
+                                                .fill(selectedMinutes == preset ? Color.focusInk : Color.focusCard)
                                         )
                                 )
                         }

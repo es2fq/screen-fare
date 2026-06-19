@@ -45,7 +45,7 @@ struct OnboardingTimeWindowView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 // Description: fontSize: 14.5
-                Text("After you solve the problem, the app unlocks for this much time before re-locking.")
+                Text("After you pay a fare, the app unlocks for this much time before re-locking.")
                     .font(.inter(14.5))
                     .foregroundColor(.focusMuted)
                     .fixedSize(horizontal: false, vertical: true)

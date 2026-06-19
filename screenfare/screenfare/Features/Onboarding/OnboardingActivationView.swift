@@ -154,8 +154,10 @@ struct OnboardingActivationView: View {
                     extraCount: extraCount,
                     columns: columnCount,
                     isSealing: phase >= 1,
+                    showSweepingLight: phase == 1,
                     reduceMotion: reduceMotion
                 )
+                .animation(.easeOut(duration: 0.3), value: phase)
 
                 Spacer()
 
@@ -178,14 +180,14 @@ struct OnboardingActivationView: View {
             }
         } else {
             // Phase 0 → 1: Gather complete, start sealing
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
                 withAnimation {
                     phase = 1
                 }
             }
 
             // Phase 1 → 2: Sealing complete, show confirmed
-            let sealDuration = 0.52 + Double(displayItems.count) * 0.12 + 0.36
+            let sealDuration = 0.7 + Double(displayItems.count) * 0.18 + 0.5
             DispatchQueue.main.asyncAfter(deadline: .now() + sealDuration) {
                 withAnimation {
                     phase = 2
@@ -207,6 +209,7 @@ struct AppGridView: View {
     let extraCount: Int
     let columns: Int
     let isSealing: Bool
+    let showSweepingLight: Bool
     let reduceMotion: Bool
 
     private let tileSize: CGFloat = 84
@@ -218,14 +221,15 @@ struct AppGridView: View {
 
     var body: some View {
         ZStack {
-            // Sweeping seal light (only during sealing phase)
-            if isSealing && !reduceMotion {
+            // Sweeping seal light (only during active sealing phase)
+            if showSweepingLight && !reduceMotion {
                 SweepingLightView(
                     itemCount: items.count,
                     columns: columns,
                     tileSize: tileSize,
                     spacing: spacing
                 )
+                .transition(.opacity)
             }
 
             // App grid
@@ -385,7 +389,7 @@ struct SweepingLightView: View {
     }
 
     private var animationDuration: Double {
-        Double(itemCount) * 0.12 + 0.3
+        Double(itemCount) * 0.18 + 0.4
     }
 
     @State private var sweepOffset: CGFloat = -64

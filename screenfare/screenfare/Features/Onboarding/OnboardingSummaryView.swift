@@ -24,7 +24,9 @@ struct OnboardingSummaryView: View {
     }
 
     private var durationFormatted: String {
-        if durationMinutes < 60 {
+        if durationMinutes == 1 {
+            return "1 minute"
+        } else if durationMinutes < 60 {
             return "\(durationMinutes) minutes"
         } else if durationMinutes == 60 {
             return "1 hour"
@@ -165,9 +167,9 @@ struct OnboardingSummaryView: View {
 
                         // How it works card
                         VStack(spacing: 13) {
-                            HowItWorksStep(number: 1, text: "Tap a blocked app — iOS shows the block screen")
-                            HowItWorksStep(number: 2, text: "Screen Fare sends a notification — tap it")
-                            HowItWorksStep(number: 3, text: "Solve a \(difficultyLabel.lowercased()) math problem")
+                            HowItWorksStep(number: 1, text: "Open a blocked app")
+                            HowItWorksStep(number: 2, text: "Tap \"Pay Fare\" to get a notification")
+                            HowItWorksStep(number: 3, text: "Pay the selected fare")
                             HowItWorksStep(number: 4, text: "The app unlocks for \(durationFormatted)")
                         }
                         .padding(.horizontal, 20)
