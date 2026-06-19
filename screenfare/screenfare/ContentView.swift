@@ -37,10 +37,12 @@ struct ContentView: View {
                         .onChange(of: shieldCommunicationManager.shouldShowChallenge) { _, _ in
                             handleChallengeRequest(from: "ShieldCommunicationManager")
                         }
+                        .transition(.opacity)
                 } else {
                     OnboardingContainerView {
                         // Onboarding complete - this will trigger a view update
                     }
+                    .transition(.opacity)
                 }
             }
             .opacity(showingLaunchAnimation ? 0 : 1)

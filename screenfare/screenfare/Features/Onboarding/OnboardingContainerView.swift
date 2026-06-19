@@ -153,9 +153,15 @@ struct OnboardingContainerView: View {
     }
 
     private func finalizeOnboarding() {
-        // Complete onboarding after animation finishes
-        settings.hasCompletedOnboarding = true
-        onComplete()
+        // Complete onboarding after animation finishes with smooth fade
+        withAnimation(.easeInOut(duration: 0.6)) {
+            settings.hasCompletedOnboarding = true
+        }
+
+        // Call completion callback after animation starts
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            onComplete()
+        }
     }
 }
 

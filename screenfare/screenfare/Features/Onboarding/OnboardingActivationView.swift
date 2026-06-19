@@ -159,31 +159,9 @@ struct OnboardingActivationView: View {
 
                 Spacer()
 
-                // Footer - appears on confirm
-                VStack(spacing: 0) {
-                    if phase >= 2 {
-                        Text("\(appCount) \(appCount == 1 ? "app" : "apps")")
-                            .font(.inter(14.5, weight: .semibold))
-                            .foregroundColor(.focusInk)
-                        + Text(" now ask for a fare. Each opens for \(durationFormatted) once you pay.")
-                            .font(.inter(14.5))
-                            .foregroundColor(.focusMuted)
-                    }
-                }
-                .frame(height: 104, alignment: .bottom)
-                .multilineTextAlignment(.center)
-                .lineSpacing(14.5 * 0.5)
-                .padding(.bottom, 16)
-                .opacity(phase >= 2 ? 1 : 0)
-                .offset(y: phase >= 2 ? 0 : 14)
-                .animation(.easeOut(duration: 0.44), value: phase)
-
-                // Continue button (only in phase 2)
-                if phase >= 2 {
-                    PrimaryButton(title: "Continue", action: onComplete)
-                        .padding(.bottom, 34)
-                        .transition(.opacity.combined(with: .offset(y: 14)))
-                }
+                // Footer spacer
+                Spacer()
+                    .frame(height: 104)
             }
         }
         .onAppear {
@@ -193,8 +171,11 @@ struct OnboardingActivationView: View {
 
     private func startAnimation() {
         if reduceMotion {
-            // Skip to final phase immediately
+            // Skip to final phase immediately, then transition to main app
             phase = 2
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                onComplete()
+            }
         } else {
             // Phase 0 → 1: Gather complete, start sealing
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
@@ -208,6 +189,11 @@ struct OnboardingActivationView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + sealDuration) {
                 withAnimation {
                     phase = 2
+                }
+
+                // Auto-transition to main app after showing confirmation
+                DispatchQueue.main.asyncAfter(deadline: .now() + sealDuration + 1.0) {
+                    onComplete()
                 }
             }
         }

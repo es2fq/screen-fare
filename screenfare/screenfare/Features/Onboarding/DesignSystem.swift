@@ -297,6 +297,7 @@ struct PermissionPrompt: View {
                     Text(title)
                         .font(.system(size: 17, weight: .semibold, design: .default))
                         .foregroundColor(.white.opacity(1))
+                        .lineSpacing(2)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     // Description

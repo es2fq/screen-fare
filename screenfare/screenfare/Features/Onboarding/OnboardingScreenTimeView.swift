@@ -24,9 +24,10 @@ struct OnboardingScreenTimeView: View {
                     // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 14px
                     (Text("Allow ")
                         .font(.instrumentSerif(36))
-                     + Text("Screen Time.")
-                        .font(.instrumentSerif(36, italic: true)))
                         .foregroundColor(.focusInk)
+                     + Text("Screen Time.")
+                        .font(.instrumentSerif(36, italic: true))
+                        .foregroundColor(.focusAccent))
                         .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
