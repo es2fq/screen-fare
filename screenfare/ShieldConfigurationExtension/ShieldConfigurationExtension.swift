@@ -29,7 +29,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             return ShieldConfiguration()
         }
 
-        return createCustomShieldConfiguration()
+        return createCustomShieldConfiguration(for: application)
     }
 
     override func configuration(shielding application: Application, in category: ActivityCategory) -> ShieldConfiguration {
@@ -48,39 +48,53 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             return ShieldConfiguration()
         }
 
-        return createCustomShieldConfiguration()
+        return createCustomShieldConfiguration(for: application)
     }
 
-    private func createCustomShieldConfiguration() -> ShieldConfiguration {
+    private func createCustomShieldConfiguration(for application: Application) -> ShieldConfiguration {
         // Read unlock duration from App Group
         let sharedDefaults = UserDefaults.appGroup
         let unlockDuration = sharedDefaults?.double(forKey: "unlockDuration") ?? 1800 // Default 30 minutes
 
         let durationText = TimeInterval(unlockDuration).formatted()
-        let subtitle = "Pay a fare to unlock for \(durationText)"
 
-        // Light, airy color palette
-        // Very light, transparent background to let light through
-        let backgroundColor = UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.3)
+        // Get the app name
+        let appName = application.localizedDisplayName ?? "this app"
+        let subtitle = "\(appName) is on your blocklist — pay the fare for \(durationText) of access."
 
-        // Rich, saturated purple for title - pops against light background
-        let titleColor = UIColor(red: 0.40, green: 0.25, blue: 0.70, alpha: 1.0)
+        // ScreenFare brand colors
+        // #F5F2ED - Cream/warm off-white background (fully opaque)
+        let backgroundColor = UIColor(red: 0.961, green: 0.949, blue: 0.929, alpha: 1.0)
 
-        // Medium purple-gray for subtitle
-        let subtitleColor = UIColor(red: 0.45, green: 0.40, blue: 0.60, alpha: 1.0)
+        // #1A1A1A - Near-black for title (focusInk)
+        let titleColor = UIColor(red: 0.102, green: 0.102, blue: 0.102, alpha: 1.0)
 
-        // Vibrant purple button
-        let buttonColor = UIColor(red: 0.50, green: 0.35, blue: 0.75, alpha: 1.0)
+        // #8B8680 - Muted gray for subtitle (focusMuted)
+        let subtitleColor = UIColor(red: 0.545, green: 0.525, blue: 0.502, alpha: 1.0)
 
-        // Muted for secondary button
-        let secondaryColor = UIColor(red: 0.55, green: 0.50, blue: 0.60, alpha: 1.0)
+        // #D8764A - Orange/terracotta accent for primary button (focusAccent)
+        let buttonColor = UIColor(red: 0.847, green: 0.463, blue: 0.290, alpha: 1.0)
+
+        // Load and round the app icon
+        let appIcon: UIImage? = {
+            guard let image = UIImage(named: "BrandIcon") else { return nil }
+            let size = CGSize(width: 60, height: 60)
+            let cornerRadius: CGFloat = 13.5 // iOS app icon corner radius proportion
+
+            let renderer = UIGraphicsImageRenderer(size: size)
+            return renderer.image { context in
+                let rect = CGRect(origin: .zero, size: size)
+                UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius).addClip()
+                image.draw(in: rect)
+            }
+        }()
 
         return ShieldConfiguration(
             backgroundBlurStyle: .light,
             backgroundColor: backgroundColor,
-            icon: UIImage(systemName: "sparkles"),
+            icon: appIcon,
             title: ShieldConfiguration.Label(
-                text: "Take a Breath",
+                text: "Fare due",
                 color: titleColor
             ),
             subtitle: ShieldConfiguration.Label(
@@ -93,8 +107,8 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             ),
             primaryButtonBackgroundColor: buttonColor,
             secondaryButtonLabel: ShieldConfiguration.Label(
-                text: "Not Now",
-                color: secondaryColor
+                text: "Not now",
+                color: titleColor
             )
         )
     }

@@ -35,6 +35,7 @@ struct MainTabView: View {
 
                 // Tab 1: Blocks
                 BlocksView(
+                    selectedTab: $selectedTab,
                     showingScheduleEditor: $blocksScheduleShowing,
                     showingStrictModeEditor: $blocksStrictModeShowing
                 )
@@ -43,6 +44,7 @@ struct MainTabView: View {
 
                 // Tab 2: Fare/Challenges
                 ChallengeTabView(
+                    selectedTab: $selectedTab,
                     viewState: $challengeViewState,
                     selectedType: $challengeSelectedType
                 )
@@ -50,7 +52,7 @@ struct MainTabView: View {
                 .zIndex(selectedTab == 2 ? 1 : 0)
 
                 // Tab 3: Settings
-                SettingsTabView()
+                SettingsTabView(selectedTab: $selectedTab)
                     .offset(x: offsetForTab(3, screenWidth: screenWidth))
                     .zIndex(selectedTab == 3 ? 1 : 0)
             }

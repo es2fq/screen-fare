@@ -18,8 +18,13 @@ struct SettingsTabView: View {
     @StateObject private var settings = SettingsManager.shared
 
     // Navigation state
+    @Binding var selectedTab: Int
     @State private var activeDetail: SettingsDetailScreen?
     @State private var dragOffset: CGFloat = 0
+
+    init(selectedTab: Binding<Int> = .constant(3)) {
+        _selectedTab = selectedTab
+    }
 
     // Modal state
     @State private var showToast: ToastData?
@@ -178,9 +183,10 @@ struct SettingsTabView: View {
                 )
             }
             .offset(x: activeDetail == .account ? dragOffset : UIScreen.main.bounds.width)
+            .shadow(color: Color.black.opacity(activeDetail == .account ? 0.06 : 0), radius: 15, x: -6, y: 0)
+            .opacity(selectedTab == 3 ? 1 : 0)
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
-            .shadow(color: Color.black.opacity(activeDetail == .account ? 0.06 : 0), radius: 15, x: -6, y: 0)
             .swipeBackGesture(isActive: activeDetail == .account, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
 
             // Permissions detail
@@ -194,9 +200,10 @@ struct SettingsTabView: View {
                 )
             }
             .offset(x: activeDetail == .permissions ? dragOffset : UIScreen.main.bounds.width)
+            .shadow(color: Color.black.opacity(activeDetail == .permissions ? 0.06 : 0), radius: 15, x: -6, y: 0)
+            .opacity(selectedTab == 3 ? 1 : 0)
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
-            .shadow(color: Color.black.opacity(activeDetail == .permissions ? 0.06 : 0), radius: 15, x: -6, y: 0)
             .swipeBackGesture(isActive: activeDetail == .permissions, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
 
             // Data & Privacy detail
@@ -211,9 +218,10 @@ struct SettingsTabView: View {
                 )
             }
             .offset(x: activeDetail == .dataPrivacy ? dragOffset : UIScreen.main.bounds.width)
+            .shadow(color: Color.black.opacity(activeDetail == .dataPrivacy ? 0.06 : 0), radius: 15, x: -6, y: 0)
+            .opacity(selectedTab == 3 ? 1 : 0)
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
-            .shadow(color: Color.black.opacity(activeDetail == .dataPrivacy ? 0.06 : 0), radius: 15, x: -6, y: 0)
             .swipeBackGesture(isActive: activeDetail == .dataPrivacy, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
 
             // About detail
@@ -224,9 +232,10 @@ struct SettingsTabView: View {
                 AboutDetailView(showToast: $showToast)
             }
             .offset(x: activeDetail == .about ? dragOffset : UIScreen.main.bounds.width)
+            .shadow(color: Color.black.opacity(activeDetail == .about ? 0.06 : 0), radius: 15, x: -6, y: 0)
+            .opacity(selectedTab == 3 ? 1 : 0)
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
-            .shadow(color: Color.black.opacity(activeDetail == .about ? 0.06 : 0), radius: 15, x: -6, y: 0)
             .swipeBackGesture(isActive: activeDetail == .about, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
         }
     }

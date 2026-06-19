@@ -17,13 +17,15 @@ struct BlocksView: View {
     @State private var showingPicker = false
     @State private var isEditing = false
     @State private var showAll = false
+    @Binding var selectedTab: Int
     @Binding var showingScheduleEditor: Bool
     @Binding var showingStrictModeEditor: Bool
     @State private var dragOffset: CGFloat = 0
 
     private let CAP = 11 // Show at most 11 apps before "show more"
 
-    init(showingScheduleEditor: Binding<Bool> = .constant(false), showingStrictModeEditor: Binding<Bool> = .constant(false)) {
+    init(selectedTab: Binding<Int> = .constant(1), showingScheduleEditor: Binding<Bool> = .constant(false), showingStrictModeEditor: Binding<Bool> = .constant(false)) {
+        _selectedTab = selectedTab
         _showingScheduleEditor = showingScheduleEditor
         _showingStrictModeEditor = showingStrictModeEditor
     }
@@ -41,9 +43,10 @@ struct BlocksView: View {
             // SCHEDULE EDITOR LAYER
             scheduleEditorLayer
                 .offset(x: showingScheduleEditor ? dragOffset : UIScreen.main.bounds.width)
+                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .opacity(selectedTab == 1 ? 1 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingScheduleEditor)
                 .animation(.interactiveSpring(), value: dragOffset)
-                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
                 .swipeBackGesture(isActive: showingScheduleEditor, dragOffset: $dragOffset, onDismiss: {
                     showingScheduleEditor = false
                 })
@@ -51,9 +54,10 @@ struct BlocksView: View {
             // STRICT MODE EDITOR LAYER
             strictModeEditorLayer
                 .offset(x: showingStrictModeEditor ? dragOffset : UIScreen.main.bounds.width)
+                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .opacity(selectedTab == 1 ? 1 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingStrictModeEditor)
                 .animation(.interactiveSpring(), value: dragOffset)
-                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
                 .swipeBackGesture(isActive: showingStrictModeEditor, dragOffset: $dragOffset, onDismiss: {
                     showingStrictModeEditor = false
                 })

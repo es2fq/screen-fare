@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ChallengeTabView: View {
     @StateObject private var settings = SettingsManager.shared
+    @Binding var selectedTab: Int
     @Binding var viewState: ChallengeViewState
     @Binding var selectedType: ChallengeType
     @State private var dragOffset: CGFloat = 0
@@ -30,7 +31,8 @@ struct ChallengeTabView: View {
     @State private var typingChallenge: TypingChallenge
     @State private var memoryChallenge: MemoryChallenge
 
-    init(viewState: Binding<ChallengeViewState> = .constant(.list), selectedType: Binding<ChallengeType> = .constant(.math)) {
+    init(selectedTab: Binding<Int> = .constant(2), viewState: Binding<ChallengeViewState> = .constant(.list), selectedType: Binding<ChallengeType> = .constant(.math)) {
+        _selectedTab = selectedTab
         _viewState = viewState
         _selectedType = selectedType
         let settings = SettingsManager.shared
@@ -66,9 +68,10 @@ struct ChallengeTabView: View {
             // CONFIG LAYER
             configLayer
                 .offset(x: viewState == .config ? dragOffset : UIScreen.main.bounds.width)
+                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .opacity(selectedTab == 2 ? 1 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: viewState)
                 .animation(.interactiveSpring(), value: dragOffset)
-                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
                 .swipeBackGesture(isActive: viewState == .config, dragOffset: $dragOffset, onDismiss: {
                     isAnyFieldFocused = false
                     viewState = .list
