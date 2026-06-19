@@ -37,11 +37,13 @@ struct OnboardingDifficultyView: View {
                 // Title: fontSize: 32, lineHeight: 1.05
                 (Text("The ")
                     .font(.instrumentSerif(32))
+                    .foregroundColor(.focusInk)
                  + Text("fare")
                     .font(.instrumentSerif(32, italic: true))
+                    .foregroundColor(.focusAccent)
                  + Text("\nbefore you scroll.")
-                    .font(.instrumentSerif(32)))
-                    .foregroundColor(.focusInk)
+                    .font(.instrumentSerif(32))
+                    .foregroundColor(.focusInk))
                     .lineSpacing(32 * 0.05) // lineHeight 1.05 = 5% extra spacing
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)

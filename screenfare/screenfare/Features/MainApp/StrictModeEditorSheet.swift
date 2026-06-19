@@ -158,6 +158,28 @@ struct StrictModeEditorSheet: View {
                                             }
                                         }
                                     ),
+                                    disabled: !settings.strictModeEnabled
+                                )
+
+                                ToggleRow(
+                                    icon: SettIcon(path: "M7 10h8M7 14h4M5 4h12a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2"),
+                                    label: "Challenge",
+                                    sub: "Changing type or difficulty",
+                                    value: Binding(
+                                        get: { settings.strictProtectChallenge },
+                                        set: { newValue in
+                                            if !newValue && settings.strictModeEnabled {
+                                                showGate = ChallengeGateData(
+                                                    title: "Stop guarding challenge settings",
+                                                    onPass: {
+                                                        settings.strictProtectChallenge = false
+                                                    }
+                                                )
+                                            } else {
+                                                settings.strictProtectChallenge = newValue
+                                            }
+                                        }
+                                    ),
                                     disabled: !settings.strictModeEnabled,
                                     last: true
                                 )

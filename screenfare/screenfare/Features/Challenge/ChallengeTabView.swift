@@ -16,6 +16,15 @@ struct ChallengeTabView: View {
     @FocusState private var isAnyFieldFocused: Bool
     @State private var configViewCount = 0 // Track config view appearances
 
+    // Temporary difficulty settings (only saved when user presses Select/Done)
+    @State private var tempChallengeDifficulty: ChallengeDifficulty
+    @State private var tempTypingDifficulty: TypingDifficulty
+    @State private var tempMemoryGridSize: Int
+    @State private var tempMemoryTilesToMatch: Int
+
+    // Challenge gate for strict mode
+    @State private var showGate: ChallengeGateData?
+
     // Pre-generated challenges for preview
     @State private var previewChallenges: [ChallengeDifficulty: MathChallenge]
     @State private var typingChallenge: TypingChallenge
@@ -25,6 +34,12 @@ struct ChallengeTabView: View {
         _viewState = viewState
         _selectedType = selectedType
         let settings = SettingsManager.shared
+
+        // Initialize temp difficulty settings from current settings
+        self._tempChallengeDifficulty = State(initialValue: settings.challengeDifficulty)
+        self._tempTypingDifficulty = State(initialValue: settings.typingDifficulty)
+        self._tempMemoryGridSize = State(initialValue: settings.memoryGridSize)
+        self._tempMemoryTilesToMatch = State(initialValue: settings.memoryTilesToMatch)
 
         // Pre-generate one challenge for each difficulty level
         var challenges: [ChallengeDifficulty: MathChallenge] = [:]
@@ -59,6 +74,51 @@ struct ChallengeTabView: View {
                     viewState = .list
                 })
         }
+        .sheet(item: $showGate) { data in
+            ChallengeGate(
+                data: data,
+                difficulty: settings.challengeDifficulty.numericLevel
+            )
+            .presentationBackground(.clear)
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SAVE LOGIC
+    // ═══════════════════════════════════════════════════════════════
+
+    private func handleSaveChanges() {
+        // Check if any changes were made
+        let hasChanges = (selectedType != settings.challengeType) ||
+                         (tempChallengeDifficulty != settings.challengeDifficulty) ||
+                         (tempTypingDifficulty != settings.typingDifficulty) ||
+                         (tempMemoryGridSize != settings.memoryGridSize) ||
+                         (tempMemoryTilesToMatch != settings.memoryTilesToMatch)
+
+        // If strict mode is on and challenge protection is enabled, show gate
+        if hasChanges && settings.strictModeEnabled && settings.strictProtectChallenge {
+            showGate = ChallengeGateData(
+                title: "Change challenge settings",
+                onPass: {
+                    commitChanges()
+                }
+            )
+        } else {
+            // No protection needed, save directly
+            commitChanges()
+        }
+    }
+
+    private func commitChanges() {
+        // Save all temp settings to actual settings
+        settings.challengeType = selectedType
+        settings.challengeDifficulty = tempChallengeDifficulty
+        settings.typingDifficulty = tempTypingDifficulty
+        settings.memoryGridSize = tempMemoryGridSize
+        settings.memoryTilesToMatch = tempMemoryTilesToMatch
+
+        // Return to list view
+        viewState = .list
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -85,6 +145,11 @@ struct ChallengeTabView: View {
 
                             Button(action: {
                                 selectedType = type
+                                // Load current settings into temp variables when entering config
+                                tempChallengeDifficulty = settings.challengeDifficulty
+                                tempTypingDifficulty = settings.typingDifficulty
+                                tempMemoryGridSize = settings.memoryGridSize
+                                tempMemoryTilesToMatch = settings.memoryTilesToMatch
                                 viewState = .config
                                 configViewCount += 1 // Increment to reset testers
                             }) {
@@ -229,14 +294,25 @@ struct ChallengeTabView: View {
                         }
 
                         // Config card
-                        ConfigCard(type: selectedType, settings: settings, previewChallenges: $previewChallenges, typingChallenge: $typingChallenge, memoryChallenge: $memoryChallenge, isAnyFieldFocused: $isAnyFieldFocused, configViewCount: configViewCount)
-                            .padding(.horizontal, 22)
+                        ConfigCard(
+                            type: selectedType,
+                            settings: settings,
+                            previewChallenges: $previewChallenges,
+                            typingChallenge: $typingChallenge,
+                            memoryChallenge: $memoryChallenge,
+                            isAnyFieldFocused: $isAnyFieldFocused,
+                            configViewCount: configViewCount,
+                            tempChallengeDifficulty: $tempChallengeDifficulty,
+                            tempTypingDifficulty: $tempTypingDifficulty,
+                            tempMemoryGridSize: $tempMemoryGridSize,
+                            tempMemoryTilesToMatch: $tempMemoryTilesToMatch
+                        )
+                        .padding(.horizontal, 22)
 
                         // Select/Done button
                         Button(action: {
                             isAnyFieldFocused = false
-                            settings.challengeType = selectedType
-                            viewState = .list
+                            handleSaveChanges()
                         }) {
                             Text(selectedType == settings.challengeType ? "Done" : "Select")
                                 .font(.inter(15, weight: .semibold))
@@ -356,6 +432,10 @@ struct ConfigCard: View {
     @Binding var memoryChallenge: MemoryChallenge
     @FocusState.Binding var isAnyFieldFocused: Bool
     let configViewCount: Int
+    @Binding var tempChallengeDifficulty: ChallengeDifficulty
+    @Binding var tempTypingDifficulty: TypingDifficulty
+    @Binding var tempMemoryGridSize: Int
+    @Binding var tempMemoryTilesToMatch: Int
 
     var body: some View {
         AppCard {
@@ -391,15 +471,15 @@ struct ConfigCard: View {
 
             CustomSlider(
                 value: Binding(
-                    get: { Double(ChallengeDifficulty.allCases.firstIndex(of: settings.challengeDifficulty) ?? 2) },
-                    set: { settings.challengeDifficulty = ChallengeDifficulty.allCases[Int($0)] }
+                    get: { Double(ChallengeDifficulty.allCases.firstIndex(of: tempChallengeDifficulty) ?? 2) },
+                    set: { tempChallengeDifficulty = ChallengeDifficulty.allCases[Int($0)] }
                 ),
                 range: 0...4,
                 step: 1
             )
 
-            MathTester(difficulty: settings.challengeDifficulty)
-                .id("\(settings.challengeDifficulty.rawValue)-\(configViewCount)")
+            MathTester(difficulty: tempChallengeDifficulty)
+                .id("\(tempChallengeDifficulty.rawValue)-\(configViewCount)")
         }
     }
 
@@ -417,19 +497,19 @@ struct ConfigCard: View {
 
             CustomSlider(
                 value: Binding(
-                    get: { Double(TypingDifficulty.allCases.firstIndex(of: settings.typingDifficulty) ?? 2) },
+                    get: { Double(TypingDifficulty.allCases.firstIndex(of: tempTypingDifficulty) ?? 2) },
                     set: {
-                        settings.typingDifficulty = TypingDifficulty.allCases[Int($0)]
+                        tempTypingDifficulty = TypingDifficulty.allCases[Int($0)]
                         // Regenerate typing challenge with new difficulty
-                        typingChallenge = TypingChallenge(difficulty: settings.typingDifficulty)
+                        typingChallenge = TypingChallenge(difficulty: tempTypingDifficulty)
                     }
                 ),
                 range: 0...4,
                 step: 1
             )
 
-            TypingTester(difficulty: settings.typingDifficulty, isAnyFieldFocused: $isAnyFieldFocused)
-                .id("\(settings.typingDifficulty.rawValue)-\(configViewCount)")
+            TypingTester(difficulty: tempTypingDifficulty, isAnyFieldFocused: $isAnyFieldFocused)
+                .id("\(tempTypingDifficulty.rawValue)-\(configViewCount)")
         }
     }
 
@@ -447,30 +527,30 @@ struct ConfigCard: View {
 
             CustomSlider(
                 value: Binding(
-                    get: { Double(settings.memoryGridSize) },
+                    get: { Double(tempMemoryGridSize) },
                     set: { newValue in
                         let gridSize = Int(newValue)
-                        settings.memoryGridSize = gridSize
+                        tempMemoryGridSize = gridSize
 
                         // Set tiles to match based on grid size
                         // Keep it challenging but achievable
-                        settings.memoryTilesToMatch = min(gridSize + 1, gridSize * gridSize)
+                        tempMemoryTilesToMatch = min(gridSize + 1, gridSize * gridSize)
 
                         // Regenerate memory challenge
-                        memoryChallenge = MemoryChallenge(gridSize: settings.memoryGridSize, litCount: settings.memoryTilesToMatch)
+                        memoryChallenge = MemoryChallenge(gridSize: tempMemoryGridSize, litCount: tempMemoryTilesToMatch)
                     }
                 ),
                 range: 3...7,
                 step: 1
             )
 
-            MemoryTester(gridSize: settings.memoryGridSize, tilesToMatch: settings.memoryTilesToMatch)
-                .id("\(settings.memoryGridSize)-\(settings.memoryTilesToMatch)-\(configViewCount)") // Reset when settings change or when re-entering config
+            MemoryTester(gridSize: tempMemoryGridSize, tilesToMatch: tempMemoryTilesToMatch)
+                .id("\(tempMemoryGridSize)-\(tempMemoryTilesToMatch)-\(configViewCount)") // Reset when settings change or when re-entering config
         }
     }
 
     private var difficultyLabel: String {
-        switch settings.challengeDifficulty {
+        switch tempChallengeDifficulty {
         case .veryEasy: return "Very easy"
         case .easy: return "Easy"
         case .medium: return "Medium"
@@ -480,7 +560,7 @@ struct ConfigCard: View {
     }
 
     private var typingDifficultyLabel: String {
-        switch settings.typingDifficulty {
+        switch tempTypingDifficulty {
         case .shortest: return "Shortest"
         case .short: return "Short"
         case .medium: return "Medium"
@@ -490,7 +570,7 @@ struct ConfigCard: View {
     }
 
     private var memoryDifficultyLabel: String {
-        let gridSize = settings.memoryGridSize
+        let gridSize = tempMemoryGridSize
         return "\(gridSize)×\(gridSize)"
     }
 }

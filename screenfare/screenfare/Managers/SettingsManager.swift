@@ -103,6 +103,12 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var strictProtectChallenge: Bool {
+        didSet {
+            UserDefaults.standard.set(strictProtectChallenge, forKey: "strictProtectChallenge")
+        }
+    }
+
     // MARK: - Permissions
     @Published var screenTimePermission: PermissionStatus {
         didSet {
@@ -168,6 +174,7 @@ class SettingsManager: ObservableObject {
         self.strictProtectOff = UserDefaults.standard.object(forKey: "strictProtectOff") as? Bool ?? true
         self.strictProtectRemove = UserDefaults.standard.object(forKey: "strictProtectRemove") as? Bool ?? false
         self.strictProtectShorten = UserDefaults.standard.object(forKey: "strictProtectShorten") as? Bool ?? false
+        self.strictProtectChallenge = UserDefaults.standard.object(forKey: "strictProtectChallenge") as? Bool ?? false
 
         // Permissions
         if let savedScreenTime = UserDefaults.standard.string(forKey: "screenTimePermission"),

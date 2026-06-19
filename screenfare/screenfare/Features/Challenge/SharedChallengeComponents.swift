@@ -232,7 +232,7 @@ struct TypingChallengeField: View {
             } else if isCursor {
                 // Cursor position - highlight the next character to type
                 charString.foregroundColor = Color.focusInk
-                charString.backgroundColor = Color.focusAccent.opacity(0.2)
+                charString.backgroundColor = Color.focusInk.opacity(0.12)
             } else {
                 charString.foregroundColor = Color.focusInk.opacity(0.3)
             }

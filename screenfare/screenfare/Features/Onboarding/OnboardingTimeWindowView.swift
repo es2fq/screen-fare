@@ -36,9 +36,10 @@ struct OnboardingTimeWindowView: View {
                 // Title: fontSize: 32, lineHeight: 1.05
                 (Text("How long should\nthe door ")
                     .font(.instrumentSerif(32))
-                 + Text("stay open?")
-                    .font(.instrumentSerif(32, italic: true)))
                     .foregroundColor(.focusInk)
+                 + Text("stay open?")
+                    .font(.instrumentSerif(32, italic: true))
+                    .foregroundColor(.focusAccent))
                     .lineSpacing(32 * 0.05) // lineHeight 1.05 = 5% extra spacing
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)

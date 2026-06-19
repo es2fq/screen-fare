@@ -32,9 +32,10 @@ struct OnboardingWelcomeView: View {
                 // Title: fontSize: 46, lineHeight: 1.0, margin: 0 0 18px
                 (Text("Pay the fare\nto ")
                     .font(.instrumentSerif(46))
-                 + Text("pass.")
-                    .font(.instrumentSerif(46, italic: true)))
                     .foregroundColor(.focusInk)
+                 + Text("pass.")
+                    .font(.instrumentSerif(46, italic: true))
+                    .foregroundColor(.focusAccent))
                     .lineSpacing(46 * 0.0) // lineHeight 1.0 = no extra spacing
                     .tracking(-0.92) // letterSpacing: -0.02em = -0.92px at 46px
                     .frame(maxWidth: .infinity, alignment: .leading)

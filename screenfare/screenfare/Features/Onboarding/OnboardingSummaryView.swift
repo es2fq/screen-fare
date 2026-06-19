@@ -59,9 +59,10 @@ struct OnboardingSummaryView: View {
                 // Title: fontSize: 36, lineHeight: 1.05, margin: 0 0 10px
                 (Text("Ready when")
                     .font(.instrumentSerif(36))
-                 + Text(" you are.")
-                    .font(.instrumentSerif(36, italic: true)))
                     .foregroundColor(.focusInk)
+                 + Text(" you are.")
+                    .font(.instrumentSerif(36, italic: true))
+                    .foregroundColor(.focusAccent))
                     .lineSpacing(36 * 0.05) // lineHeight 1.05 = 5% extra spacing
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -187,7 +188,7 @@ struct OnboardingSummaryView: View {
                     .frame(height: 14)
 
                 // Primary button
-                PrimaryButton(title: "Activate Screen Fare", action: onComplete)
+                PrimaryButton(title: "Activate", action: onComplete)
                     .padding(.bottom, 34)
             }
         }
