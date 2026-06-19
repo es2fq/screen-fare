@@ -95,6 +95,20 @@
 			);
 			target = 98B0B5872FDA594900933948 /* DeviceMonitorActivityExtension */;
 		};
+		98C7D4642FE4884E002453F8 /* Exceptions for "screenfare" folder in "ShieldConfigurationExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+			);
+			target = 98B0B54C2FD9BBFC00933948 /* ShieldConfigurationExtension */;
+		};
+		98CD0BC32FE3DD74002B9B2A /* Exceptions for "screenfare" folder in "ShieldActionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+			);
+			target = 98B0B5672FD9BCCC00933948 /* ShieldActionExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -102,6 +116,8 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				987EF8192FA86B7B00F8DEDF /* Exceptions for "screenfare" folder in "screenfare" target */,
+				98C7D4642FE4884E002453F8 /* Exceptions for "screenfare" folder in "ShieldConfigurationExtension" target */,
+				98CD0BC32FE3DD74002B9B2A /* Exceptions for "screenfare" folder in "ShieldActionExtension" target */,
 			);
 			path = screenfare;
 			sourceTree = "<group>";
