@@ -15,7 +15,7 @@ struct DataPrivacyDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Intro note
-            IntroNote(text: "Your activity lives on your device. Sync and exports are yours to control.")
+            IntroNote(text: "Your activity only lives on your device.")
 
             // MVP: Commented out for initial release
             // Your data section
