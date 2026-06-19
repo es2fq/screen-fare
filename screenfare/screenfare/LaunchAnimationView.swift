@@ -62,7 +62,7 @@ private struct AnimationDurations {
             become: s(0.380),
             holdIcon: s(0.100),  // Very brief 0.1s pause before tap
             pay: s(0.520),
-            expand: s(0.500),    // Faster expansion - reduced from 0.760
+            expand: s(0.320),    // Much faster expansion
             shift: s(0.780),
             reveal: s(0.480)
         )
@@ -481,7 +481,7 @@ struct LaunchAnimationView: View {
         }
         .opacity(phase.rawValue >= LaunchPhase.paying.rawValue ? 1 : 0)
         .animation(.easeOut(duration: 0.2), value: phase.rawValue >= LaunchPhase.paying.rawValue)
-        .animation(.timingCurve(0.42, 0, 1.0, 1.0, duration: dur.expand), value: grown)  // Ease-in: slow start, accelerates
+        .animation(.timingCurve(0.85, 0, 0.95, 1.0, duration: dur.expand), value: grown)  // Very fast, aggressive expansion
         .animation(.easeInOut(duration: dur.shift), value: phase.rawValue >= LaunchPhase.warming.rawValue)
     }
 

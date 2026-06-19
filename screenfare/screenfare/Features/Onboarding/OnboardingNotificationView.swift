@@ -88,7 +88,7 @@ struct OnboardingNotificationView: View {
                 NotificationPermissionPrompt(onTap: {
                     checkPermissionStatusAndProceed()
                 })
-                .offset(y: 30)
+                .offset(y: 27)
             }
         }
         .onAppear {

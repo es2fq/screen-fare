@@ -16,6 +16,7 @@ struct OnboardingContainerView: View {
     @State private var selectedApps = FamilyActivitySelection()
     @State private var selectedDifficulty: ChallengeDifficulty = .medium
     @State private var selectedDuration: TimeInterval = 1800 // 30 minutes
+    @State private var showActivationAnimation = false
 
     let onComplete: () -> Void
 
@@ -24,45 +25,56 @@ struct OnboardingContainerView: View {
             Color.focusBg
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Fixed header that doesn't animate with page transitions
-                if currentPage > 0 {
-                    ScreenHeader(currentStep: currentPage, onBack: previousPage, hideBackButton: currentPage < 4)
-                        .padding(.horizontal, 28)
-                        .transition(.opacity)
+            if showActivationAnimation {
+                // Show activation animation
+                OnboardingActivationView(
+                    selectedApps: selectedApps,
+                    duration: selectedDuration,
+                    onComplete: finalizeOnboarding
+                )
+                .transition(.opacity)
+            } else {
+                // Show onboarding flow
+                VStack(spacing: 0) {
+                    // Fixed header that doesn't animate with page transitions
+                    if currentPage > 0 {
+                        ScreenHeader(currentStep: currentPage, onBack: previousPage, hideBackButton: currentPage < 4)
+                            .padding(.horizontal, 28)
+                            .transition(.opacity)
+                    }
+
+                    // Content area with page transitions
+                    TabView(selection: $currentPage) {
+                        OnboardingWelcomeView(onContinue: nextPageFromWelcome)
+                            .tag(0)
+
+                        OnboardingScreenTimeView(onContinue: nextPage)
+                            .tag(1)
+
+                        OnboardingNotificationView(onContinue: nextPage)
+                            .tag(2)
+
+                        OnboardingAppSelectionView(selectedApps: $selectedApps, onContinue: nextPage)
+                            .tag(3)
+
+                        OnboardingDifficultyView(selectedDifficulty: $selectedDifficulty, onContinue: nextPage)
+                            .id("difficulty-view") // Maintain view identity to prevent recreation
+                            .tag(4)
+
+                        OnboardingTimeWindowView(selectedDuration: $selectedDuration, onContinue: nextPage)
+                            .tag(5)
+
+                        OnboardingSummaryView(
+                            selectedApps: selectedApps,
+                            difficulty: selectedDifficulty,
+                            duration: selectedDuration,
+                            onComplete: startActivation
+                        )
+                        .tag(6)
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .interactiveDismissDisabled()
                 }
-
-                // Content area with page transitions
-                TabView(selection: $currentPage) {
-                    OnboardingWelcomeView(onContinue: nextPageFromWelcome)
-                        .tag(0)
-
-                    OnboardingScreenTimeView(onContinue: nextPage)
-                        .tag(1)
-
-                    OnboardingNotificationView(onContinue: nextPage)
-                        .tag(2)
-
-                    OnboardingAppSelectionView(selectedApps: $selectedApps, onContinue: nextPage)
-                        .tag(3)
-
-                    OnboardingDifficultyView(selectedDifficulty: $selectedDifficulty, onContinue: nextPage)
-                        .id("difficulty-view") // Maintain view identity to prevent recreation
-                        .tag(4)
-
-                    OnboardingTimeWindowView(selectedDuration: $selectedDuration, onContinue: nextPage)
-                        .tag(5)
-
-                    OnboardingSummaryView(
-                        selectedApps: selectedApps,
-                        difficulty: selectedDifficulty,
-                        duration: selectedDuration,
-                        onComplete: applySettingsAndComplete
-                    )
-                    .tag(6)
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .interactiveDismissDisabled()
             }
         }
         .onAppear {
@@ -127,14 +139,21 @@ struct OnboardingContainerView: View {
         }
     }
 
-    private func applySettingsAndComplete() {
-        // Apply all settings
+    private func startActivation() {
+        // Apply settings immediately
         blockingManager.selectedApps = selectedApps
         blockingManager.applyBlocking()
         settings.challengeDifficulty = selectedDifficulty
         settings.unlockDuration = selectedDuration
 
-        // Complete onboarding
+        // Show activation animation
+        withAnimation {
+            showActivationAnimation = true
+        }
+    }
+
+    private func finalizeOnboarding() {
+        // Complete onboarding after animation finishes
         settings.hasCompletedOnboarding = true
         onComplete()
     }

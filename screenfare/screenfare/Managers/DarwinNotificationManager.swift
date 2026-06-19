@@ -8,6 +8,7 @@
 
 import Foundation
 import Combine
+import UserNotifications
 
 @MainActor
 class DarwinNotificationManager: ObservableObject {
