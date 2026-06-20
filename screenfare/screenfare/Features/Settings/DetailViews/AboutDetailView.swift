@@ -23,7 +23,7 @@ struct AboutDetailView: View {
                             .font(.inter(16, weight: .semibold))
                             .foregroundColor(.focusInk)
 
-                        Text("Version 1.0")
+                        Text("Version 1.0.0")
                             .font(.inter(12.5))
                             .foregroundColor(.focusMuted)
                     }

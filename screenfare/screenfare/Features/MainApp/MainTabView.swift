@@ -25,14 +25,12 @@ struct MainTabView: View {
     @State private var settingsActiveDetail: SettingsDetailScreen? = nil
 
     var body: some View {
-        let screenWidth = UIScreen.main.bounds.width
-
         ZStack(alignment: .bottom) {
-            // Tab content with slide animations
+            // Tab content with fade animations
             ZStack {
                 // Tab 0: Today
                 TodayView(showingHistoryView: $todayHistoryShowing, selectedTab: $selectedTab)
-                    .offset(x: offsetForTab(0, screenWidth: screenWidth))
+                    .opacity(selectedTab == 0 ? 1 : 0)
                     .zIndex(selectedTab == 0 ? 1 : 0)
 
                 // Tab 1: Blocks
@@ -41,7 +39,7 @@ struct MainTabView: View {
                     showingScheduleEditor: $blocksScheduleShowing,
                     showingStrictModeEditor: $blocksStrictModeShowing
                 )
-                .offset(x: offsetForTab(1, screenWidth: screenWidth))
+                .opacity(selectedTab == 1 ? 1 : 0)
                 .zIndex(selectedTab == 1 ? 1 : 0)
 
                 // Tab 2: Fare/Challenges
@@ -50,16 +48,17 @@ struct MainTabView: View {
                     viewState: $challengeViewState,
                     selectedType: $challengeSelectedType
                 )
-                .offset(x: offsetForTab(2, screenWidth: screenWidth))
+                .opacity(selectedTab == 2 ? 1 : 0)
                 .zIndex(selectedTab == 2 ? 1 : 0)
 
                 // Tab 3: Settings
                 SettingsTabView(selectedTab: $selectedTab, activeDetail: $settingsActiveDetail)
-                    .offset(x: offsetForTab(3, screenWidth: screenWidth))
+                    .opacity(selectedTab == 3 ? 1 : 0)
                     .zIndex(selectedTab == 3 ? 1 : 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.spring(response: 0.36, dampingFraction: 0.88), value: selectedTab)
+            .background(Color.focusBg)
+            .animation(.easeInOut(duration: 0.3), value: selectedTab)
 
             // Custom tab bar
             CustomTabBar(
@@ -72,16 +71,13 @@ struct MainTabView: View {
             )
         }
         .ignoresSafeArea(.keyboard)
-    }
-
-    /// Calculate horizontal offset for tab based on its position relative to selectedTab
-    private func offsetForTab(_ tabIndex: Int, screenWidth: CGFloat) -> CGFloat {
-        if tabIndex == selectedTab {
-            return 0 // Selected tab is centered
-        } else if tabIndex < selectedTab {
-            return -screenWidth // Tabs to the left are offscreen left
-        } else {
-            return screenWidth // Tabs to the right are offscreen right
+        .onChange(of: selectedTab) { oldValue, newValue in
+            // Dismiss all drill-in views when switching tabs
+            todayHistoryShowing = false
+            blocksScheduleShowing = false
+            blocksStrictModeShowing = false
+            challengeViewState = .list
+            settingsActiveDetail = nil
         }
     }
 }

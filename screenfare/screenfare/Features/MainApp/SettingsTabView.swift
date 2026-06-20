@@ -133,6 +133,7 @@ struct SettingsTabView: View {
                                 }
                             )
 
+                            /*
                             SettingsRow(
                                 icon: SettIcon(path: "M11 3v11M6 9l5 5 5-5M4 18h14"),
                                 label: "Data & privacy",
@@ -142,11 +143,12 @@ struct SettingsTabView: View {
                                     activeDetail = .dataPrivacy
                                 }
                             )
+                            */
 
                             SettingsRow(
                                 icon: SettIcon(path: "M11 16v0M8.5 8.5a2.5 2.5 0 014.6 1.3c0 1.7-2.1 1.9-2.1 3.2", circle: "11,11,8"),
                                 label: "About & support",
-                                sub: "Version 1.0",
+                                sub: "Version 1.0.0",
                                 right: AnyView(Chevron()),
                                 last: true,
                                 action: {
@@ -188,7 +190,6 @@ struct SettingsTabView: View {
             }
             .offset(x: activeDetail == .account ? dragOffset : UIScreen.main.bounds.width)
             .shadow(color: Color.black.opacity(activeDetail == .account ? 0.06 : 0), radius: 15, x: -6, y: 0)
-            .opacity(selectedTab == 3 ? 1 : 0)
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
             .swipeBackGesture(isActive: activeDetail == .account, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
@@ -206,12 +207,12 @@ struct SettingsTabView: View {
             }
             .offset(x: activeDetail == .permissions ? dragOffset : UIScreen.main.bounds.width)
             .shadow(color: Color.black.opacity(activeDetail == .permissions ? 0.06 : 0), radius: 15, x: -6, y: 0)
-            .opacity(selectedTab == 3 ? 1 : 0)
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
             .swipeBackGesture(isActive: activeDetail == .permissions, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
 
-            // Data & Privacy detail
+            // Data & Privacy detail (commented out)
+            /*
             DetailPanel(
                 title: "Data & privacy",
                 onBack: { activeDetail = nil }
@@ -224,10 +225,10 @@ struct SettingsTabView: View {
             }
             .offset(x: activeDetail == .dataPrivacy ? dragOffset : UIScreen.main.bounds.width)
             .shadow(color: Color.black.opacity(activeDetail == .dataPrivacy ? 0.06 : 0), radius: 15, x: -6, y: 0)
-            .opacity(selectedTab == 3 ? 1 : 0)
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
             .swipeBackGesture(isActive: activeDetail == .dataPrivacy, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
+            */
 
             // About detail
             DetailPanel(
@@ -238,7 +239,6 @@ struct SettingsTabView: View {
             }
             .offset(x: activeDetail == .about ? dragOffset : UIScreen.main.bounds.width)
             .shadow(color: Color.black.opacity(activeDetail == .about ? 0.06 : 0), radius: 15, x: -6, y: 0)
-            .opacity(selectedTab == 3 ? 1 : 0)
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
             .swipeBackGesture(isActive: activeDetail == .about, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })

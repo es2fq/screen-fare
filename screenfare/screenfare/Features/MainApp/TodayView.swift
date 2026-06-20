@@ -49,7 +49,6 @@ struct TodayView: View {
             historyLayer
                 .offset(x: showingHistoryView ? dragOffset : UIScreen.main.bounds.width)
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
-                .opacity(selectedTab == 0 ? 1 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingHistoryView)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .swipeBackGesture(isActive: showingHistoryView, dragOffset: $dragOffset, onDismiss: {

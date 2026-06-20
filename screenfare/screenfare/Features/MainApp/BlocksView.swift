@@ -44,7 +44,6 @@ struct BlocksView: View {
             scheduleEditorLayer
                 .offset(x: showingScheduleEditor ? dragOffset : UIScreen.main.bounds.width)
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
-                .opacity(selectedTab == 1 ? 1 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingScheduleEditor)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .swipeBackGesture(isActive: showingScheduleEditor, dragOffset: $dragOffset, onDismiss: {
@@ -55,7 +54,6 @@ struct BlocksView: View {
             strictModeEditorLayer
                 .offset(x: showingStrictModeEditor ? dragOffset : UIScreen.main.bounds.width)
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
-                .opacity(selectedTab == 1 ? 1 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingStrictModeEditor)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .swipeBackGesture(isActive: showingStrictModeEditor, dragOffset: $dragOffset, onDismiss: {

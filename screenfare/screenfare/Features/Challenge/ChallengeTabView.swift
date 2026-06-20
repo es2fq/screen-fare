@@ -69,7 +69,6 @@ struct ChallengeTabView: View {
             configLayer
                 .offset(x: viewState == .config ? dragOffset : UIScreen.main.bounds.width)
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
-                .opacity(selectedTab == 2 ? 1 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: viewState)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .swipeBackGesture(isActive: viewState == .config, dragOffset: $dragOffset, onDismiss: {
