@@ -15,7 +15,7 @@ struct PermissionsDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Intro note
-            IntroNote(text: "Screen Fare runs on Apple's on-device APIs. It never sees which apps you open by name — only the tokens iOS hands it.")
+            IntroNote(text: "Screen Fare needs these permissions to work properly.")
 
             // Permissions
             AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
@@ -31,9 +31,7 @@ struct PermissionsDetailView: View {
                             )
                         ),
                         action: {
-                            if settings.screenTimePermission == .granted {
-                                showToast = ToastData(message: "Manage in iOS Settings → Screen Time")
-                            } else {
+                            if settings.screenTimePermission != .granted {
                                 openAppSettings()
                             }
                         }
@@ -79,8 +77,6 @@ struct PermissionsDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18))
             }
 
-            FootNote(text: "You can change any of these in the iOS Settings app at any time. Revoking Screen Time will pause all blocking.")
-
             Spacer()
                 .frame(height: 12)
         }
@@ -103,8 +99,8 @@ struct PermissionsDetailView: View {
     private func handleNotificationPermission() {
         switch settings.notificationPermission {
         case .granted:
-            // Already granted - show info toast
-            showToast = ToastData(message: "Manage in iOS Settings → Notifications")
+            // Already granted - no action needed
+            break
 
         case .notDetermined:
             // Not determined - request permission
@@ -112,11 +108,7 @@ struct PermissionsDetailView: View {
 
         case .denied:
             // Denied - must go to settings to enable
-            showToast = ToastData(message: "Enable in iOS Settings → Notifications → Screen Fare")
-            // Wait a moment then open settings
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                openAppSettings()
-            }
+            openAppSettings()
         }
     }
 
@@ -125,15 +117,6 @@ struct PermissionsDetailView: View {
             DispatchQueue.main.async {
                 // Update permission status
                 settings.updateNotificationPermission()
-
-                if granted {
-                    showToast = ToastData(message: "Notifications enabled!")
-                } else if error != nil {
-                    showToast = ToastData(message: "Failed to enable notifications")
-                } else {
-                    // User denied
-                    showToast = ToastData(message: "Notifications not enabled")
-                }
             }
         }
     }
