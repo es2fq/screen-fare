@@ -15,10 +15,7 @@ enum ChallengeType: String, CaseIterable {
     case memory = "Memory"
 
     var isPro: Bool {
-        switch self {
-        case .math: return false
-        case .typing, .memory: return true
-        }
+        return false
     }
 }
 

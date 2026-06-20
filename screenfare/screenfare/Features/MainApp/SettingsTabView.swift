@@ -8,7 +8,7 @@
 import SwiftUI
 
 enum SettingsDetailScreen {
-    case account
+    // case account
     case permissions
     case dataPrivacy
     case about
@@ -72,8 +72,9 @@ struct SettingsTabView: View {
 
     private var settingsListLayer: some View {
         AppScreen(title: "Settings") {
-                VStack(spacing: 18) {
-                    // Account card
+                VStack(spacing: 0) {
+                    // MARK: - Account card (commented out)
+                    /*
                     Button(action: { activeDetail = .account }) {
                         AppCard(padding: EdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)) {
                             HStack(spacing: 14) {
@@ -107,6 +108,7 @@ struct SettingsTabView: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
+                    */
 
                     // System section
                     SectionTitle(text: "System")
@@ -133,7 +135,7 @@ struct SettingsTabView: View {
                             SettingsRow(
                                 icon: SettIcon(path: "M11 3v11M6 9l5 5 5-5M4 18h14"),
                                 label: "Data & privacy",
-                                sub: "Sync, export & reset",
+                                sub: "No data collected or shared",
                                 right: AnyView(Chevron()),
                                 action: {
                                     activeDetail = .dataPrivacy
@@ -143,7 +145,7 @@ struct SettingsTabView: View {
                             SettingsRow(
                                 icon: SettIcon(path: "M11 16v0M8.5 8.5a2.5 2.5 0 014.6 1.3c0 1.7-2.1 1.9-2.1 3.2", circle: "11,11,8"),
                                 label: "About & support",
-                                sub: "Version 1.0 · help · rate",
+                                sub: "Version 1.0",
                                 right: AnyView(Chevron()),
                                 last: true,
                                 action: {
@@ -158,11 +160,11 @@ struct SettingsTabView: View {
                         .frame(height: 26)
 
                     // Tagline
-                    Text("Screen Fare, by design.")
-                        .font(.instrumentSerif(18, italic: true))
-                        .foregroundColor(.focusMuted)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.bottom, 24)
+//                    Text("Screen Fare, by design.")
+//                        .font(.instrumentSerif(18, italic: true))
+//                        .foregroundColor(.focusMuted)
+//                        .frame(maxWidth: .infinity, alignment: .center)
+//                        .padding(.bottom, 24)
                 }
         }
     }
@@ -171,7 +173,8 @@ struct SettingsTabView: View {
 
     private var detailPanelsLayer: some View {
         ZStack {
-            // Account detail
+            // MARK: - Account detail (commented out)
+            /*
             DetailPanel(
                 title: "Account",
                 onBack: { activeDetail = nil }
@@ -188,6 +191,7 @@ struct SettingsTabView: View {
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
             .swipeBackGesture(isActive: activeDetail == .account, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
+            */
 
             // Permissions detail
             DetailPanel(

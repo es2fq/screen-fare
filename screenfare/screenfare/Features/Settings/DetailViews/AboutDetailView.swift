@@ -23,7 +23,7 @@ struct AboutDetailView: View {
                             .font(.inter(16, weight: .semibold))
                             .foregroundColor(.focusInk)
 
-                        Text("Version 1.0 · build 14")
+                        Text("Version 1.0")
                             .font(.inter(12.5))
                             .foregroundColor(.focusMuted)
                     }
@@ -33,7 +33,8 @@ struct AboutDetailView: View {
             }
             .padding(.bottom, 4)
 
-            // Support section
+            // MARK: - Support section (commented out)
+            /*
             SectionTitle(text: "Support")
 
             AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
@@ -61,8 +62,10 @@ struct AboutDetailView: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18))
             }
+            */
 
-            // Spread the word section
+            // MARK: - Spread the word section (commented out)
+            /*
             SectionTitle(text: "Spread the word")
 
             AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
@@ -89,12 +92,13 @@ struct AboutDetailView: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18))
             }
+            */
 
             Spacer()
                 .frame(height: 26)
 
             // Tagline
-            Text("The pause before you scroll.")
+            Text("The tax on distraction.")
                 .font(.instrumentSerif(18, italic: true))
                 .foregroundColor(.focusMuted)
                 .frame(maxWidth: .infinity, alignment: .center)
