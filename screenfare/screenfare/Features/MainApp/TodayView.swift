@@ -17,7 +17,6 @@ struct TodayView: View {
     @StateObject private var historyManager = HistoryManager.shared
     @StateObject private var statsManager = StatsManager.shared
     @State private var currentTime = Date()
-    @Environment(\.selectedTab) private var selectedTab
 
     // Strict mode gate
     @State private var showGate: ChallengeGateData?
@@ -25,7 +24,71 @@ struct TodayView: View {
 
     @State private var timerCancellable: AnyCancellable?
 
+    // History view state
+    @Binding var showingHistoryView: Bool
+    @State private var dragOffset: CGFloat = 0
+
+    // Tab navigation
+    @Binding var selectedTab: Int
+
+    init(showingHistoryView: Binding<Bool> = .constant(false), selectedTab: Binding<Int> = .constant(0)) {
+        _showingHistoryView = showingHistoryView
+        _selectedTab = selectedTab
+    }
+
     var body: some View {
+        ZStack {
+            // MAIN TODAY LAYER
+            mainTodayLayer
+                .offset(x: showingHistoryView ? -90 : 0)
+                .brightness(showingHistoryView ? -0.03 : 0)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingHistoryView)
+                .animation(nil, value: dragOffset) // Don't animate background during drag
+
+            // HISTORY VIEW LAYER
+            historyLayer
+                .offset(x: showingHistoryView ? dragOffset : UIScreen.main.bounds.width)
+                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingHistoryView)
+                .animation(.interactiveSpring(), value: dragOffset)
+                .swipeBackGesture(isActive: showingHistoryView, dragOffset: $dragOffset, onDismiss: {
+                    showingHistoryView = false
+                })
+        }
+        .onAppear {
+            // Start timer for updating current time
+            timerCancellable = Timer.publish(every: 1, on: .main, in: .common)
+                .autoconnect()
+                .sink { _ in
+                    currentTime = Date()
+                }
+
+            // Clean up any expired unlocks when user views Today tab
+            blockingManager.cleanupExpiredUnlocks()
+            // Load any pending history events from shield extension
+            historyManager.loadPendingEvents()
+        }
+        .onDisappear {
+            // Cancel timer to prevent memory leak
+            timerCancellable?.cancel()
+            timerCancellable = nil
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Also load pending events when app comes to foreground
+            historyManager.loadPendingEvents()
+        }
+        .sheet(item: $showGate) { data in
+            ChallengeGate(
+                data: data,
+                difficulty: settings.challengeDifficulty.numericLevel
+            )
+            .presentationBackground(.clear)
+        }
+    }
+
+    // MARK: - Main Today Layer
+
+    private var mainTodayLayer: some View {
         ZStack {
             Color.focusBg
                 .ignoresSafeArea()
@@ -149,8 +212,7 @@ struct TodayView: View {
                     .padding(.top, 22)
 
                 Button(action: {
-                    // Navigate to Challenge tab (index 2)
-                    selectedTab?.wrappedValue = 2
+                    selectedTab = 2
                 }) {
                     AppCard(padding: EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)) {
                         HStack(spacing: 14) {
@@ -199,8 +261,29 @@ struct TodayView: View {
                 }
 
                 // Recent activity section
-                SectionHeader(title: "Recent")
-                    .padding(.top, 22)
+                HStack(alignment: .lastTextBaseline) {
+                    Text("RECENT")
+                        .font(.inter(11, weight: .semibold))
+                        .foregroundColor(.focusMuted)
+                        .tracking(0.6)
+
+                    Spacer()
+
+                    if !historyManager.recentEvents.isEmpty {
+                        Button(action: { showingHistoryView = true }) {
+                            HStack(spacing: 2) {
+                                Text("See all")
+                                    .font(.inter(13, weight: .medium))
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.focusAccent)
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+                .padding(.top, 22)
+                .padding(.bottom, 10)
 
                 AppCard(padding: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)) {
                     if historyManager.recentEvents.isEmpty {
@@ -243,35 +326,12 @@ struct TodayView: View {
             .safeAreaPadding(.top)
             .padding(.bottom, 90)
         }
-        .onAppear {
-            // Start timer for updating current time
-            timerCancellable = Timer.publish(every: 1, on: .main, in: .common)
-                .autoconnect()
-                .sink { _ in
-                    currentTime = Date()
-                }
+    }
 
-            // Clean up any expired unlocks when user views Today tab
-            blockingManager.cleanupExpiredUnlocks()
-            // Load any pending history events from shield extension
-            historyManager.loadPendingEvents()
-        }
-        .onDisappear {
-            // Cancel timer to prevent memory leak
-            timerCancellable?.cancel()
-            timerCancellable = nil
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            // Also load pending events when app comes to foreground
-            historyManager.loadPendingEvents()
-        }
-        .sheet(item: $showGate) { data in
-            ChallengeGate(
-                data: data,
-                difficulty: settings.challengeDifficulty.numericLevel
-            )
-            .presentationBackground(.clear)
-        }
+    // MARK: - History Layer
+
+    private var historyLayer: some View {
+        HistoryView(onClose: { showingHistoryView = false })
     }
 
     // MARK: - Strict Mode Protection

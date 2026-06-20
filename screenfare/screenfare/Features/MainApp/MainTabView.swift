@@ -17,6 +17,7 @@ struct MainTabView: View {
     @Binding var selectedTab: Int
 
     // Track drill-in state for tabs
+    @State private var todayHistoryShowing = false
     @State private var challengeViewState: ChallengeViewState = .list
     @State private var challengeSelectedType: ChallengeType = .math
     @State private var blocksScheduleShowing = false
@@ -30,7 +31,7 @@ struct MainTabView: View {
             // Tab content with slide animations
             ZStack {
                 // Tab 0: Today
-                TodayView()
+                TodayView(showingHistoryView: $todayHistoryShowing, selectedTab: $selectedTab)
                     .offset(x: offsetForTab(0, screenWidth: screenWidth))
                     .zIndex(selectedTab == 0 ? 1 : 0)
 
@@ -63,6 +64,7 @@ struct MainTabView: View {
             // Custom tab bar
             CustomTabBar(
                 selectedTab: $selectedTab,
+                todayHistoryShowing: $todayHistoryShowing,
                 challengeViewState: $challengeViewState,
                 blocksScheduleShowing: $blocksScheduleShowing,
                 blocksStrictModeShowing: $blocksStrictModeShowing,
@@ -87,6 +89,7 @@ struct MainTabView: View {
 /// Custom tab bar matching exact design specs
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
+    @Binding var todayHistoryShowing: Bool
     @Binding var challengeViewState: ChallengeViewState
     @Binding var blocksScheduleShowing: Bool
     @Binding var blocksStrictModeShowing: Bool
@@ -105,11 +108,13 @@ struct CustomTabBar: View {
                 Button(action: {
                     if selectedTab == index {
                         // Dismiss drill-in views when tapping active tab
-                        if index == 2 && challengeViewState != .list {
-                            challengeViewState = .list
+                        if index == 0 && todayHistoryShowing {
+                            todayHistoryShowing = false
                         } else if index == 1 && (blocksScheduleShowing || blocksStrictModeShowing) {
                             blocksScheduleShowing = false
                             blocksStrictModeShowing = false
+                        } else if index == 2 && challengeViewState != .list {
+                            challengeViewState = .list
                         } else if index == 3 && settingsActiveDetail != nil {
                             settingsActiveDetail = nil
                         }

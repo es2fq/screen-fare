@@ -159,4 +159,67 @@ class HistoryManager: ObservableObject {
         }
         recentEvents = decoded
     }
+
+    // MARK: - History View Helpers
+
+    /// Groups events by day for the history view
+    func groupEventsByDay() -> [(day: String, date: String, events: [HistoryEvent])] {
+        var groups: [(day: String, date: String, events: [HistoryEvent])] = []
+        var currentDay: Date?
+        var currentEvents: [HistoryEvent] = []
+
+        // Sort events by date (newest first)
+        let sortedEvents = recentEvents.sorted { $0.timestamp > $1.timestamp }
+
+        for event in sortedEvents {
+            let eventDay = event.timestamp.startOfDay()
+
+            if let day = currentDay, day == eventDay {
+                // Same day, add to current group
+                currentEvents.append(event)
+            } else {
+                // New day, save previous group if it exists
+                if let day = currentDay, !currentEvents.isEmpty {
+                    groups.append((
+                        day: day.dayLabel(),
+                        date: day.shortDateLabel(),
+                        events: currentEvents
+                    ))
+                }
+
+                // Start new group
+                currentDay = eventDay
+                currentEvents = [event]
+            }
+        }
+
+        // Add the last group
+        if let day = currentDay, !currentEvents.isEmpty {
+            groups.append((
+                day: day.dayLabel(),
+                date: day.shortDateLabel(),
+                events: currentEvents
+            ))
+        }
+
+        return groups
+    }
+
+    /// Calculates statistics for the history view (last 5 days)
+    func weekStats() -> (walkedAway: Int, faresPaid: Int, walkAwayRate: Int) {
+        let calendar = Calendar.current
+        let now = Date()
+        let fiveDaysAgo = calendar.date(byAdding: .day, value: -5, to: now) ?? now
+
+        // Filter events from last 5 days
+        let recentEvents = recentEvents.filter { $0.timestamp >= fiveDaysAgo }
+
+        let walkedAwayCount = recentEvents.filter { $0.eventType == .walkedAway }.count
+        let faresPaidCount = recentEvents.filter { $0.eventType == .farePaid }.count
+        let totalCount = walkedAwayCount + faresPaidCount
+
+        let walkAwayRate = totalCount > 0 ? Int(round(Double(walkedAwayCount) / Double(totalCount) * 100)) : 0
+
+        return (walkedAway: walkedAwayCount, faresPaid: faresPaidCount, walkAwayRate: walkAwayRate)
+    }
 }
