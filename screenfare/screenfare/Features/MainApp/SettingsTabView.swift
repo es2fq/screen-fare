@@ -19,11 +19,12 @@ struct SettingsTabView: View {
 
     // Navigation state
     @Binding var selectedTab: Int
-    @State private var activeDetail: SettingsDetailScreen?
+    @Binding var activeDetail: SettingsDetailScreen?
     @State private var dragOffset: CGFloat = 0
 
-    init(selectedTab: Binding<Int> = .constant(3)) {
+    init(selectedTab: Binding<Int> = .constant(3), activeDetail: Binding<SettingsDetailScreen?> = .constant(nil)) {
         _selectedTab = selectedTab
+        _activeDetail = activeDetail
     }
 
     // Modal state

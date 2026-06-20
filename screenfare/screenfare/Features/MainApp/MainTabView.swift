@@ -21,6 +21,7 @@ struct MainTabView: View {
     @State private var challengeSelectedType: ChallengeType = .math
     @State private var blocksScheduleShowing = false
     @State private var blocksStrictModeShowing = false
+    @State private var settingsActiveDetail: SettingsDetailScreen? = nil
 
     var body: some View {
         let screenWidth = UIScreen.main.bounds.width
@@ -52,7 +53,7 @@ struct MainTabView: View {
                 .zIndex(selectedTab == 2 ? 1 : 0)
 
                 // Tab 3: Settings
-                SettingsTabView(selectedTab: $selectedTab)
+                SettingsTabView(selectedTab: $selectedTab, activeDetail: $settingsActiveDetail)
                     .offset(x: offsetForTab(3, screenWidth: screenWidth))
                     .zIndex(selectedTab == 3 ? 1 : 0)
             }
@@ -64,7 +65,8 @@ struct MainTabView: View {
                 selectedTab: $selectedTab,
                 challengeViewState: $challengeViewState,
                 blocksScheduleShowing: $blocksScheduleShowing,
-                blocksStrictModeShowing: $blocksStrictModeShowing
+                blocksStrictModeShowing: $blocksStrictModeShowing,
+                settingsActiveDetail: $settingsActiveDetail
             )
         }
         .ignoresSafeArea(.keyboard)
@@ -88,6 +90,7 @@ struct CustomTabBar: View {
     @Binding var challengeViewState: ChallengeViewState
     @Binding var blocksScheduleShowing: Bool
     @Binding var blocksStrictModeShowing: Bool
+    @Binding var settingsActiveDetail: SettingsDetailScreen?
 
     private let tabs: [(icon: String, label: String)] = [
         ("clock", "Today"),
@@ -107,6 +110,8 @@ struct CustomTabBar: View {
                         } else if index == 1 && (blocksScheduleShowing || blocksStrictModeShowing) {
                             blocksScheduleShowing = false
                             blocksStrictModeShowing = false
+                        } else if index == 3 && settingsActiveDetail != nil {
+                            settingsActiveDetail = nil
                         }
                     } else {
                         selectedTab = index
