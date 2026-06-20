@@ -44,7 +44,32 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         }
 
         // For LONG timers (≥15 min), intervalDidEnd fires at actual expiry
-        print("[DeviceMonitor] 🔒 Long timer expired (interval ended), re-locking app")
+
+        // Check if this is a category unlock
+        if activity.rawValue.contains("unlock.category.") {
+            print("[DeviceMonitor] 🔒 Category long timer expired (interval ended), re-locking category")
+
+            // Load the category token that was unlocked
+            guard let categoryTokenData = sharedDefaults?.data(forKey: "deviceActivity.\(activity.rawValue).categoryToken") else {
+                print("[DeviceMonitor] ⚠️ Could not load category token")
+                return
+            }
+
+            // Remove from temporary category unlocks
+            if var unlocks = loadTemporaryCategoryUnlocks() {
+                unlocks.removeValue(forKey: categoryTokenData)
+                saveTemporaryCategoryUnlocks(unlocks)
+            }
+
+            // RE-ADD to shield store
+            reapplyShields()
+
+            print("[DeviceMonitor] ✓ Category re-locked via intervalDidEnd")
+            return
+        }
+
+        // Handle app unlock
+        print("[DeviceMonitor] 🔒 App long timer expired (interval ended), re-locking app")
 
         guard sharedDefaults?.bool(forKey: "isCurrentlyUnlocked") == true else {
             print("[DeviceMonitor] Already locked, skipping")
@@ -85,6 +110,19 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         sharedDefaults?.set(encoded, forKey: "com.screenfare.temporaryUnlocks")
     }
 
+    private func loadTemporaryCategoryUnlocks() -> [Data: Date]? {
+        guard let data = sharedDefaults?.data(forKey: "com.screenfare.temporaryCategoryUnlocks"),
+              let unlocks = try? JSONDecoder().decode([Data: Date].self, from: data) else {
+            return nil
+        }
+        return unlocks
+    }
+
+    private func saveTemporaryCategoryUnlocks(_ unlocks: [Data: Date]) {
+        guard let encoded = try? JSONEncoder().encode(unlocks) else { return }
+        sharedDefaults?.set(encoded, forKey: "com.screenfare.temporaryCategoryUnlocks")
+    }
+
     private func reapplyShields() {
         // Load all selected apps
         guard let selectedAppsData = sharedDefaults?.data(forKey: "com.screenfare.selectedApps"),
@@ -93,8 +131,16 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
             return
         }
 
+        // Load selected categories
+        var selectedCategoryTokens: Set<ActivityCategoryToken> = []
+        if let selectedCategoriesData = sharedDefaults?.data(forKey: "com.screenfare.selectedCategories"),
+           let categoryTokens = try? JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: selectedCategoriesData) {
+            selectedCategoryTokens = categoryTokens
+        }
+
         // Load current unlocks
         let unlocks = loadTemporaryUnlocks() ?? [:]
+        let categoryUnlocks = loadTemporaryCategoryUnlocks() ?? [:]
         let now = Date()
 
         // Calculate which apps should be blocked (exclude active unlocks)
@@ -105,12 +151,27 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
             }
         }
 
+        // Calculate which categories should be blocked (exclude active unlocks)
+        var blockedCategories = selectedCategoryTokens
+        for (categoryTokenData, expiryTime) in categoryUnlocks {
+            if now < expiryTime, let categoryToken = try? JSONDecoder().decode(ActivityCategoryToken.self, from: categoryTokenData) {
+                blockedCategories.remove(categoryToken)
+            }
+        }
+
         // Apply shields (this will forcibly close any unlocked apps whose time expired)
         // Note: Keep shields active even if blockedApps is empty (all apps temporarily unlocked)
         // Setting to nil would disable focus mode entirely
         store.shield.applications = blockedApps
 
-        print("[DeviceMonitor] Shield reapplied to \(blockedApps.count) apps")
+        // Apply category shields
+        if !blockedCategories.isEmpty {
+            store.shield.applicationCategories = .specific(blockedCategories)
+        } else {
+            store.shield.applicationCategories = nil
+        }
+
+        print("[DeviceMonitor] Shield reapplied to \(blockedApps.count) apps, \(blockedCategories.count) categories")
     }
 
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
@@ -119,9 +180,9 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         // Check if this is a usage tracking event
         if event.rawValue.starts(with: "usage.") {
-            // User spent 1 minute using the app - record it
-            recordTimeSpent(seconds: 60)
-            print("[DeviceMonitor] ⏱️ Recorded 1 minute of app usage")
+            // User spent 15 seconds using the app - record it
+            recordTimeSpent(seconds: 15)
+            print("[DeviceMonitor] ⏱️ Recorded 15 seconds of app usage")
         }
     }
 
@@ -140,7 +201,32 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         // THE KEY: For short timers, this fires at the actual expiry time
         // (warningTime trick - interval is 15min but warning fires at desired time)
-        print("[DeviceMonitor] 🔒 Short timer expired (warning fired), re-locking app")
+
+        // Check if this is a category unlock
+        if activity.rawValue.contains("unlock.category.") {
+            print("[DeviceMonitor] 🔒 Category short timer expired (warning fired), re-locking category")
+
+            // Load the category token that was unlocked
+            guard let categoryTokenData = sharedDefaults?.data(forKey: "deviceActivity.\(activity.rawValue).categoryToken") else {
+                print("[DeviceMonitor] ⚠️ Could not load category token")
+                return
+            }
+
+            // Remove from temporary category unlocks
+            if var unlocks = loadTemporaryCategoryUnlocks() {
+                unlocks.removeValue(forKey: categoryTokenData)
+                saveTemporaryCategoryUnlocks(unlocks)
+            }
+
+            // RE-ADD to shield store
+            reapplyShields()
+
+            print("[DeviceMonitor] ✓ Category re-locked via intervalWillEndWarning")
+            return
+        }
+
+        // Handle app unlock
+        print("[DeviceMonitor] 🔒 App short timer expired (warning fired), re-locking app")
 
         guard sharedDefaults?.bool(forKey: "isCurrentlyUnlocked") == true else {
             print("[DeviceMonitor] Already locked, skipping")

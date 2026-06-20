@@ -7,22 +7,45 @@
 		<key>DeviceMonitorActivityExtension.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
+			<integer>0</integer>
 		</dict>
 		<key>ShieldActionExtension.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>1</integer>
+			<integer>2</integer>
 		</dict>
 		<key>ShieldConfigurationExtension.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>3</integer>
+			<integer>1</integer>
 		</dict>
 		<key>screenfare.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>0</integer>
+			<integer>3</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>986783A42FA82DC20091CF6D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>98B0B54C2FD9BBFC00933948</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>98B0B5672FD9BCCC00933948</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>98B0B5872FDA594900933948</key>
+		<dict>
+			<key>primary</key>
+			<true/>
 		</dict>
 	</dict>
 </dict>

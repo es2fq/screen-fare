@@ -36,9 +36,6 @@ class AppBlockingManager: ObservableObject {
     @Published var unlockStartTimes: [Data: Date] = [:] // App/Category token data -> when unlock started
     @Published var temporaryCategoryUnlocks: [Data: Date] = [:] // Category token data -> expiry time
 
-    // Track active timer tasks to prevent memory leaks
-    private var activeTimerTasks: [Data: Task<Void, Never>] = [:]
-
     // Cache for decoded tokens to avoid repeated JSON decoding
     private var decodedAppTokenCache: [Data: ApplicationToken] = [:]
     private var decodedCategoryTokenCache: [Data: ActivityCategoryToken] = [:]
@@ -120,8 +117,7 @@ class AppBlockingManager: ObservableObject {
         // Load persisted temporary unlocks
         loadTemporaryUnlocks()
 
-        // Restart timers for any active unlocks
-        restartExpiredTimers()
+        // Note: Re-locking is handled by DeviceActivityMonitor (no need to restart timers)
 
         // Listen for schedule changes
         NotificationCenter.default.addObserver(
@@ -218,80 +214,36 @@ class AppBlockingManager: ObservableObject {
     }
 
     func loadTemporaryUnlocks() {
+        print("[loadTemporaryUnlocks] Starting load - current in-memory: \(temporaryUnlocks.count) apps, \(temporaryCategoryUnlocks.count) categories")
+
         // Load app unlocks
         if let data = sharedDefaults?.data(forKey: temporaryUnlocksKey),
            let decoded = try? JSONDecoder().decode([Data: Date].self, from: data) {
+            print("[loadTemporaryUnlocks] Loaded \(decoded.count) app unlocks from disk")
+            for (_, expiryTime) in decoded {
+                let remaining = expiryTime.timeIntervalSince(Date())
+                print("[loadTemporaryUnlocks]   - Unlock expires in \(remaining)s (at \(expiryTime))")
+            }
             temporaryUnlocks = decoded
+        } else {
+            print("[loadTemporaryUnlocks] No app unlocks found in UserDefaults")
         }
 
         // Load category unlocks
         if let data = sharedDefaults?.data(forKey: "com.screenfare.temporaryCategoryUnlocks"),
            let decoded = try? JSONDecoder().decode([Data: Date].self, from: data) {
+            print("[loadTemporaryUnlocks] Loaded \(decoded.count) category unlocks from disk")
             temporaryCategoryUnlocks = decoded
         }
 
         // Load durations
         if let durationsData = sharedDefaults?.data(forKey: unlockDurationsKey),
            let decodedDurations = try? JSONDecoder().decode([Data: TimeInterval].self, from: durationsData) {
+            print("[loadTemporaryUnlocks] Loaded \(decodedDurations.count) unlock durations")
             unlockDurations = decodedDurations
         }
     }
 
-    func restartExpiredTimers() {
-        let now = Date()
-        var needsRecalculation = false
-
-        // Restart app unlock timers
-        for (appTokenData, expiryTime) in temporaryUnlocks {
-            let remaining = expiryTime.timeIntervalSince(now)
-
-            if remaining > 0 {
-                // Cancel existing timer if any
-                activeTimerTasks[appTokenData]?.cancel()
-
-                // Unlock is still active, restart timer and track it
-                let task = Task {
-                    try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
-                    await MainActor.run {
-                        self.removeTemporaryUnlock(appTokenData: appTokenData)
-                    }
-                }
-                activeTimerTasks[appTokenData] = task
-            } else {
-                // Already expired, remove immediately
-                temporaryUnlocks.removeValue(forKey: appTokenData)
-                needsRecalculation = true
-            }
-        }
-
-        // Restart category unlock timers
-        for (categoryTokenData, expiryTime) in temporaryCategoryUnlocks {
-            let remaining = expiryTime.timeIntervalSince(now)
-
-            if remaining > 0 {
-                // Cancel existing timer if any
-                activeTimerTasks[categoryTokenData]?.cancel()
-
-                // Unlock is still active, restart timer and track it
-                let task = Task {
-                    try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
-                    await MainActor.run {
-                        self.removeTemporaryCategoryUnlock(categoryTokenData: categoryTokenData)
-                    }
-                }
-                activeTimerTasks[categoryTokenData] = task
-            } else {
-                // Already expired, remove immediately
-                temporaryCategoryUnlocks.removeValue(forKey: categoryTokenData)
-                needsRecalculation = true
-            }
-        }
-
-        if needsRecalculation {
-            saveTemporaryUnlocks()
-            recalculateShields()
-        }
-    }
 
     // MARK: - Blocking Management
 
@@ -337,6 +289,8 @@ class AppBlockingManager: ObservableObject {
     }
 
     private func recalculateShields() {
+        print("[recalculateShields] 🛡️ Called - current unlocks: \(temporaryUnlocks.count) apps, \(temporaryCategoryUnlocks.count) categories")
+
         guard isBlocking else {
             // If blocking is off, clear all shields
             store.shield.applications = nil
@@ -369,8 +323,19 @@ class AppBlockingManager: ObservableObject {
         let originalAppCount = temporaryUnlocks.count
         let originalCategoryCount = temporaryCategoryUnlocks.count
 
+        print("[cleanupExpiredUnlocks] Starting cleanup at \(now)")
+        print("[cleanupExpiredUnlocks] Current state: \(temporaryUnlocks.count) app unlocks, \(temporaryCategoryUnlocks.count) category unlocks")
+
+        // Log each app unlock before filtering
+        for (_, expiryTime) in temporaryUnlocks {
+            let remaining = expiryTime.timeIntervalSince(now)
+            let isExpired = expiryTime <= now
+            print("[cleanupExpiredUnlocks]   App unlock: expires at \(expiryTime), remaining \(remaining)s, expired=\(isExpired)")
+        }
+
         // Get expired app tokens
         let expiredTokens = temporaryUnlocks.filter { $0.value <= now }.map { $0.key }
+        print("[cleanupExpiredUnlocks] Found \(expiredTokens.count) expired app unlocks")
 
         // Remove expired app unlocks
         temporaryUnlocks = temporaryUnlocks.filter { $0.value > now }
@@ -382,6 +347,7 @@ class AppBlockingManager: ObservableObject {
 
         // Get expired category tokens
         let expiredCategoryTokens = temporaryCategoryUnlocks.filter { $0.value <= now }.map { $0.key }
+        print("[cleanupExpiredUnlocks] Found \(expiredCategoryTokens.count) expired category unlocks")
 
         // Remove expired category unlocks
         temporaryCategoryUnlocks = temporaryCategoryUnlocks.filter { $0.value > now }
@@ -392,18 +358,15 @@ class AppBlockingManager: ObservableObject {
         }
 
         if temporaryUnlocks.count != originalAppCount || temporaryCategoryUnlocks.count != originalCategoryCount {
+            print("[cleanupExpiredUnlocks] State changed: \(originalAppCount) -> \(temporaryUnlocks.count) apps, \(originalCategoryCount) -> \(temporaryCategoryUnlocks.count) categories")
             saveTemporaryUnlocks()
             recalculateShields()
+        } else {
+            print("[cleanupExpiredUnlocks] No changes needed")
         }
     }
 
     func removeBlocking() {
-        // Cancel all active timer tasks
-        for (_, task) in activeTimerTasks {
-            task.cancel()
-        }
-        activeTimerTasks.removeAll()
-
         // Clear token caches
         decodedAppTokenCache.removeAll()
         decodedCategoryTokenCache.removeAll()
@@ -453,6 +416,7 @@ class AppBlockingManager: ObservableObject {
 
         // Store expiry timestamp and unlock flag for Shield Extension
         let expiryTime = Date().addingTimeInterval(duration)
+        print("[temporaryUnlock] 🔓 Creating unlock - start: \(startTime), expiry: \(expiryTime), duration: \(duration)s")
         sharedDefaults?.set(expiryTime.timeIntervalSince1970, forKey: "quotaEndTimestamp")
         sharedDefaults?.set(true, forKey: "isCurrentlyUnlocked")
 
@@ -467,6 +431,7 @@ class AppBlockingManager: ObservableObject {
         temporaryUnlocks[appTokenData] = expiryTime
         unlockDurations[appTokenData] = duration
         unlockStartTimes[appTokenData] = startTime // Track when unlock started
+        print("[temporaryUnlock] Saving unlock to UserDefaults")
         saveTemporaryUnlocks()
 
         // Schedule chaining for reliable re-locking (especially for short timers)
@@ -480,15 +445,14 @@ class AppBlockingManager: ObservableObject {
         // Note: Time tracking is now handled by DeviceActivityMonitor.eventDidReachThreshold()
         // which fires every minute the app is actually used
 
-        // Cancel and remove timer task
-        activeTimerTasks[appTokenData]?.cancel()
-        activeTimerTasks.removeValue(forKey: appTokenData)
+        print("[removeTemporaryUnlock] 🔒 Removing unlock - had \(temporaryUnlocks.count) unlocks")
 
         // Clear cached decoded token
         decodedAppTokenCache.removeValue(forKey: appTokenData)
 
         // Stop monitoring if active
         if let activityName = activeMonitors[appTokenData] {
+            print("[removeTemporaryUnlock] Stopping monitor: \(activityName.rawValue)")
             activityCenter.stopMonitoring([activityName])
             activeMonitors.removeValue(forKey: appTokenData)
         }
@@ -496,6 +460,7 @@ class AppBlockingManager: ObservableObject {
         temporaryUnlocks.removeValue(forKey: appTokenData)
         unlockDurations.removeValue(forKey: appTokenData)
         unlockStartTimes.removeValue(forKey: appTokenData)
+        print("[removeTemporaryUnlock] Now have \(temporaryUnlocks.count) unlocks, saving and recalculating")
         saveTemporaryUnlocks()
         recalculateShields()
     }
@@ -520,7 +485,13 @@ class AppBlockingManager: ObservableObject {
         let startTime = Date()
         let expiryTime = startTime.addingTimeInterval(duration)
 
-        // Update temporary category unlocks (matching app unlock behavior)
+        // Create unique activity name for this category unlock
+        let activityName = DeviceActivityName("unlock.category.\(UUID().uuidString)")
+
+        // Store category token data in shared storage for the monitor extension
+        sharedDefaults?.set(categoryTokenData, forKey: "deviceActivity.\(activityName.rawValue).categoryToken")
+
+        // Update temporary category unlocks
         temporaryCategoryUnlocks[categoryTokenData] = expiryTime
         unlockDurations[categoryTokenData] = duration
         unlockStartTimes[categoryTokenData] = startTime
@@ -528,17 +499,11 @@ class AppBlockingManager: ObservableObject {
 
         print("[AppBlockingManager] 🔓 Category unlock started: expiry=\(expiryTime), remaining=\(Int(duration))s")
 
-        // Cancel existing timer if any
-        activeTimerTasks[categoryTokenData]?.cancel()
+        // Track this monitor
+        activeMonitors[categoryTokenData] = activityName
 
-        // Schedule timer to remove unlock when it expires and track it
-        let task = Task {
-            try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
-            await MainActor.run {
-                self.removeTemporaryCategoryUnlock(categoryTokenData: categoryTokenData)
-            }
-        }
-        activeTimerTasks[categoryTokenData] = task
+        // Schedule DeviceActivityMonitor for reliable re-locking
+        scheduleReblockChainForCategory(categoryTokenData: categoryTokenData, activityName: activityName, expiryTime: expiryTime)
 
         // IMMEDIATELY update shields to remove this category
         recalculateShields()
@@ -547,12 +512,14 @@ class AppBlockingManager: ObservableObject {
     }
 
     private func removeTemporaryCategoryUnlock(categoryTokenData: Data) {
-        // Cancel and remove timer task
-        activeTimerTasks[categoryTokenData]?.cancel()
-        activeTimerTasks.removeValue(forKey: categoryTokenData)
-
         // Clear cached decoded token
         decodedCategoryTokenCache.removeValue(forKey: categoryTokenData)
+
+        // Stop monitoring if active
+        if let activityName = activeMonitors[categoryTokenData] {
+            activityCenter.stopMonitoring([activityName])
+            activeMonitors.removeValue(forKey: categoryTokenData)
+        }
 
         temporaryCategoryUnlocks.removeValue(forKey: categoryTokenData)
         unlockDurations.removeValue(forKey: categoryTokenData)
@@ -605,7 +572,7 @@ class AppBlockingManager: ObservableObject {
                 warningTime: DateComponents(minute: warningMinutes) // Fires at actual expiry
             )
 
-            // Create usage tracking event (fires every 1 minute of actual app use)
+            // Create usage tracking event (fires every 15 seconds of actual app use)
             guard let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) else {
                 return
             }
@@ -613,7 +580,7 @@ class AppBlockingManager: ObservableObject {
             let usageEventName = DeviceActivityEvent.Name("usage.\(activityName.rawValue)")
             let usageEvent = DeviceActivityEvent(
                 applications: [appToken],
-                threshold: DateComponents(minute: 1) // Track every 1 minute of usage
+                threshold: DateComponents(second: 15) // Track every 15 seconds of usage
             )
 
             let events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [
@@ -650,7 +617,7 @@ class AppBlockingManager: ObservableObject {
                 repeats: false
             )
 
-            // Create usage tracking event (fires every 1 minute of actual app use)
+            // Create usage tracking event (fires every 15 seconds of actual app use)
             guard let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) else {
                 return
             }
@@ -658,7 +625,7 @@ class AppBlockingManager: ObservableObject {
             let usageEventName = DeviceActivityEvent.Name("usage.\(activityName.rawValue)")
             let usageEvent = DeviceActivityEvent(
                 applications: [appToken],
-                threshold: DateComponents(minute: 1) // Track every 1 minute of usage
+                threshold: DateComponents(second: 15) // Track every 15 seconds of usage
             )
 
             let events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [
@@ -670,6 +637,91 @@ class AppBlockingManager: ObservableObject {
                 print("[AppBlockingManager] ✓ Long timer with usage tracking: interval ends in \(Int(duration))s")
             } catch {
                 print("[AppBlockingManager] ⚠️ Failed to schedule: \(error)")
+            }
+        }
+    }
+
+    /// Schedule DeviceActivity monitor to re-lock category at expiry time
+    /// Similar to scheduleReblockChain but for categories (no usage tracking events)
+    private func scheduleReblockChainForCategory(categoryTokenData: Data, activityName: DeviceActivityName, expiryTime: Date) {
+        let duration = expiryTime.timeIntervalSinceNow
+
+        guard duration > 0 else {
+            print("[AppBlockingManager] ⚠️ Category expiry time already passed")
+            return
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+
+        // Use same approach as apps: warningTime trick for short timers, intervalDidEnd for long
+        if duration < 15 * 60 {
+            // Short timer: Use warningTime trick
+            let intervalEnd = now.addingTimeInterval(15 * 60)
+            let warningMinutes = Int((15 * 60 - duration) / 60)
+
+            let start = DateComponents(
+                calendar: calendar,
+                hour: calendar.component(.hour, from: now),
+                minute: calendar.component(.minute, from: now),
+                second: calendar.component(.second, from: now)
+            )
+
+            let end = DateComponents(
+                calendar: calendar,
+                hour: calendar.component(.hour, from: intervalEnd),
+                minute: calendar.component(.minute, from: intervalEnd),
+                second: calendar.component(.second, from: intervalEnd)
+            )
+
+            let schedule = DeviceActivitySchedule(
+                intervalStart: start,
+                intervalEnd: end,
+                repeats: false,
+                warningTime: DateComponents(minute: warningMinutes)
+            )
+
+            // No usage tracking events for categories (empty dict)
+            let events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
+
+            do {
+                try activityCenter.startMonitoring(activityName, during: schedule, events: events)
+                print("[AppBlockingManager] ✓ Category short timer: interval=15min, warningTime=\(warningMinutes)min (fires in \(Int(duration))s)")
+            } catch {
+                print("[AppBlockingManager] ⚠️ Failed to schedule category timer: \(error)")
+            }
+        } else {
+            // Long timer: Use direct intervalDidEnd
+            let intervalEnd = expiryTime
+
+            let start = DateComponents(
+                calendar: calendar,
+                hour: calendar.component(.hour, from: now),
+                minute: calendar.component(.minute, from: now),
+                second: calendar.component(.second, from: now)
+            )
+
+            let end = DateComponents(
+                calendar: calendar,
+                hour: calendar.component(.hour, from: intervalEnd),
+                minute: calendar.component(.minute, from: intervalEnd),
+                second: calendar.component(.second, from: intervalEnd)
+            )
+
+            let schedule = DeviceActivitySchedule(
+                intervalStart: start,
+                intervalEnd: end,
+                repeats: false
+            )
+
+            // No usage tracking events for categories (empty dict)
+            let events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
+
+            do {
+                try activityCenter.startMonitoring(activityName, during: schedule, events: events)
+                print("[AppBlockingManager] ✓ Category long timer: interval ends in \(Int(duration))s")
+            } catch {
+                print("[AppBlockingManager] ⚠️ Failed to schedule category timer: \(error)")
             }
         }
     }

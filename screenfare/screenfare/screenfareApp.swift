@@ -40,12 +40,15 @@ struct screenfareApp: App {
             ContentView()
                 .environmentObject(notificationManager)
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-                    // Reload state and restart timers when app becomes active
+                    // Reload state when app becomes active
+                    // Note: Re-locking is handled by DeviceActivityMonitor (survives app termination)
+                    print("[App] 📱 DidBecomeActive notification received")
                     Task { @MainActor in
+                        print("[App] Starting unlock state refresh sequence")
                         blockingManager.loadTemporaryUnlocks()
                         blockingManager.cleanupExpiredUnlocks() // Clean up and reapply shields
-                        blockingManager.restartExpiredTimers()
-                        print("[App] Did become active - cleaned up expired unlocks")
+                        // Removed: restartExpiredTimers() - DeviceActivityMonitor handles re-locking
+                        print("[App] ✅ Did become active - finished unlock state refresh")
                     }
                 }
         }
