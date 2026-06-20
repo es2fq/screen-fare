@@ -178,11 +178,18 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         super.eventDidReachThreshold(event, activity: activity)
         print("[DeviceMonitor] eventDidReachThreshold: \(event.rawValue) for activity: \(activity.rawValue)")
 
-        // Check if this is a usage tracking event
-        if event.rawValue.starts(with: "usage.") {
-            // User spent 15 seconds using the app - record it
-            recordTimeSpent(seconds: 15)
-            print("[DeviceMonitor] ⏱️ Recorded 15 seconds of app usage")
+        // Check if this is a usage tracking event (format: "usage.Xmin")
+        if event.rawValue.starts(with: "usage."), event.rawValue.hasSuffix("min") {
+            // Extract minute number from event name
+            let minuteStr = event.rawValue
+                .replacingOccurrences(of: "usage.", with: "")
+                .replacingOccurrences(of: "min", with: "")
+
+            if let minute = Int(minuteStr) {
+                // Record 1 minute of usage (60 seconds)
+                recordTimeSpent(seconds: 60)
+                print("[DeviceMonitor] ⏱️ Minute \(minute) threshold reached, recorded 60s")
+            }
         }
     }
 
@@ -280,6 +287,11 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         if let encoded = try? JSONEncoder().encode(stats) {
             sharedDefaults?.set(encoded, forKey: storageKey)
             print("[DeviceMonitor] 📊 Time spent recorded: \(stats.timeSpentSeconds)s total")
+
+            // Notify main app that stats changed (for real-time UI updates)
+            let center = CFNotificationCenterGetDarwinNotifyCenter()
+            let notificationName = "com.screenfare.statsUpdated" as CFString
+            CFNotificationCenterPostNotification(center, CFNotificationName(notificationName), nil, nil, true)
         }
     }
 

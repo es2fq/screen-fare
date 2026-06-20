@@ -572,24 +572,27 @@ class AppBlockingManager: ObservableObject {
                 warningTime: DateComponents(minute: warningMinutes) // Fires at actual expiry
             )
 
-            // Create usage tracking event (fires every 15 seconds of actual app use)
+            // Create usage tracking events (fires at 1min, 2min, 3min... of actual app use)
             guard let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) else {
                 return
             }
 
-            let usageEventName = DeviceActivityEvent.Name("usage.\(activityName.rawValue)")
-            let usageEvent = DeviceActivityEvent(
-                applications: [appToken],
-                threshold: DateComponents(second: 15) // Track every 15 seconds of usage
-            )
+            // Generate threshold events based on unlock duration (1 per minute, max 60)
+            let maxMinutes = min(Int(duration / 60) + 1, 60)
+            var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
 
-            let events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [
-                usageEventName: usageEvent
-            ]
+            for minute in 1...maxMinutes {
+                let eventName = DeviceActivityEvent.Name("usage.\(minute)min")
+                let event = DeviceActivityEvent(
+                    applications: [appToken],
+                    threshold: DateComponents(minute: minute)
+                )
+                events[eventName] = event
+            }
 
             do {
                 try activityCenter.startMonitoring(activityName, during: schedule, events: events)
-                print("[AppBlockingManager] ✓ Short timer with usage tracking: interval=15min, warningTime=\(warningMinutes)min (fires in \(Int(duration))s)")
+                print("[AppBlockingManager] ✓ Short timer with usage tracking: interval=15min, warningTime=\(warningMinutes)min, \(maxMinutes) threshold events")
             } catch {
                 print("[AppBlockingManager] ⚠️ Failed to schedule: \(error)")
             }
@@ -617,24 +620,27 @@ class AppBlockingManager: ObservableObject {
                 repeats: false
             )
 
-            // Create usage tracking event (fires every 15 seconds of actual app use)
+            // Create usage tracking events (fires at 1min, 2min, 3min... of actual app use)
             guard let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) else {
                 return
             }
 
-            let usageEventName = DeviceActivityEvent.Name("usage.\(activityName.rawValue)")
-            let usageEvent = DeviceActivityEvent(
-                applications: [appToken],
-                threshold: DateComponents(second: 15) // Track every 15 seconds of usage
-            )
+            // Generate threshold events based on unlock duration (1 per minute, max 60)
+            let maxMinutes = min(Int(duration / 60) + 1, 60)
+            var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
 
-            let events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [
-                usageEventName: usageEvent
-            ]
+            for minute in 1...maxMinutes {
+                let eventName = DeviceActivityEvent.Name("usage.\(minute)min")
+                let event = DeviceActivityEvent(
+                    applications: [appToken],
+                    threshold: DateComponents(minute: minute)
+                )
+                events[eventName] = event
+            }
 
             do {
                 try activityCenter.startMonitoring(activityName, during: schedule, events: events)
-                print("[AppBlockingManager] ✓ Long timer with usage tracking: interval ends in \(Int(duration))s")
+                print("[AppBlockingManager] ✓ Long timer with usage tracking: interval ends in \(Int(duration))s, \(maxMinutes) threshold events")
             } catch {
                 print("[AppBlockingManager] ⚠️ Failed to schedule: \(error)")
             }

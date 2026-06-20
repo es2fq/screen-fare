@@ -49,6 +49,7 @@ struct TodayView: View {
             historyLayer
                 .offset(x: showingHistoryView ? dragOffset : UIScreen.main.bounds.width)
                 .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .opacity(selectedTab == 0 ? 1 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingHistoryView)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .swipeBackGesture(isActive: showingHistoryView, dragOffset: $dragOffset, onDismiss: {
@@ -290,8 +291,8 @@ struct TodayView: View {
                         // Empty state - matches design from empty-states.jsx
                         EmptyState(
                             icon: EmptyStateIcons.recent(),
-                            title: Text("Nothing yet ") + Text("today.").font(.instrumentSerif(22, italic: true)),
-                            message: "Open or walk away from a blocked app and it'll show up here — with the time and what you chose."
+                            title: Text("Nothing ") + Text("yet").font(.instrumentSerif(22, italic: true)).foregroundColor(.focusAccent),
+                            message: "Open or walk away from a blocked app and it'll show up here."
                         )
                     } else {
                         VStack(spacing: 0) {
