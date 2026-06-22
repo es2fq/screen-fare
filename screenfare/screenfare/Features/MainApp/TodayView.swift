@@ -36,6 +36,13 @@ struct TodayView: View {
         _selectedTab = selectedTab
     }
 
+    // Check if there are any non-expired unlocks
+    private var hasActiveUnlocks: Bool {
+        let hasActiveApps = blockingManager.temporaryUnlocks.contains { $0.value > currentTime }
+        let hasActiveCategories = blockingManager.temporaryCategoryUnlocks.contains { $0.value > currentTime }
+        return hasActiveApps || hasActiveCategories
+    }
+
     var body: some View {
         ZStack {
             // MAIN TODAY LAYER
@@ -67,6 +74,12 @@ struct TodayView: View {
             blockingManager.cleanupExpiredUnlocks()
             // Load any pending history events from shield extension
             historyManager.loadPendingEvents()
+        }
+        .onChange(of: hasActiveUnlocks) { oldValue, newValue in
+            // Only cleanup when unlocks transition from active to none
+            if oldValue && !newValue {
+                blockingManager.cleanupExpiredUnlocks()
+            }
         }
         .onDisappear {
             // Cancel timer to prevent memory leak
@@ -248,7 +261,7 @@ struct TodayView: View {
                 .buttonStyle(.plain)
 
                 // Unlocked now section - show unlocked apps and categories with countdown
-                if !blockingManager.temporaryUnlocks.isEmpty || !blockingManager.temporaryCategoryUnlocks.isEmpty {
+                if hasActiveUnlocks {
                     UnlockedNowSection(
                         temporaryUnlocks: blockingManager.temporaryUnlocks,
                         temporaryCategoryUnlocks: blockingManager.temporaryCategoryUnlocks,
@@ -610,15 +623,19 @@ struct UnlockedNowSection: View {
     let onLock: (Data) -> Void
 
     private var sortedUnlocks: [(key: Data, value: Date)] {
-        temporaryUnlocks.sorted(by: { $0.value < $1.value })
+        temporaryUnlocks
+            .filter { $0.value > currentTime } // Only show non-expired unlocks
+            .sorted(by: { $0.value < $1.value })
     }
 
     private var sortedCategoryUnlocks: [(key: Data, value: Date)] {
-        temporaryCategoryUnlocks.sorted(by: { $0.value < $1.value })
+        temporaryCategoryUnlocks
+            .filter { $0.value > currentTime } // Only show non-expired unlocks
+            .sorted(by: { $0.value < $1.value })
     }
 
     private var totalCount: Int {
-        temporaryUnlocks.count + temporaryCategoryUnlocks.count
+        sortedUnlocks.count + sortedCategoryUnlocks.count
     }
 
     private var hasWarning: Bool {
