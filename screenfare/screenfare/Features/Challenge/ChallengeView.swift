@@ -1166,6 +1166,7 @@ struct MemoryGrid: View {
         LazyVGrid(columns: columns, spacing: gap) {
             ForEach(0..<(gridSize * gridSize), id: \.self) { index in
                 Button {
+                    HapticManager.shared.impact()
                     toggleTile(index)
                 } label: {
                     Rectangle()
@@ -1280,7 +1281,10 @@ struct KeypadButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticManager.shared.impact()
+            action()
+        }) {
             Group {
                 if let content = content {
                     Text(content)

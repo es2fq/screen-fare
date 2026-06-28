@@ -135,6 +135,10 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    // MARK: - Subscription Status
+    @Published var isProSubscriber: Bool = false
+    private var subscriptionCancellable: AnyCancellable?
+
     private init() {
         // Load saved settings or use defaults
         let savedDuration = UserDefaults.standard.double(forKey: "unlockDuration")
@@ -211,6 +215,12 @@ class SettingsManager: ObservableObject {
         // Initial sync to App Group
         UserDefaults.appGroup?.set(unlockDuration, forKey: "unlockDuration")
         UserDefaults.appGroup?.set(challengeType.rawValue, forKey: "challengeType")
+
+        // Subscribe to subscription manager changes
+        subscriptionCancellable = SubscriptionManager.shared.$isProSubscriber
+            .sink { [weak self] isProSubscriber in
+                self?.isProSubscriber = isProSubscriber
+            }
     }
 
     var unlockDurationText: String {

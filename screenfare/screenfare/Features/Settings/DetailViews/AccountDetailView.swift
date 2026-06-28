@@ -11,6 +11,8 @@ struct AccountDetailView: View {
     @ObservedObject var settings: SettingsManager
     @Binding var showToast: ToastData?
     @Binding var showConfirm: ConfirmDialogData?
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @State private var showPaywall = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -42,6 +44,60 @@ struct AccountDetailView: View {
                 }
             }
             .padding(.bottom, 4)
+
+            // Subscription section
+            SectionTitle(text: "Subscription")
+
+            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
+                if subscriptionManager.isProSubscriber {
+                    // Pro subscriber - show status
+                    VStack(spacing: 0) {
+                        SettingsRow(
+                            label: "Plan",
+                            right: AnyView(
+                                HStack(spacing: 6) {
+                                    Text("PRO")
+                                        .font(.inter(10, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.focusInk)
+                                        .cornerRadius(5)
+                                        .tracking(0.9)
+
+                                    Text(subscriptionStatusText)
+                                        .font(.inter(14))
+                                        .foregroundColor(.focusMuted)
+                                }
+                            ),
+                            action: {}
+                        )
+
+                        SettingsRow(
+                            label: "Manage subscription",
+                            right: AnyView(Chevron()),
+                            last: true,
+                            action: {
+                                if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
+                        )
+                    }
+                } else {
+                    // Free user - show upgrade
+                    SettingsRow(
+                        label: "Upgrade to Pro",
+                        sub: "Unlock Memory challenge and custom schedules",
+                        right: AnyView(Chevron()),
+                        last: true,
+                        action: {
+                            showPaywall = true
+                        }
+                    )
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 18))
 
             // Profile section
             SectionTitle(text: "Profile")
@@ -146,6 +202,22 @@ struct AccountDetailView: View {
 
             Spacer()
                 .frame(height: 12)
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+    }
+
+    // MARK: - Helper Methods
+
+    private var subscriptionStatusText: String {
+        switch subscriptionManager.subscriptionStatus {
+        case .subscribed(let plan, _):
+            return plan.displayName
+        case .inTrial(let plan, _):
+            return "\(plan.displayName) (Trial)"
+        case .notSubscribed, .expired:
+            return "Free"
         }
     }
 }

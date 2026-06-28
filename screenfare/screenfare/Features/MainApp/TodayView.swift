@@ -225,6 +225,7 @@ struct TodayView: View {
                     .padding(.top, 22)
 
                 Button(action: {
+                    HapticManager.shared.impact()
                     selectedTab = 2
                 }) {
                     AppCard(padding: EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)) {
@@ -283,7 +284,10 @@ struct TodayView: View {
                     Spacer()
 
                     if !historyManager.recentEvents.isEmpty {
-                        Button(action: { showingHistoryView = true }) {
+                        Button(action: {
+                            HapticManager.shared.impact()
+                            showingHistoryView = true
+                        }) {
                             HStack(spacing: 2) {
                                 Text("See all")
                                     .font(.inter(13, weight: .medium))
@@ -796,6 +800,7 @@ struct UnlockedSessionCard: View {
 
                 // Lock now button
                 Button(action: {
+                    HapticManager.shared.impact()
                     withAnimation(.easeOut(duration: 0.35)) {
                         isDismissing = true
                     }

@@ -71,6 +71,7 @@ struct CustomSlider: View {
 
                                 if clampedValue != value {
                                     value = clampedValue
+                                    HapticManager.shared.impact()
                                 }
                             }
                             .onEnded { _ in

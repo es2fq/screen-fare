@@ -102,6 +102,9 @@ struct CustomTabBar: View {
         HStack(spacing: 0) {
             ForEach(0..<tabs.count, id: \.self) { index in
                 Button(action: {
+                    // Trigger haptic feedback
+                    HapticManager.shared.impact()
+
                     if selectedTab == index {
                         // Dismiss drill-in views when tapping active tab
                         if index == 0 && todayHistoryShowing {

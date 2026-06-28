@@ -27,6 +27,9 @@ struct ChallengeTabView: View {
     // Challenge gate for strict mode
     @State private var showGate: ChallengeGateData?
 
+    // Paywall for pro features
+    @State private var showPaywall: Bool = false
+
     // Pre-generated challenges for preview
     @State private var previewChallenges: [ChallengeDifficulty: MathChallenge]
     @State private var typingChallenge: TypingChallenge
@@ -87,6 +90,9 @@ struct ChallengeTabView: View {
             )
             .presentationBackground(.clear)
         }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -137,7 +143,7 @@ struct ChallengeTabView: View {
         AppScreen(title: "Fare") {
             VStack(spacing: 0) {
                 // Description
-                Text("Choose what stands between you and a blocked app. Tap to set it up.")
+                Text("Choose the fare you pay to open a blocked app. Tap to try it out and set it up.")
                     .font(.inter(13))
                     .foregroundColor(.focusMuted)
                     .lineSpacing(4)
@@ -152,12 +158,21 @@ struct ChallengeTabView: View {
                             let isActive = settings.challengeType == type
 
                             Button(action: {
+                                HapticManager.shared.impact()
+
+                                // Check if this is a pro feature and user is not subscribed
+                                if type.isPro && !settings.isProSubscriber {
+                                    showPaywall = true
+                                    return
+                                }
+
                                 selectedType = type
                                 // Load current settings into temp variables when entering config
                                 tempChallengeDifficulty = settings.challengeDifficulty
                                 tempTypingDifficulty = settings.typingDifficulty
                                 tempMemoryGridSize = settings.memoryGridSize
                                 tempMemoryTilesToMatch = settings.memoryTilesToMatch
+                                tempBreathingCycles = settings.breathingCycles
                                 viewState = .config
                                 configViewCount += 1 // Increment to reset testers
                             }) {
@@ -213,14 +228,6 @@ struct ChallengeTabView: View {
 
                 AccessWindowCard(duration: $settings.unlockDuration)
 
-                Text("Applies to every challenge.")
-                    .font(.inter(11.5))
-                    .foregroundColor(.focusMuted)
-                    .lineSpacing(1.5)
-                    .padding(.horizontal, 4)
-                    .padding(.top, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
                 Spacer()
             }
         }
@@ -244,6 +251,7 @@ struct ChallengeTabView: View {
                 // Back button header
                 HStack(spacing: 0) {
                     Button(action: {
+                        HapticManager.shared.impact()
                         isAnyFieldFocused = false
                         viewState = .list
                     }) {
@@ -321,6 +329,7 @@ struct ChallengeTabView: View {
 
                         // Select/Done button
                         Button(action: {
+                            HapticManager.shared.impact()
                             isAnyFieldFocused = false
                             handleSaveChanges()
                         }) {
@@ -804,6 +813,7 @@ struct MemoryTester: View {
                     ForEach(0..<totalTiles, id: \.self) { index in
                         Button(action: {
                             if stage == .recall {
+                                HapticManager.shared.impact()
                                 toggleTile(index)
                             }
                         }) {
@@ -820,7 +830,10 @@ struct MemoryTester: View {
                 }
 
                 // Button
-                Button(action: handleAction) {
+                Button(action: {
+                    HapticManager.shared.impact()
+                    handleAction()
+                }) {
                     Text(buttonText)
                         .font(.inter(14, weight: .semibold))
                         .foregroundColor(buttonDisabled ? Color.focusInk.opacity(0.3) : Color.focusInk)
@@ -995,6 +1008,7 @@ struct AccessWindowCard: View {
                 HStack(spacing: 8) {
                     ForEach([5, 15, 30, 45, 60], id: \.self) { preset in
                         Button(action: {
+                            HapticManager.shared.impact()
                             duration = TimeInterval(preset * 60)
                         }) {
                             Text(preset < 60 ? "\(preset)m" : "\(preset/60)h")
@@ -1097,7 +1111,10 @@ struct BreathingTester: View {
                 .frame(height: 20)
 
                 // Button
-                Button(action: handleAction) {
+                Button(action: {
+                    HapticManager.shared.impact()
+                    handleAction()
+                }) {
                     Text(buttonText)
                         .font(.inter(14, weight: .semibold))
                         .foregroundColor(buttonDisabled ? Color.focusInk.opacity(0.3) : Color.focusInk)

@@ -194,7 +194,10 @@ struct SettingsRow: View {
     var action: (() -> Void)? = nil
 
     var body: some View {
-        Button(action: { action?() }) {
+        Button(action: {
+            HapticManager.shared.impact()
+            action?()
+        }) {
             HStack(spacing: 12) {
                 if let icon = icon {
                     icon
@@ -270,6 +273,7 @@ struct ToggleRow: View {
                 get: { value },
                 set: { newValue in
                     if !disabled {
+                        HapticManager.shared.impact()
                         value = newValue
                         onChange?(newValue)
                     }

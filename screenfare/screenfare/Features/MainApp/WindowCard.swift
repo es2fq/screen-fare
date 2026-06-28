@@ -84,7 +84,10 @@ struct WindowCard: View {
                         }
 
                         if removable {
-                            Button(action: onRemove) {
+                            Button(action: {
+                                HapticManager.shared.impact()
+                                onRemove()
+                            }) {
                                 Text("Remove window")
                                     .font(.inter(13, weight: .semibold))
                                     .foregroundColor(Color(red: 0.88, green: 0.27, blue: 0.18)) // Red

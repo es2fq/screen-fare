@@ -43,6 +43,8 @@ struct CustomToggle: View {
         .frame(width: 44, height: 26)
         .contentShape(Rectangle()) // Make entire area tappable
         .onTapGesture {
+            // Trigger haptic feedback
+            HapticManager.shared.impact()
             // Toggle the binding
             isOn.toggle()
             // Also call the callback if provided

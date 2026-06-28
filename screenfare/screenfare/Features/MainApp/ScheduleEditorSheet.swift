@@ -145,7 +145,10 @@ struct ScheduleEditorSheet: View {
 
                         // Save button (appears at bottom when there are unsaved changes)
                         if hasUnsavedChanges {
-                            Button(action: commit) {
+                            Button(action: {
+                                HapticManager.shared.impact()
+                                commit()
+                            }) {
                                 Text("Save Changes")
                                     .font(.inter(16, weight: .semibold))
                                     .foregroundColor(.white)
@@ -234,7 +237,10 @@ struct ScheduleEditorSheet: View {
 
             // Add window button
             if draft.windows.count < 4 {
-                Button(action: addWindow) {
+                Button(action: {
+                    HapticManager.shared.impact()
+                    addWindow()
+                }) {
                     HStack(spacing: 8) {
                         Image(systemName: "plus")
                             .font(.system(size: 14, weight: .semibold))
@@ -327,7 +333,10 @@ struct SegmentButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticManager.shared.impact()
+            action()
+        }) {
             Text(title)
                 .font(.inter(14, weight: .semibold))
                 .foregroundColor(isSelected ? .focusInk : .focusMuted)

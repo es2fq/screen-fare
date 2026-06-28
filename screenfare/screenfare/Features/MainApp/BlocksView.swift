@@ -90,7 +90,10 @@ struct BlocksView: View {
                     Spacer()
 
                     // Add button
-                    Button(action: { showingPicker = true }) {
+                    Button(action: {
+                        HapticManager.shared.impact()
+                        showingPicker = true
+                    }) {
                         HStack(spacing: 6) {
                             Image(systemName: "plus")
                                 .font(.system(size: 12, weight: .semibold))
@@ -138,7 +141,10 @@ struct BlocksView: View {
                             )
 
                             // Schedule card - tappable (expands to fill remaining space)
-                            Button(action: { showingScheduleEditor = true }) {
+                            Button(action: {
+                                HapticManager.shared.impact()
+                                showingScheduleEditor = true
+                            }) {
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("SCHEDULE")
                                         .font(.inter(11, weight: .semibold))
@@ -256,7 +262,10 @@ struct BlockedAppsSection: View {
                 Spacer()
 
                 if appCount > 0 {
-                    Button(action: { isEditing.toggle() }) {
+                    Button(action: {
+                        HapticManager.shared.impact()
+                        isEditing.toggle()
+                    }) {
                         Text(isEditing ? "Done" : "Edit")
                             .font(.inter(12.5, weight: .semibold))
                             .foregroundColor(isEditing ? .focusInk : .focusMuted)
@@ -304,7 +313,10 @@ struct BlockedAppsSection: View {
 
                             // Show more button or Add apps tile
                             if overflow {
-                                Button(action: { showAll = true }) {
+                                Button(action: {
+                                    HapticManager.shared.impact()
+                                    showAll = true
+                                }) {
                                     VStack {
                                         Text("+\(totalItems - cap)")
                                             .font(.instrumentSerif(19))
@@ -315,7 +327,10 @@ struct BlockedAppsSection: View {
                                     .cornerRadius(16)
                                 }
                             } else if !isEditing {
-                                Button(action: { showingPicker = true }) {
+                                Button(action: {
+                                    HapticManager.shared.impact()
+                                    showingPicker = true
+                                }) {
                                     Image(systemName: "plus")
                                         .font(.system(size: 18))
                                         .foregroundColor(.focusMuted)
@@ -431,7 +446,10 @@ struct AppIconTile: View {
             .animation(.easeInOut(duration: 0.18), value: isEditing)
 
             if isEditing {
-                Button(action: onRemove) {
+                Button(action: {
+                    HapticManager.shared.impact()
+                    onRemove()
+                }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 8, weight: .bold))
                         .foregroundColor(.white)
@@ -477,7 +495,10 @@ struct CategoryIconTile: View {
             .animation(.easeInOut(duration: 0.18), value: isEditing)
 
             if isEditing {
-                Button(action: onRemove) {
+                Button(action: {
+                    HapticManager.shared.impact()
+                    onRemove()
+                }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 8, weight: .bold))
                         .foregroundColor(.white)
@@ -562,7 +583,10 @@ struct ScheduleSection: View {
                 .padding(.horizontal, 4)
                 .padding(.bottom, 10)
 
-            Button(action: { showingScheduleEditor = true }) {
+            Button(action: {
+                HapticManager.shared.impact()
+                showingScheduleEditor = true
+            }) {
                 AppCard(padding: EdgeInsets(top: 16, leading: 16, bottom: 14, trailing: 16)) {
                     VStack(spacing: 14) {
                         // Mode info header
@@ -636,7 +660,10 @@ struct StrictModeSection: View {
                 .padding(.horizontal, 4)
                 .padding(.bottom, 10)
 
-            Button(action: { showingStrictModeEditor = true }) {
+            Button(action: {
+                HapticManager.shared.impact()
+                showingStrictModeEditor = true
+            }) {
                 AppCard(padding: EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)) {
                     HStack(spacing: 14) {
                         // Icon
@@ -674,7 +701,7 @@ struct StrictModeSection: View {
 
     private var strictModeSummary: String {
         if !settings.strictModeEnabled {
-            return "Off — blocks can be changed freely"
+            return "Off — changes can be made freely"
         }
 
         let protectionCount = [

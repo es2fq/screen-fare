@@ -27,6 +27,7 @@ struct TimeStepper: View {
             HStack(spacing: 12) {
                 // Minus button
                 Button(action: {
+                    HapticManager.shared.impact()
                     value = ((value - step) % 1440 + 1440) % 1440
                 }) {
                     Image(systemName: "minus")
@@ -44,6 +45,7 @@ struct TimeStepper: View {
 
                 // Time display - tappable to show picker
                 Button(action: {
+                    HapticManager.shared.impact()
                     showPicker.toggle()
                 }) {
                     Text(ScheduleManager.minToLabel(value))
@@ -113,6 +115,7 @@ struct TimeStepper: View {
 
                 // Plus button
                 Button(action: {
+                    HapticManager.shared.impact()
                     value = (value + step) % 1440
                 }) {
                     Image(systemName: "plus")
@@ -143,6 +146,7 @@ struct DayPicker: View {
                 let isSelected = days.contains(dayNum)
 
                 Button(action: {
+                    HapticManager.shared.impact()
                     toggleDay(dayNum)
                 }) {
                     Text(letter)
