@@ -131,7 +131,7 @@ struct BreathingOrbView: View {
                 .scaleEffect(orbScale)
                 .animation(.linear(duration: 0.016), value: orbScale)
         }
-        .frame(width: 300, height: 300)
+        .frame(width: 200, height: 300)
         .onChange(of: isAnimating) { oldValue, newValue in
             if newValue && !oldValue {
                 startBreathing()
