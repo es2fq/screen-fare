@@ -45,6 +45,12 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var breathingCycles: Int {
+        didSet {
+            UserDefaults.standard.set(breathingCycles, forKey: "breathingCycles")
+        }
+    }
+
     @Published var challengeType: ChallengeType {
         didSet {
             UserDefaults.standard.set(challengeType.rawValue, forKey: "challengeType")
@@ -153,6 +159,9 @@ class SettingsManager: ObservableObject {
 
         let savedTilesToMatch = UserDefaults.standard.integer(forKey: "memoryTilesToMatch")
         self.memoryTilesToMatch = savedTilesToMatch > 0 ? savedTilesToMatch : 4 // Default 4 tiles
+
+        let savedBreathingCycles = UserDefaults.standard.integer(forKey: "breathingCycles")
+        self.breathingCycles = savedBreathingCycles > 0 ? savedBreathingCycles : 3 // Default 3 cycles
 
         if let savedType = UserDefaults.standard.string(forKey: "challengeType"),
            let type = ChallengeType(rawValue: savedType) {

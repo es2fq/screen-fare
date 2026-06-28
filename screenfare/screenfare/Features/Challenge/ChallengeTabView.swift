@@ -22,6 +22,7 @@ struct ChallengeTabView: View {
     @State private var tempTypingDifficulty: TypingDifficulty
     @State private var tempMemoryGridSize: Int
     @State private var tempMemoryTilesToMatch: Int
+    @State private var tempBreathingCycles: Int
 
     // Challenge gate for strict mode
     @State private var showGate: ChallengeGateData?
@@ -30,6 +31,7 @@ struct ChallengeTabView: View {
     @State private var previewChallenges: [ChallengeDifficulty: MathChallenge]
     @State private var typingChallenge: TypingChallenge
     @State private var memoryChallenge: MemoryChallenge
+    @State private var breathingChallenge: BreathingChallenge
 
     init(selectedTab: Binding<Int> = .constant(2), viewState: Binding<ChallengeViewState> = .constant(.list), selectedType: Binding<ChallengeType> = .constant(.math)) {
         _selectedTab = selectedTab
@@ -42,6 +44,7 @@ struct ChallengeTabView: View {
         self._tempTypingDifficulty = State(initialValue: settings.typingDifficulty)
         self._tempMemoryGridSize = State(initialValue: settings.memoryGridSize)
         self._tempMemoryTilesToMatch = State(initialValue: settings.memoryTilesToMatch)
+        self._tempBreathingCycles = State(initialValue: settings.breathingCycles)
 
         // Pre-generate one challenge for each difficulty level
         var challenges: [ChallengeDifficulty: MathChallenge] = [:]
@@ -51,6 +54,7 @@ struct ChallengeTabView: View {
         self._previewChallenges = State(initialValue: challenges)
         self._typingChallenge = State(initialValue: TypingChallenge(difficulty: settings.typingDifficulty))
         self._memoryChallenge = State(initialValue: MemoryChallenge())
+        self._breathingChallenge = State(initialValue: BreathingChallenge(totalBreaths: settings.breathingCycles))
     }
 
     var body: some View {
@@ -95,7 +99,8 @@ struct ChallengeTabView: View {
                          (tempChallengeDifficulty != settings.challengeDifficulty) ||
                          (tempTypingDifficulty != settings.typingDifficulty) ||
                          (tempMemoryGridSize != settings.memoryGridSize) ||
-                         (tempMemoryTilesToMatch != settings.memoryTilesToMatch)
+                         (tempMemoryTilesToMatch != settings.memoryTilesToMatch) ||
+                         (tempBreathingCycles != settings.breathingCycles)
 
         // If strict mode is on and challenge protection is enabled, show gate
         if hasChanges && settings.strictModeEnabled && settings.strictProtectChallenge {
@@ -118,6 +123,7 @@ struct ChallengeTabView: View {
         settings.typingDifficulty = tempTypingDifficulty
         settings.memoryGridSize = tempMemoryGridSize
         settings.memoryTilesToMatch = tempMemoryTilesToMatch
+        settings.breathingCycles = tempBreathingCycles
 
         // Return to list view
         viewState = .list
@@ -302,12 +308,14 @@ struct ChallengeTabView: View {
                             previewChallenges: $previewChallenges,
                             typingChallenge: $typingChallenge,
                             memoryChallenge: $memoryChallenge,
+                            breathingChallenge: $breathingChallenge,
                             isAnyFieldFocused: $isAnyFieldFocused,
                             configViewCount: configViewCount,
                             tempChallengeDifficulty: $tempChallengeDifficulty,
                             tempTypingDifficulty: $tempTypingDifficulty,
                             tempMemoryGridSize: $tempMemoryGridSize,
-                            tempMemoryTilesToMatch: $tempMemoryTilesToMatch
+                            tempMemoryTilesToMatch: $tempMemoryTilesToMatch,
+                            tempBreathingCycles: $tempBreathingCycles
                         )
                         .padding(.horizontal, 22)
 
@@ -348,6 +356,7 @@ struct ChallengeTabView: View {
         case .math: return "Solve math problems"
         case .typing: return "Type the prompt exactly"
         case .memory: return "Remember the pattern"
+        case .breathing: return "Complete breathing cycles"
         }
     }
 
@@ -359,6 +368,9 @@ struct ChallengeTabView: View {
             return typingDifficultyLabel(for: settings.typingDifficulty)
         case .memory:
             return "\(settings.memoryGridSize)×\(settings.memoryGridSize) grid"
+        case .breathing:
+            let cycles = settings.breathingCycles
+            return "\(cycles) breath\(cycles == 1 ? "" : "s")"
         }
     }
 
@@ -409,6 +421,7 @@ struct TypeIcon: View {
         case .math: return "plus.forwardslash.minus"
         case .typing: return "keyboard"
         case .memory: return "brain.head.profile"
+        case .breathing: return "wind"
         }
     }
 }
@@ -432,12 +445,14 @@ struct ConfigCard: View {
     @Binding var previewChallenges: [ChallengeDifficulty: MathChallenge]
     @Binding var typingChallenge: TypingChallenge
     @Binding var memoryChallenge: MemoryChallenge
+    @Binding var breathingChallenge: BreathingChallenge
     @FocusState.Binding var isAnyFieldFocused: Bool
     let configViewCount: Int
     @Binding var tempChallengeDifficulty: ChallengeDifficulty
     @Binding var tempTypingDifficulty: TypingDifficulty
     @Binding var tempMemoryGridSize: Int
     @Binding var tempMemoryTilesToMatch: Int
+    @Binding var tempBreathingCycles: Int
 
     var body: some View {
         AppCard {
@@ -449,6 +464,8 @@ struct ConfigCard: View {
                     typingConfig
                 case .memory:
                     memoryConfig
+                case .breathing:
+                    breathingConfig
                 }
             }
         }
@@ -548,6 +565,36 @@ struct ConfigCard: View {
 
             MemoryTester(gridSize: tempMemoryGridSize, tilesToMatch: tempMemoryTilesToMatch)
                 .id("\(tempMemoryGridSize)-\(tempMemoryTilesToMatch)-\(configViewCount)") // Reset when settings change or when re-entering config
+        }
+    }
+
+    private var breathingConfig: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Breathing cycles")
+                    .font(.inter(13))
+                    .foregroundColor(.focusMuted)
+                Spacer()
+                Text("\(tempBreathingCycles) breath\(tempBreathingCycles == 1 ? "" : "s")")
+                    .font(.inter(15, weight: .semibold))
+                    .foregroundColor(.focusInk)
+            }
+
+            CustomSlider(
+                value: Binding(
+                    get: { Double(tempBreathingCycles) },
+                    set: { newValue in
+                        tempBreathingCycles = Int(newValue)
+                        // Regenerate breathing challenge
+                        breathingChallenge = BreathingChallenge(totalBreaths: tempBreathingCycles)
+                    }
+                ),
+                range: 1...5,
+                step: 1
+            )
+
+            BreathingTester(challenge: breathingChallenge)
+                .id("\(tempBreathingCycles)-\(configViewCount)")
         }
     }
 
@@ -985,6 +1032,147 @@ struct AccessWindowCard: View {
             }
             return "\(hours)h \(mins)m"
         }
+    }
+}
+
+// MARK: - Breathing Tester
+
+struct BreathingTester: View {
+    let challenge: BreathingChallenge
+    @State private var currentBreath: Int = 0
+    @State private var currentPhase: BreathingPhase = .inhale
+    @State private var phaseProgress: Double = 0
+    @State private var isAnimating: Bool = false
+    @State private var stage: Stage = .idle
+
+    enum Stage {
+        case idle
+        case breathing
+        case done
+    }
+
+    var body: some View {
+        TryShell(hint: stage == .idle ? "Follow the animated orb through \(challenge.totalBreaths) breath cycle\(challenge.totalBreaths == 1 ? "" : "s")." : nil) {
+            VStack(spacing: 12) {
+                // Breathing instructions and orb
+                if stage == .breathing {
+                    VStack(spacing: 4) {
+                        Text(currentPhase.label)
+                            .font(.instrumentSerif(24))
+                            .foregroundColor(Color(red: 0.46, green: 0.52, blue: 0.49))
+                            .transition(.opacity)
+                            .id(currentPhase)
+
+                        Text("\(phaseCountdown)")
+                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .tracking(0.52)
+                            .foregroundColor(Color(red: 0.66, green: 0.74, blue: 0.70))
+                            .monospacedDigit()
+                    }
+                    .frame(height: 50)
+                }
+
+                // Breathing orb preview (smaller version)
+                BreathingOrbView(
+                    challenge: challenge,
+                    currentBreath: $currentBreath,
+                    currentPhase: $currentPhase,
+                    phaseProgress: $phaseProgress,
+                    isAnimating: $isAnimating,
+                    onComplete: handleComplete
+                )
+                .scaleEffect(0.7)
+                .frame(height: stage == .breathing ? 210 : 240)
+
+                // Breath count dots
+                HStack(spacing: 9) {
+                    ForEach(1...challenge.totalBreaths, id: \.self) { breathNum in
+                        Circle()
+                            .fill(breathNum <= currentBreath - 1 ? Color(red: 0.46, green: 0.52, blue: 0.49) : (breathNum == currentBreath ? Color(red: 0.46, green: 0.52, blue: 0.49).opacity(0.55) : Color.focusInk.opacity(0.13)))
+                            .frame(width: 7, height: 7)
+                            .scaleEffect(breathNum == currentBreath ? 1.35 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: currentBreath)
+                    }
+                }
+                .frame(height: 20)
+
+                // Button
+                Button(action: handleAction) {
+                    Text(buttonText)
+                        .font(.inter(14, weight: .semibold))
+                        .foregroundColor(buttonDisabled ? Color.focusInk.opacity(0.3) : Color.focusInk)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 11)
+                                .strokeBorder(buttonDisabled ? Color.focusLine.opacity(0.5) : Color.focusLine, lineWidth: 1)
+                        )
+                        .cornerRadius(11)
+                }
+                .disabled(buttonDisabled)
+            }
+        }
+    }
+
+    private var phaseCountdown: Int {
+        let phaseDuration: TimeInterval
+        switch currentPhase {
+        case .inhale:
+            phaseDuration = challenge.inhaleDuration
+        case .hold:
+            phaseDuration = challenge.holdDuration
+        case .exhale:
+            phaseDuration = challenge.exhaleDuration
+        }
+
+        let elapsed = phaseProgress * phaseDuration
+        return max(1, Int(ceil(phaseDuration - elapsed)))
+    }
+
+    private var buttonText: String {
+        switch stage {
+        case .idle:
+            return "Start"
+        case .breathing:
+            return "Breathing..."
+        case .done:
+            return "Done · Try again"
+        }
+    }
+
+    private var buttonDisabled: Bool {
+        stage == .breathing
+    }
+
+    private func handleAction() {
+        switch stage {
+        case .idle:
+            startBreathing()
+        case .breathing:
+            break
+        case .done:
+            resetBreathing()
+        }
+    }
+
+    private func startBreathing() {
+        stage = .breathing
+        currentBreath = 0
+        isAnimating = true
+    }
+
+    private func handleComplete() {
+        stage = .done
+        isAnimating = false
+    }
+
+    private func resetBreathing() {
+        stage = .idle
+        currentBreath = 0
+        currentPhase = .inhale
+        phaseProgress = 0
+        isAnimating = false
     }
 }
 

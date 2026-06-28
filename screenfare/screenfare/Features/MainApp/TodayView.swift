@@ -372,6 +372,7 @@ struct TodayView: View {
         case .math: return "Math"
         case .typing: return "Typing"
         case .memory: return "Memory"
+        case .breathing: return "Breathing"
         }
     }
 
@@ -380,6 +381,7 @@ struct TodayView: View {
         case .math: return "plus.forwardslash.minus"
         case .typing: return "keyboard"
         case .memory: return "brain.head.profile"
+        case .breathing: return "wind"
         }
     }
 
@@ -405,6 +407,9 @@ struct TodayView: View {
             let gridSize = settings.memoryGridSize
             let tileCount = settings.memoryTilesToMatch
             return "\(gridSize)×\(gridSize) · \(tileCount) tiles"
+        case .breathing:
+            let cycles = settings.breathingCycles
+            return "\(cycles) breath\(cycles == 1 ? "" : "s")"
         }
     }
 

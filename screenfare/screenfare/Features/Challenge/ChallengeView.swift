@@ -50,6 +50,13 @@ struct ChallengeView: View {
         case recall
     }
 
+    // Breathing challenge state
+    @State private var breathingChallenge: BreathingChallenge?
+    @State private var currentBreath: Int = 0
+    @State private var currentPhase: BreathingPhase = .inhale
+    @State private var phaseProgress: Double = 0
+    @State private var isBreathingAnimating: Bool = false
+
     // Common state
     @State private var attempts = 0
     @State private var shakeCount = 0
@@ -102,6 +109,8 @@ struct ChallengeView: View {
             _typingChallenge = State(initialValue: TypingChallenge(difficulty: settings.typingDifficulty))
         case .memory:
             _memoryChallenge = State(initialValue: MemoryChallenge(gridSize: settings.memoryGridSize, litCount: settings.memoryTilesToMatch))
+        case .breathing:
+            _breathingChallenge = State(initialValue: BreathingChallenge(totalBreaths: settings.breathingCycles))
         }
     }
 
@@ -155,12 +164,7 @@ struct ChallengeView: View {
                         // Status message
                         HStack {
                             Spacer()
-                            if phase == .paying {
-                                Text(payingLabel)
-                                    .font(.inter(13, weight: .semibold))
-                                    .foregroundColor(.transitGreen)
-                                    .tracking(0.26)
-                            } else if phase == .challenge && showError {
+                            if phase == .challenge && showError {
                                 Text(errorText)
                                     .font(.inter(13, weight: .medium))
                                     .foregroundColor(.transitRed)
@@ -196,6 +200,7 @@ struct ChallengeView: View {
                     case .math: return "Math"
                     case .typing: return "Typing"
                     case .memory: return "Memory"
+                    case .breathing: return "Breathing"
                     }
                 }()
                 historyManager.recordEvent(
@@ -531,6 +536,8 @@ struct ChallengeView: View {
             typingContent
         case .memory:
             memoryContent
+        case .breathing:
+            breathingContent
         }
     }
 
@@ -625,6 +632,20 @@ struct ChallengeView: View {
         }
     }
 
+    @ViewBuilder
+    private var breathingContent: some View {
+        if let challenge = breathingChallenge {
+            BreathingChallengeContent(
+                challenge: challenge,
+                currentBreath: $currentBreath,
+                currentPhase: $currentPhase,
+                phaseProgress: $phaseProgress,
+                isAnimating: $isBreathingAnimating,
+                onComplete: checkBreathingAnswer
+            )
+        }
+    }
+
     // MARK: - Footer
 
     @ViewBuilder
@@ -647,6 +668,8 @@ struct ChallengeView: View {
                 EmptyView() // No button needed - auto-submits on completion
             case .memory:
                 EmptyView() // No button needed - auto-submits on completion
+            case .breathing:
+                EmptyView() // No button needed - auto-completes on breath completion
             }
         }
     }
@@ -673,6 +696,7 @@ struct ChallengeView: View {
             case .math: return "MATH"
             case .typing: return "TYPE"
             case .memory: return "MEM"
+            case .breathing: return "BREATH"
             }
         }
     }
@@ -688,6 +712,8 @@ struct ChallengeView: View {
             case .memorize: return "Memorize \(memoryChallenge?.litCount ?? 4)"
             case .recall: return "Tap the \(memoryChallenge?.litCount ?? 4)"
             }
+        case .breathing:
+            return "Follow the breath"
         }
     }
 
@@ -702,6 +728,9 @@ struct ChallengeView: View {
             case .memorize: return "\(memoryCountdown)s"
             case .recall: return "\(selectedTiles.count)/\(memoryChallenge?.litCount ?? 4)"
             }
+        case .breathing:
+            let total = breathingChallenge?.totalBreaths ?? settings.breathingCycles
+            return "Breath \(currentBreath)/\(total)"
         }
     }
 
@@ -717,6 +746,8 @@ struct ChallengeView: View {
             return "That doesn't match — fix the highlighted part"
         case .memory:
             return "Not quite — watch the pattern again"
+        case .breathing:
+            return "" // Breathing challenge doesn't have errors
         }
     }
 
@@ -789,6 +820,8 @@ struct ChallengeView: View {
                 isTypingFocused = true
             case .memory:
                 break
+            case .breathing:
+                break // Breathing starts when user taps the orb
             }
         }
     }
@@ -830,6 +863,15 @@ struct ChallengeView: View {
                 memoryStage = .memorize
                 startMemoryCountdown()
             }
+        }
+    }
+
+    private func checkBreathingAnswer() {
+        guard let challenge = breathingChallenge else { return }
+
+        // Breathing challenge auto-completes when all breaths are done
+        if challenge.isComplete(breathsCompleted: currentBreath) {
+            succeed()
         }
     }
 
@@ -911,6 +953,7 @@ struct ChallengeView: View {
                 case .math: return "Math"
                 case .typing: return "Typing"
                 case .memory: return "Memory"
+                case .breathing: return "Breathing"
                 }
             }()
 
@@ -932,6 +975,7 @@ struct ChallengeView: View {
                 case .math: return "Math"
                 case .typing: return "Typing"
                 case .memory: return "Memory"
+                case .breathing: return "Breathing"
                 }
             }()
 

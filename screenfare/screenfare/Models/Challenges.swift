@@ -13,6 +13,7 @@ enum ChallengeType: String, CaseIterable {
     case math = "Math"
     case typing = "Typing"
     case memory = "Memory"
+    case breathing = "Breathing"
 
     var isPro: Bool {
         return false
@@ -280,5 +281,43 @@ struct MemoryChallenge: Challenge {
 
     func isCorrect(_ selectedTiles: [Int]) -> Bool {
         selectedTiles.count == litCount && Set(selectedTiles) == Set(litIndices)
+    }
+}
+
+// MARK: - Breathing Challenge
+
+struct BreathingChallenge: Challenge {
+    let totalBreaths: Int
+    let inhaleDuration: TimeInterval
+    let holdDuration: TimeInterval
+    let exhaleDuration: TimeInterval
+
+    var type: ChallengeType { .breathing }
+
+    var questionText: String {
+        "Take \(totalBreaths) slow breaths"
+    }
+
+    // Total duration for one complete breath cycle
+    var breathCycleDuration: TimeInterval {
+        inhaleDuration + holdDuration + exhaleDuration
+    }
+
+    // Total duration for all breath cycles
+    var totalDuration: TimeInterval {
+        breathCycleDuration * TimeInterval(totalBreaths)
+    }
+
+    init(totalBreaths: Int = 3, inhaleDuration: TimeInterval = 4.0, holdDuration: TimeInterval = 4.0, exhaleDuration: TimeInterval = 6.0) {
+        self.totalBreaths = totalBreaths
+        self.inhaleDuration = inhaleDuration
+        self.holdDuration = holdDuration
+        self.exhaleDuration = exhaleDuration
+    }
+
+    // Breathing challenge doesn't have a "correct" answer in the traditional sense
+    // It's complete when all breaths are finished
+    func isComplete(breathsCompleted: Int) -> Bool {
+        breathsCompleted >= totalBreaths
     }
 }
