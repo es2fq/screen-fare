@@ -102,12 +102,12 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
                 color: subtitleColor
             ),
             primaryButtonLabel: ShieldConfiguration.Label(
-                text: "Pay fare",
+                text: "Walk away",
                 color: .white
             ),
             primaryButtonBackgroundColor: buttonColor,
             secondaryButtonLabel: ShieldConfiguration.Label(
-                text: "Not now",
+                text: "Pay fare",
                 color: titleColor
             )
         )

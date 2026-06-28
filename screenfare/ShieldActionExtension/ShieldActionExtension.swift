@@ -20,16 +20,16 @@ class ShieldActionExtension: ShieldActionDelegate {
 
         switch action {
         case .primaryButtonPressed:
-            // User clicked "Start Challenge" - don't record event yet, wait for ChallengeView to appear
+            // User clicked "Walk away" - record walked away event
+            recordWalkedAwayEvent(for: application)
+            completionHandler(.close)
+
+        case .secondaryButtonPressed:
+            // User clicked "Pay fare" - don't record event yet, wait for ChallengeView to appear
             markUnlockRequested(for: application)
             sendUnlockNotification()
             // Keep shield open - user must complete challenge in main app
             completionHandler(.defer)
-
-        case .secondaryButtonPressed:
-            // User clicked "Not Now" - record walked away event
-            recordWalkedAwayEvent(for: application)
-            completionHandler(.close)
 
         case .firstSecondarySubmenuItemPressed,
              .secondSecondarySubmenuItemPressed,
@@ -47,18 +47,18 @@ class ShieldActionExtension: ShieldActionDelegate {
 
         switch action {
         case .primaryButtonPressed:
-            // User clicked "Start Challenge" on a category-blocked app
+            // User clicked "Walk away" - record walked away event
+            recordWalkedAwayForCategory(for: category)
+            completionHandler(.close)
+
+        case .secondaryButtonPressed:
+            // User clicked "Pay fare" on a category-blocked app
             // Note: We don't have the specific ApplicationToken here, only the category
             // Store the category token so the main app knows which category to unlock
             markCategoryUnlockRequested(for: category)
             sendUnlockNotification()
             // Keep shield open - user must complete challenge in main app
             completionHandler(.defer)
-
-        case .secondaryButtonPressed:
-            // User clicked "Not Now" - record walked away event
-            recordWalkedAwayForCategory(for: category)
-            completionHandler(.close)
 
         case .firstSecondarySubmenuItemPressed,
              .secondSecondarySubmenuItemPressed,
