@@ -29,6 +29,7 @@ struct CompactActivityView: View {
                     .font(.custom("Inter_18pt-Regular", size: 12.5))
                     .foregroundColor(Color(white: 0.5))
                     .padding(.top, 7)
+                    .fixedSize()
             }
 
             Spacer()
