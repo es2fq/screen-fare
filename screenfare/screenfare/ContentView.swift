@@ -20,26 +20,28 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // Main app - always rendered at bottom
-            MainTabView(selectedTab: $selectedTab)
-                .environment(\.selectedTab, $selectedTab)
-                .sheet(isPresented: $showingChallenge) {
-                    ChallengeView()
-                        .environment(\.selectedTab, $selectedTab)
-                }
-                .onChange(of: notificationManager.shouldShowChallenge) { _, _ in
-                    handleChallengeRequest(from: "NotificationManager")
-                }
-                .onChange(of: darwinNotificationManager.shouldShowChallenge) { _, _ in
-                    handleChallengeRequest(from: "DarwinNotificationManager")
-                }
-                .onChange(of: shieldCommunicationManager.shouldShowChallenge) { _, _ in
-                    handleChallengeRequest(from: "ShieldCommunicationManager")
-                }
-                .opacity(showingLaunchAnimation ? 0 : 1)
+            // Main app - only render after animation completes to avoid lag
+            if !showingLaunchAnimation {
+                MainTabView(selectedTab: $selectedTab)
+                    .environment(\.selectedTab, $selectedTab)
+                    .sheet(isPresented: $showingChallenge) {
+                        ChallengeView()
+                            .environment(\.selectedTab, $selectedTab)
+                    }
+                    .onChange(of: notificationManager.shouldShowChallenge) { _, _ in
+                        handleChallengeRequest(from: "NotificationManager")
+                    }
+                    .onChange(of: darwinNotificationManager.shouldShowChallenge) { _, _ in
+                        handleChallengeRequest(from: "DarwinNotificationManager")
+                    }
+                    .onChange(of: shieldCommunicationManager.shouldShowChallenge) { _, _ in
+                        handleChallengeRequest(from: "ShieldCommunicationManager")
+                    }
+                    .transition(.opacity)
+            }
 
             // Onboarding overlay - fades out when complete
-            if !settings.hasCompletedOnboarding {
+            if !settings.hasCompletedOnboarding && !showingLaunchAnimation {
                 OnboardingContainerView {
                     // Onboarding complete - this will trigger a view update
                 }

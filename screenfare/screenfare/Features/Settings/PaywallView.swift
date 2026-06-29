@@ -87,7 +87,7 @@ struct PaywallView: View {
                             Group {
                                 Text("Upgrade your ")
                                     .font(.instrumentSerif(40))
-                                + Text("ride.")
+                                + Text("ticket.")
                                     .font(.instrumentSerif(40, italic: true))
                             }
                             .foregroundColor(.focusInk)

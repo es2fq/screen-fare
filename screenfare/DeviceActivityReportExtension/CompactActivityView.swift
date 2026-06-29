@@ -11,10 +11,10 @@ struct CompactActivityView: View {
     let config: CompactActivityConfig
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 4) {
             // Left side: Total time + delta
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
                     // Total time (Instrument Serif Italic to match "Today.")
                     Text(formatMinutes(config.totalMinutes))
                         .font(.custom("InstrumentSerif-Italic", size: 40))
@@ -35,7 +35,14 @@ struct CompactActivityView: View {
 
             // Right side: Mini week chart
             miniWeekChart
-                .frame(width: 132)
+                .frame(width: 124)
+            
+            Spacer()
+
+            // Chevron indicator
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .regular))
+                .foregroundColor(Color(white: 0.5))
         }
     }
 
@@ -44,9 +51,9 @@ struct CompactActivityView: View {
     private var deltaChip: some View {
         let delta = calculateDelta()
         let isDown = delta > 0
-        let color = isDown ? Color.orange : Color(white: 0.5)
+        let color = isDown ? Color.focusAccent : Color(white: 0.5)
 
-        return HStack(spacing: 4) {
+        return HStack(spacing: 2) {
             Image(systemName: isDown ? "arrow.down" : "arrow.up")
                 .font(.custom("Inter_18pt-SemiBold", size: 11))
 
@@ -54,6 +61,7 @@ struct CompactActivityView: View {
                 .font(.custom("Inter_18pt-SemiBold", size: 12.5))
         }
         .foregroundColor(color)
+        .fixedSize()
     }
 
     // MARK: - Mini Week Chart
@@ -71,7 +79,7 @@ struct CompactActivityView: View {
                     // Bar
                     let barHeight = max(3, CGFloat(minutes) / CGFloat(maxMinutes) * 44)
                     RoundedRectangle(cornerRadius: 5)
-                        .fill(isToday ? Color.orange : Color(white: 0.86))
+                        .fill(isToday ? Color.focusAccent : Color(white: 0.86))
                         .frame(height: barHeight)
 
                     // Day label

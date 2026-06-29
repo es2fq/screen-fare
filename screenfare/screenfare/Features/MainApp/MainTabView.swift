@@ -18,6 +18,7 @@ struct MainTabView: View {
 
     // Track drill-in state for tabs
     @State private var todayHistoryShowing = false
+    @State private var todayInsightsShowing = false
     @State private var challengeViewState: ChallengeViewState = .list
     @State private var challengeSelectedType: ChallengeType = .math
     @State private var blocksScheduleShowing = false
@@ -29,7 +30,7 @@ struct MainTabView: View {
             // Tab content with fade animations
             ZStack {
                 // Tab 0: Today
-                TodayView(showingHistoryView: $todayHistoryShowing, selectedTab: $selectedTab)
+                TodayView(showingHistoryView: $todayHistoryShowing, showingInsightsView: $todayInsightsShowing, selectedTab: $selectedTab)
                     .opacity(selectedTab == 0 ? 1 : 0)
                     .zIndex(selectedTab == 0 ? 1 : 0)
 
@@ -64,6 +65,7 @@ struct MainTabView: View {
             CustomTabBar(
                 selectedTab: $selectedTab,
                 todayHistoryShowing: $todayHistoryShowing,
+                todayInsightsShowing: $todayInsightsShowing,
                 challengeViewState: $challengeViewState,
                 blocksScheduleShowing: $blocksScheduleShowing,
                 blocksStrictModeShowing: $blocksStrictModeShowing,
@@ -74,6 +76,7 @@ struct MainTabView: View {
         .onChange(of: selectedTab) { oldValue, newValue in
             // Dismiss all drill-in views when switching tabs
             todayHistoryShowing = false
+            todayInsightsShowing = false
             blocksScheduleShowing = false
             blocksStrictModeShowing = false
             challengeViewState = .list
@@ -86,6 +89,7 @@ struct MainTabView: View {
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
     @Binding var todayHistoryShowing: Bool
+    @Binding var todayInsightsShowing: Bool
     @Binding var challengeViewState: ChallengeViewState
     @Binding var blocksScheduleShowing: Bool
     @Binding var blocksStrictModeShowing: Bool
@@ -107,8 +111,9 @@ struct CustomTabBar: View {
 
                     if selectedTab == index {
                         // Dismiss drill-in views when tapping active tab
-                        if index == 0 && todayHistoryShowing {
+                        if index == 0 && (todayHistoryShowing || todayInsightsShowing) {
                             todayHistoryShowing = false
+                            todayInsightsShowing = false
                         } else if index == 1 && (blocksScheduleShowing || blocksStrictModeShowing) {
                             blocksScheduleShowing = false
                             blocksStrictModeShowing = false

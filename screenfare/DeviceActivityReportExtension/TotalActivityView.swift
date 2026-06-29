@@ -160,7 +160,7 @@ struct TotalActivityView: View {
     private var deltaChip: some View {
         let delta = calculateDelta()
         let isDown = delta > 0
-        let color = isDown ? Color.orange : Color(white: 0.5)
+        let color = isDown ? Color.focusAccent : Color(white: 0.5)
 
         return HStack(spacing: 4) {
             // Arrow
@@ -171,6 +171,7 @@ struct TotalActivityView: View {
                 .font(.system(size: 12.5, weight: .semibold))
         }
         .foregroundColor(color)
+        .fixedSize()
     }
 
     private func calculateDelta() -> Int {
@@ -215,14 +216,14 @@ struct WeekBars: View {
                     // Time label (only for today)
                     Text(day.isToday ? formatMinutes(day.minutes) : "")
                         .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundColor(.orange)
+                        .foregroundColor(.focusAccent)
                         .frame(height: 15)
                         .monospacedDigit()
 
                     // Bar
                     let barHeight = max(5, CGFloat(day.minutes) / CGFloat(maxMinutes) * (height - 30))
                     RoundedRectangle(cornerRadius: 7)
-                        .fill(day.isToday ? Color.orange : Color(white: 0.86))
+                        .fill(day.isToday ? Color.focusAccent : Color(white: 0.86))
                         .frame(width: 30, height: barHeight)
 
                     // Day label
@@ -331,7 +332,7 @@ struct HourlyChart: View {
                     VStack(spacing: 2) {
                         // Bar
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(isCurrentHour ? Color.orange : Color(white: 0.88))
+                            .fill(isCurrentHour ? Color.focusAccent : Color(white: 0.88))
                             .frame(height: barHeight)
                     }
                     .frame(maxWidth: .infinity)

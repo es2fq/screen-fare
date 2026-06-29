@@ -29,14 +29,15 @@ struct TodayView: View {
     @State private var dragOffset: CGFloat = 0
 
     // Insights view state
-    @State private var showingInsightsView = false
+    @Binding var showingInsightsView: Bool
     @State private var insightsDragOffset: CGFloat = 0
 
     // Tab navigation
     @Binding var selectedTab: Int
 
-    init(showingHistoryView: Binding<Bool> = .constant(false), selectedTab: Binding<Int> = .constant(0)) {
+    init(showingHistoryView: Binding<Bool> = .constant(false), showingInsightsView: Binding<Bool> = .constant(false), selectedTab: Binding<Int> = .constant(0)) {
         _showingHistoryView = showingHistoryView
+        _showingInsightsView = showingInsightsView
         _selectedTab = selectedTab
     }
 
@@ -277,30 +278,14 @@ struct TodayView: View {
                 .buttonStyle(.plain)
 
                 // Screen time section
-                HStack(alignment: .lastTextBaseline) {
-                    Text("SCREEN TIME")
-                        .font(.inter(11, weight: .semibold))
-                        .foregroundColor(.focusMuted)
-                        .tracking(0.6)
-
-                    Spacer()
-
-                    Button(action: {
-                        HapticManager.shared.impact()
-                        showingInsightsView = true
-                    }) {
-                        HStack(spacing: 2) {
-                            Text("See all")
-                                .font(.inter(13, weight: .medium))
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold))
-                        }
-                        .foregroundColor(.focusAccent)
-                    }
-                }
-                .padding(.horizontal, 4)
-                .padding(.top, 22)
-                .padding(.bottom, 10)
+                Text("SCREEN TIME")
+                    .font(.inter(11, weight: .semibold))
+                    .foregroundColor(.focusMuted)
+                    .tracking(0.6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 22)
+                    .padding(.bottom, 10)
 
                 ScreenTimeWidget(onOpen: {
                     showingInsightsView = true
