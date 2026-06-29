@@ -107,7 +107,10 @@ struct PrimaryButton: View {
     var disabled: Bool = false
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticManager.shared.impact()
+            action()
+        }) {
             Text(title)
                 .font(.inter(16, weight: .semibold))
                 .foregroundColor(disabled ? Color.focusInk.opacity(0.35) : .white)
@@ -131,7 +134,10 @@ struct BackButton: View {
                 .frame(width: 36, height: 36)
                 .allowsHitTesting(false)
         } else {
-            Button(action: action) {
+            Button(action: {
+                HapticManager.shared.impact()
+                action()
+            }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.focusInk)
@@ -352,6 +358,7 @@ struct PermissionPrompt: View {
                     }
                     .onEnded { _ in
                         isPressed = false
+                        HapticManager.shared.impact()
                         onTap?()
                     }
             )
@@ -541,6 +548,7 @@ struct SettingsScreenMockup: View {
                 }
                 .onEnded { _ in
                     isPressed = false
+                    HapticManager.shared.impact()
                     onTap?()
                 }
         )

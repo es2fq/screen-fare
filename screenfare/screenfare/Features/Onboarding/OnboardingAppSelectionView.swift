@@ -149,7 +149,10 @@ struct OnboardingAppSelectionView: View {
                         )
 
                         // Edit selection button
-                        Button(action: { showingPicker = true }) {
+                        Button(action: {
+                            HapticManager.shared.impact()
+                            showingPicker = true
+                        }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 14, weight: .semibold))
@@ -163,7 +166,10 @@ struct OnboardingAppSelectionView: View {
                     }
                 } else {
                     // Empty state - fills available vertical space
-                    Button(action: { showingPicker = true }) {
+                    Button(action: {
+                        HapticManager.shared.impact()
+                        showingPicker = true
+                    }) {
                         VStack(spacing: 16) {
                             Spacer()
 

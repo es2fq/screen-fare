@@ -36,7 +36,6 @@ struct StrictModeEditorSheet: View {
                     Spacer()
                 }
                 .padding(.horizontal, 22)
-                .padding(.top, 12)
                 .padding(.bottom, 4)
 
                 // Large title

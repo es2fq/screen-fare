@@ -187,7 +187,7 @@ struct ChallengeTabView: View {
                                                 .font(.inter(15, weight: .medium))
                                                 .foregroundColor(.focusInk)
 
-                                            if type.isPro {
+                                            if type.isPro && !settings.isProSubscriber {
                                                 ProTag()
                                             }
                                         }
@@ -288,7 +288,7 @@ struct ChallengeTabView: View {
                                         .font(.instrumentSerif(26))
                                         .foregroundColor(.focusInk)
 
-                                    if selectedType.isPro {
+                                    if selectedType.isPro && !settings.isProSubscriber {
                                         ProTag()
                                     }
                                 }

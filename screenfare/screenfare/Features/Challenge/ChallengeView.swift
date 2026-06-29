@@ -133,7 +133,7 @@ struct ChallengeView: View {
                     }
                 }
                 .padding(.horizontal, 22)
-                .padding(.top, 44)
+                .padding(.top, 20)
                 .padding(.bottom, 4)
 
                 // Scrollable content area

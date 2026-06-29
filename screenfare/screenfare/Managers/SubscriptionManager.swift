@@ -98,13 +98,18 @@ class SubscriptionManager: ObservableObject {
 
     func loadProducts() async {
         do {
+            print("[SubscriptionManager] Loading products for IDs: \(productIDs)")
             let loadedProducts = try await Product.products(for: productIDs)
+            print("[SubscriptionManager] Successfully loaded \(loadedProducts.count) products:")
+            for product in loadedProducts {
+                print("  - \(product.id): \(product.displayName) - \(product.displayPrice)")
+            }
             products = loadedProducts.sorted { product1, product2 in
                 // Sort annual first (it's the recommended plan)
                 product1.id.contains("annual")
             }
         } catch {
-            print("Failed to load products: \(error)")
+            print("[SubscriptionManager] ❌ Failed to load products: \(error)")
         }
     }
 

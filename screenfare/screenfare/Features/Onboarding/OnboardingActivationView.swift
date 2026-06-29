@@ -133,7 +133,7 @@ struct OnboardingActivationView: View {
 
                         (Text("The gate is ")
                             .font(.instrumentSerif(34))
-                         + Text("up.")
+                         + Text("closed.")
                             .font(.instrumentSerif(34, italic: true)))
                             .foregroundColor(.focusInk)
                             .lineSpacing(34 * 0.05)
@@ -181,6 +181,7 @@ struct OnboardingActivationView: View {
         } else {
             // Phase 0 → 1: Gather complete, start sealing
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                HapticManager.shared.impact()
                 withAnimation {
                     phase = 1
                 }
@@ -189,6 +190,7 @@ struct OnboardingActivationView: View {
             // Phase 1 → 2: Sealing complete, show confirmed
             let sealDuration = 0.7 + Double(displayItems.count) * 0.18 + 0.5
             DispatchQueue.main.asyncAfter(deadline: .now() + sealDuration) {
+                HapticManager.shared.impact()
                 withAnimation {
                     phase = 2
                 }

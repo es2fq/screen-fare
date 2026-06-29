@@ -74,8 +74,7 @@ struct PaywallView: View {
                     }
                 }
                 .padding(.horizontal, 22)
-                .padding(.top, 44)
-                .padding(.bottom, 4)
+                .padding(.top, 20)
 
                 // Scrollable content area
                 ScrollView {
@@ -145,8 +144,6 @@ struct PaywallView: View {
                         }
                         .padding(.horizontal, 22)
 
-                        Spacer()
-                            .frame(minHeight: 40)
                     }
                 }
                 .scrollIndicators(.hidden)
