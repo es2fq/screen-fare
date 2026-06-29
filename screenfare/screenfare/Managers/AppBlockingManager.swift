@@ -261,6 +261,9 @@ class AppBlockingManager: ObservableObject {
         // Setup schedule monitors for auto-enable/disable
         setupScheduleMonitoring()
 
+        // Setup insights monitoring for screen time tracking
+        setupInsightsMonitoring()
+
         // Move all heavy work to background to keep UI responsive
         let appsToEncode = selectedApps.applicationTokens
         let categoriesToEncode = selectedApps.categoryTokens
@@ -379,6 +382,9 @@ class AppBlockingManager: ObservableObject {
 
         // Stop schedule monitors
         stopScheduleMonitoring()
+
+        // Stop insights monitoring
+        stopInsightsMonitoring()
 
         // Clear all shields
         store.shield.applications = nil
@@ -835,6 +841,36 @@ class AppBlockingManager: ObservableObject {
             print("[AppBlockingManager] 🛑 Stopped \(activeScheduleMonitors.count) schedule monitors")
             activeScheduleMonitors.removeAll()
         }
+    }
+
+    // MARK: - Insights Monitoring
+
+    func setupInsightsMonitoring() {
+        // Set up DeviceActivity monitoring for screen time insights
+        // This runs 24/7 to track usage of ALL apps for reporting
+
+        let activityName = DeviceActivityName("insights.daily")
+
+        // Create a daily schedule that resets at midnight
+        let schedule = DeviceActivitySchedule(
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
+            repeats: true
+        )
+
+        do {
+            // Monitor all apps (no filter = all apps)
+            try activityCenter.startMonitoring(activityName, during: schedule)
+            print("[AppBlockingManager] ✅ Insights monitoring started for all apps")
+        } catch {
+            print("[AppBlockingManager] ⚠️ Failed to start insights monitoring: \(error)")
+        }
+    }
+
+    func stopInsightsMonitoring() {
+        let activityName = DeviceActivityName("insights.daily")
+        activityCenter.stopMonitoring([activityName])
+        print("[AppBlockingManager] 🛑 Stopped insights monitoring")
     }
 
     private func handleScheduleChange() {

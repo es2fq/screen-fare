@@ -17,9 +17,9 @@ enum ChallengeType: String, CaseIterable {
 
     var isPro: Bool {
         switch self {
-        case .memory:
+        case .memory, .breathing:
             return true
-        case .math, .typing, .breathing:
+        case .math, .typing:
             return false
         }
     }

@@ -11,7 +11,7 @@ import StoreKit
 
 struct PaywallView: View {
     @Environment(\.dismiss) var dismiss
-    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var selectedPlan: SubscriptionPlan = .annual
     @State private var isPurchasing = false
     @State private var showError: String?

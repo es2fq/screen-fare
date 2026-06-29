@@ -649,6 +649,7 @@ struct ScheduleSection: View {
 struct StrictModeSection: View {
     @ObservedObject private var settings = SettingsManager.shared
     @Binding var showingStrictModeEditor: Bool
+    @State private var showPaywall: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -662,6 +663,13 @@ struct StrictModeSection: View {
 
             Button(action: {
                 HapticManager.shared.impact()
+
+                // Check if user is not subscribed - show paywall
+                if !settings.isProSubscriber {
+                    showPaywall = true
+                    return
+                }
+
                 showingStrictModeEditor = true
             }) {
                 AppCard(padding: EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)) {
@@ -678,9 +686,15 @@ struct StrictModeSection: View {
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Lock changes")
-                                .font(.inter(15, weight: .medium))
-                                .foregroundColor(.focusInk)
+                            HStack(spacing: 6) {
+                                Text("Lock changes")
+                                    .font(.inter(15, weight: .medium))
+                                    .foregroundColor(.focusInk)
+
+                                if !settings.isProSubscriber {
+                                    ProTag()
+                                }
+                            }
 
                             Text(strictModeSummary)
                                 .font(.inter(12.5))
@@ -696,6 +710,9 @@ struct StrictModeSection: View {
                 }
             }
             .buttonStyle(PlainButtonStyle())
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
         }
     }
 

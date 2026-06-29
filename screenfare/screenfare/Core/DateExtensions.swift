@@ -40,3 +40,13 @@ extension Date {
         Calendar.current.startOfDay(for: self)
     }
 }
+
+extension Calendar {
+    /// Converts a date to a "YYYY-MM-DD" string
+    func dateString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.calendar = self
+        return formatter.string(from: date)
+    }
+}

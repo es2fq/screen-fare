@@ -23,6 +23,13 @@ struct DailyStats: Codable {
     }
 }
 
+// Data structure for week chart display
+struct DayChartData {
+    let dayLabel: String  // M, T, W, etc.
+    let minutes: Int
+    let isToday: Bool
+}
+
 @MainActor
 class StatsManager: ObservableObject {
     static let shared = StatsManager()
@@ -30,6 +37,7 @@ class StatsManager: ObservableObject {
     @Published private(set) var todayStats: DailyStats
 
     private let storageKey = "com.screenfare.dailyStats"
+    private let historicalKey = "com.screenfare.historicalStats"  // Last 7 days
     private let sharedDefaults = UserDefaults.appGroup
 
     private init() {
@@ -113,12 +121,93 @@ class StatsManager: ObservableObject {
         TimeInterval(todayStats.timeSpentSeconds).formattedTimeSpent()
     }
 
+    // MARK: - Week Data
+
+    var weekData: [DayChartData] {
+        // Get last 7 days of data
+        let calendar = Calendar.current
+        let today = Date()
+        var result: [DayChartData] = []
+
+        for dayOffset in (0..<7).reversed() {
+            guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: today) else { continue }
+            let isToday = dayOffset == 0
+
+            // Get day label (M, T, W, etc.)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "E"
+            let dayLabel = String(formatter.string(from: date).prefix(1))
+
+            // Get minutes for this day
+            let dateString = calendar.dateString(from: date)
+            let minutes: Int
+
+            if isToday {
+                minutes = todayStats.timeSpentSeconds / 60
+            } else {
+                minutes = getHistoricalMinutes(for: dateString)
+            }
+
+            result.append(DayChartData(dayLabel: dayLabel, minutes: minutes, isToday: isToday))
+        }
+
+        return result
+    }
+
+    var yesterdaySeconds: Int {
+        let calendar = Calendar.current
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) else {
+            return 0
+        }
+        let yesterdayString = calendar.dateString(from: yesterday)
+        return getHistoricalSeconds(for: yesterdayString)
+    }
+
     // MARK: - Persistence
 
     private func saveStats() {
         if let encoded = try? JSONEncoder().encode(todayStats) {
             sharedDefaults?.set(encoded, forKey: storageKey)
         }
+
+        // Also save to historical data
+        saveToHistorical(todayStats)
+    }
+
+    private func saveToHistorical(_ stats: DailyStats) {
+        // Load existing historical data
+        var historical = loadHistoricalStats()
+        historical[stats.date] = stats
+
+        // Keep only last 30 days
+        let calendar = Calendar.current
+        let cutoffDate = calendar.date(byAdding: .day, value: -30, to: Date())!
+        let cutoffString = calendar.dateString(from: cutoffDate)
+
+        historical = historical.filter { $0.key >= cutoffString }
+
+        // Save back
+        if let encoded = try? JSONEncoder().encode(historical) {
+            sharedDefaults?.set(encoded, forKey: historicalKey)
+        }
+    }
+
+    private func loadHistoricalStats() -> [String: DailyStats] {
+        guard let data = sharedDefaults?.data(forKey: historicalKey),
+              let stats = try? JSONDecoder().decode([String: DailyStats].self, from: data) else {
+            return [:]
+        }
+        return stats
+    }
+
+    private func getHistoricalMinutes(for dateString: String) -> Int {
+        let historical = loadHistoricalStats()
+        return (historical[dateString]?.timeSpentSeconds ?? 0) / 60
+    }
+
+    private func getHistoricalSeconds(for dateString: String) -> Int {
+        let historical = loadHistoricalStats()
+        return historical[dateString]?.timeSpentSeconds ?? 0
     }
 
     private func checkAndResetIfNewDay() {

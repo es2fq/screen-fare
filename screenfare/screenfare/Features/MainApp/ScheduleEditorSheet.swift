@@ -19,6 +19,9 @@ struct ScheduleEditorSheet: View {
     // Strict mode gate
     @State private var showGate: ChallengeGateData?
 
+    // Paywall for pro features
+    @State private var showPaywall: Bool = false
+
     // Check if there are unsaved changes
     private var hasUnsavedChanges: Bool {
         // Mode changed
@@ -89,8 +92,17 @@ struct ScheduleEditorSheet: View {
 
                             SegmentButton(
                                 title: "Scheduled",
+                                showProTag: !settings.isProSubscriber,
                                 isSelected: draft.mode == .scheduled,
-                                action: { draft.mode = .scheduled }
+                                action: {
+                                    // Check if user is not subscribed - show paywall
+                                    if !settings.isProSubscriber {
+                                        showPaywall = true
+                                        return
+                                    }
+
+                                    draft.mode = .scheduled
+                                }
                             )
                         }
                         .padding(4)
@@ -178,6 +190,9 @@ struct ScheduleEditorSheet: View {
                 difficulty: settings.challengeDifficulty.numericLevel
             )
             .presentationBackground(.clear)
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
         }
     }
 
@@ -329,6 +344,7 @@ struct ScheduleEditorSheet: View {
 
 struct SegmentButton: View {
     let title: String
+    var showProTag: Bool = false
     let isSelected: Bool
     let action: () -> Void
 
@@ -337,15 +353,21 @@ struct SegmentButton: View {
             HapticManager.shared.impact()
             action()
         }) {
-            Text(title)
-                .font(.inter(14, weight: .semibold))
-                .foregroundColor(isSelected ? .focusInk : .focusMuted)
-                .frame(maxWidth: .infinity)
-                .frame(height: 36)
-                .background(isSelected ? Color.white : Color.clear)
-                .cornerRadius(9)
-                .shadow(color: isSelected ? Color.black.opacity(0.08) : .clear, radius: 3, y: 1)
-                .contentShape(Rectangle())
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.inter(14, weight: .semibold))
+                    .foregroundColor(isSelected ? .focusInk : .focusMuted)
+
+                if showProTag {
+                    ProTag()
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 36)
+            .background(isSelected ? Color.white : Color.clear)
+            .cornerRadius(9)
+            .shadow(color: isSelected ? Color.black.opacity(0.08) : .clear, radius: 3, y: 1)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }

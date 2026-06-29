@@ -28,6 +28,10 @@ struct TodayView: View {
     @Binding var showingHistoryView: Bool
     @State private var dragOffset: CGFloat = 0
 
+    // Insights view state
+    @State private var showingInsightsView = false
+    @State private var insightsDragOffset: CGFloat = 0
+
     // Tab navigation
     @Binding var selectedTab: Int
 
@@ -47,9 +51,10 @@ struct TodayView: View {
         ZStack {
             // MAIN TODAY LAYER
             mainTodayLayer
-                .offset(x: showingHistoryView ? -90 : 0)
-                .brightness(showingHistoryView ? -0.03 : 0)
+                .offset(x: (showingHistoryView || showingInsightsView) ? -90 : 0)
+                .brightness((showingHistoryView || showingInsightsView) ? -0.03 : 0)
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingHistoryView)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingInsightsView)
                 .animation(nil, value: dragOffset) // Don't animate background during drag
 
             // HISTORY VIEW LAYER
@@ -60,6 +65,16 @@ struct TodayView: View {
                 .animation(.interactiveSpring(), value: dragOffset)
                 .swipeBackGesture(isActive: showingHistoryView, dragOffset: $dragOffset, onDismiss: {
                     showingHistoryView = false
+                })
+
+            // INSIGHTS VIEW LAYER
+            insightsLayer
+                .offset(x: showingInsightsView ? insightsDragOffset : UIScreen.main.bounds.width)
+                .shadow(color: Color.black.opacity(0.06), radius: 15, x: -6, y: 0)
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: showingInsightsView)
+                .animation(.interactiveSpring(), value: insightsDragOffset)
+                .swipeBackGesture(isActive: showingInsightsView, dragOffset: $insightsDragOffset, onDismiss: {
+                    showingInsightsView = false
                 })
         }
         .onAppear {
@@ -261,6 +276,36 @@ struct TodayView: View {
                 }
                 .buttonStyle(.plain)
 
+                // Screen time section
+                HStack(alignment: .lastTextBaseline) {
+                    Text("SCREEN TIME")
+                        .font(.inter(11, weight: .semibold))
+                        .foregroundColor(.focusMuted)
+                        .tracking(0.6)
+
+                    Spacer()
+
+                    Button(action: {
+                        HapticManager.shared.impact()
+                        showingInsightsView = true
+                    }) {
+                        HStack(spacing: 2) {
+                            Text("See all")
+                                .font(.inter(13, weight: .medium))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundColor(.focusAccent)
+                    }
+                }
+                .padding(.horizontal, 4)
+                .padding(.top, 22)
+                .padding(.bottom, 10)
+
+                ScreenTimeWidget(onOpen: {
+                    showingInsightsView = true
+                })
+
                 // Unlocked now section - show unlocked apps and categories with countdown
                 if hasActiveUnlocks {
                     UnlockedNowSection(
@@ -349,6 +394,12 @@ struct TodayView: View {
 
     private var historyLayer: some View {
         HistoryView(onClose: { showingHistoryView = false })
+    }
+
+    // MARK: - Insights Layer
+
+    private var insightsLayer: some View {
+        InsightsView(onClose: { showingInsightsView = false })
     }
 
     // MARK: - Strict Mode Protection

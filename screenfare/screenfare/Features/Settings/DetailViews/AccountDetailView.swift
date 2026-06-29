@@ -11,7 +11,7 @@ struct AccountDetailView: View {
     @ObservedObject var settings: SettingsManager
     @Binding var showToast: ToastData?
     @Binding var showConfirm: ConfirmDialogData?
-    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var showPaywall = false
 
     var body: some View {
