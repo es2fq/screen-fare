@@ -11,8 +11,8 @@ import SwiftUI
 
 @main
 struct ScreenFareReportExtension: DeviceActivityReportExtension {
-    var body: some DeviceActivityReportScene {
-        // Full insights report
+    nonisolated var body: some DeviceActivityReportScene {
+        // Full insights report (unfiltered - manually separates total vs blocked)
         TotalActivityReport { totalActivity in
             TotalActivityView(config: totalActivity)
         }

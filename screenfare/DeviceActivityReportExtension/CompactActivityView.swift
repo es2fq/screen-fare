@@ -15,9 +15,9 @@ struct CompactActivityView: View {
             // Left side: Total time + delta
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    // Total time (Instrument Serif Italic to match "Today.")
+                    // Total time
                     Text(formatMinutes(config.totalMinutes))
-                        .font(.custom("InstrumentSerif-Italic", size: 40))
+                        .font(.custom("InstrumentSerif-Regular", size: 40))
                         .foregroundColor(Color(red: 0.1, green: 0.1, blue: 0.1))
                         .fixedSize()  // Don't constrain - let it take natural width
 

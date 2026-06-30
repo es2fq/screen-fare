@@ -279,6 +279,11 @@ class AppBlockingManager: ObservableObject {
                 defaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
             }
 
+            // Note: The tokens themselves are already saved above with keys:
+            // - "com.screenfare.selectedApps" (ApplicationToken set)
+            // - "com.screenfare.selectedCategories" (ActivityCategoryToken set)
+            // The report extension will decode these tokens directly and compare them
+
             // Apply shields on main actor (only if within schedule)
             await MainActor.run { [weak self] in
                 guard let self = self else { return }

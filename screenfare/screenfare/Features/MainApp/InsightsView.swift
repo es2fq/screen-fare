@@ -48,12 +48,9 @@ struct InsightsView: View {
 
                 // Title
                 HStack {
-                    (Text("Insights")
+                    Text("Insights")
                         .font(.instrumentSerif(34))
-                     + Text(".")
-                        .font(.instrumentSerif(34, italic: true))
-                        .foregroundColor(.focusMuted))
-                    .foregroundColor(.focusInk)
+                        .foregroundColor(.focusInk)
 
                     Spacer()
                 }
@@ -61,34 +58,36 @@ struct InsightsView: View {
                 .padding(.top, 4)
                 .padding(.bottom, 12)
 
+                // Segmented control (fixed, not scrollable)
+                segmentedControl
+                    .padding(.horizontal, 22)
+                    .padding(.bottom,  20)
+
                 // Scrollable content
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Segmented control
-                        segmentedControl
-                            .padding(.horizontal, 22)
 
-                        // DeviceActivityReport - embedded here
-                        // The system will render the actual values
-                        DeviceActivityReport(
-                            DeviceActivityReport.Context("Total Activity"),
-                            filter: activityFilter
-                        )
-                        .padding(.horizontal, 22)
-                        .padding(.top, 16)
+                        // Total activity report (unfiltered - ALL apps)
+                        // TotalActivityReport will manually separate blocked vs total
+                        ZStack(alignment: .top) {
+                            DeviceActivityReport(
+                                DeviceActivityReport.Context("Total Activity"),
+                                filter: totalActivityFilter
+                            )
+                            .padding(EdgeInsets(top: 0, leading: 22, bottom: 20, trailing: 22))
+                            .frame(height: 1200)
+                            .allowsHitTesting(false)
 
-                        // Privacy note
-                        reportNote
-                            .padding(.horizontal, 22)
-                            .padding(.top, 18)
-
-                        Spacer().frame(height: 40)
+                            // Transparent overlay to make scrolling work
+                            // Note: Using white.opacity(0.001) instead of .clear because Color.clear doesn't register touches
+                            Color.white.opacity(0.001)
+                                .contentShape(Rectangle())
+                        }
                     }
                 }
                 .scrollIndicators(.hidden)
             }
             .safeAreaPadding(.top)
-            .padding(.bottom, 90)
         }
     }
 
@@ -117,40 +116,51 @@ struct InsightsView: View {
         .cornerRadius(13)
     }
 
-    // MARK: - Activity Filter
+    // MARK: - Activity Filters
 
-    private var activityFilter: DeviceActivityFilter {
-        // Use hourly segments for more detailed breakdown
+    // Total activity filter (unfiltered - shows ALL device activity)
+    private var totalActivityFilter: DeviceActivityFilter {
+        let calendar = Calendar.current
+        let now = Date()
+
+        if range == .today {
+            // Today only - use hourly segments for detailed breakdown
+            let interval = calendar.dateInterval(of: .day, for: now)!
+            return DeviceActivityFilter(
+                segment: .hourly(during: interval),
+                users: .all,
+                devices: .init([.iPhone, .iPad])
+            )
+        } else {
+            // Last 7 days (today + previous 6 days) - matches widget behavior
+            let startOfToday = calendar.startOfDay(for: now)
+            let weekAgo = calendar.date(byAdding: .day, value: -6, to: startOfToday)!
+            let endOfToday = calendar.date(byAdding: .day, value: 1, to: startOfToday)!
+            let interval = DateInterval(start: weekAgo, end: endOfToday)
+            return DeviceActivityFilter(
+                segment: .daily(during: interval),
+                users: .all,
+                devices: .init([.iPhone, .iPad])
+            )
+        }
+    }
+
+    // Blocked activity filter (filtered to selected apps/categories only)
+    private var blockedActivityFilter: DeviceActivityFilter {
         let interval = range == .today ?
             Calendar.current.dateInterval(of: .day, for: Date())! :
             Calendar.current.dateInterval(of: .weekOfYear, for: Date())!
 
+        // Filter to ONLY blocked apps/categories
         let filter = DeviceActivityFilter(
             segment: .hourly(during: interval),
             users: .all,
-            devices: .init([.iPhone, .iPad])
+            devices: .init([.iPhone, .iPad]),
+            applications: blockingManager.selectedApps.applicationTokens,
+            categories: blockingManager.selectedApps.categoryTokens
         )
 
         return filter
-    }
-
-    // MARK: - Privacy Note
-
-    private var reportNote: some View {
-        HStack(alignment: .top, spacing: 9) {
-            // Shield icon
-            Image(systemName: "shield")
-                .font(.system(size: 15))
-                .foregroundColor(.focusMuted)
-                .padding(.top, 1)
-
-            Text("Measured by iOS Screen Time for all apps on your device. Screen Fare styles this view — it never reads the numbers behind it.")
-                .font(.inter(11.5))
-                .foregroundColor(.focusMuted)
-                .lineSpacing(11.5 * 0.45)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, 4)
     }
 }
 
