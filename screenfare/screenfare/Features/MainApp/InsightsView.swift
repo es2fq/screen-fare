@@ -65,24 +65,21 @@ struct InsightsView: View {
 
                 // Scrollable content
                 ScrollView {
-                    VStack(spacing: 0) {
+                    // Total activity report (unfiltered - ALL apps)
+                    // TotalActivityReport will manually separate blocked vs total
+                    ZStack(alignment: .top) {
+                        DeviceActivityReport(
+                            DeviceActivityReport.Context("Total Activity"),
+                            filter: totalActivityFilter
+                        )
+                        .padding(EdgeInsets(top: 0, leading: 22, bottom: 0, trailing: 22))
+                        .frame(height: 1200)
+                        .allowsHitTesting(false)
 
-                        // Total activity report (unfiltered - ALL apps)
-                        // TotalActivityReport will manually separate blocked vs total
-                        ZStack(alignment: .top) {
-                            DeviceActivityReport(
-                                DeviceActivityReport.Context("Total Activity"),
-                                filter: totalActivityFilter
-                            )
-                            .padding(EdgeInsets(top: 0, leading: 22, bottom: 20, trailing: 22))
-                            .frame(height: 1200)
-                            .allowsHitTesting(false)
-
-                            // Transparent overlay to make scrolling work
-                            // Note: Using white.opacity(0.001) instead of .clear because Color.clear doesn't register touches
-                            Color.white.opacity(0.001)
-                                .contentShape(Rectangle())
-                        }
+                        // Transparent overlay to make scrolling work
+                        // Note: Using white.opacity(0.001) instead of .clear because Color.clear doesn't register touches
+                        Color.white.opacity(0.001)
+                            .contentShape(Rectangle())
                     }
                 }
                 .scrollIndicators(.hidden)
