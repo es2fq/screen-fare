@@ -24,8 +24,6 @@ extension DeviceActivityReport.Context {
 struct ActivityConfig: Sendable {
     let totalMinutes: Int       // Total device time (ALL apps)
     let blockedMinutes: Int     // Time on blocked apps only
-    let previousMinutes: Int    // For delta calculation (total)
-    let previousBlockedMinutes: Int  // For blocked delta
     let dailyData: [DayData]    // For week bars (total time)
     let hourlyData: [HourData]  // For hour-by-hour chart
     let topApps: [AppData]      // ALL apps for per-app breakdown
@@ -76,7 +74,10 @@ struct TotalActivityReport: DeviceActivityReportScene {
         let calendar = Calendar.current
         var totalSeconds: TimeInterval = 0
         var blockedSeconds: TimeInterval = 0
-        var appUsageMap: [String: (token: ApplicationToken?, app: Application, duration: TimeInterval)] = [:]  // Store token + app + duration
+        // Use bounded array instead of unbounded map to prevent memory explosion
+        // Only track top 10 apps instead of storing all 100+ apps in memory
+        var topApps: [(id: String, token: ApplicationToken?, app: Application, duration: TimeInterval)] = []
+        let maxAppsToTrack = 10
         var hourlyUsageMap: [Int: TimeInterval] = [:]  // Hour (0-23) -> duration
         var dailyUsageMap: [String: TimeInterval] = [:]  // Date string -> duration
         var totalPickups = 0
@@ -117,16 +118,15 @@ struct TotalActivityReport: DeviceActivityReportScene {
         var appIndex = 0
         for await deviceData in data {
             for await segment in deviceData.activitySegments {
-                // Add segment total to overall total
-                totalSeconds += segment.totalActivityDuration
-
-                // Track date range
+                // Track date range for all segments
                 if minDate == nil || segment.dateInterval.start < minDate! {
                     minDate = segment.dateInterval.start
                 }
                 if maxDate == nil || segment.dateInterval.end > maxDate! {
                     maxDate = segment.dateInterval.end
                 }
+
+                // Don't add to totalSeconds here - we'll calculate it later after determining if it's week view
 
                 // Extract hour from segment for hourly chart
                 let hour = calendar.component(.hour, from: segment.dateInterval.start)
@@ -188,12 +188,19 @@ struct TotalActivityReport: DeviceActivityReportScene {
 
                         let appId = String(appHash)  // Use hashValue as unique ID for tracking
 
-                        if let existing = appUsageMap[appId] {
-                            // App already tracked, add to duration
-                            appUsageMap[appId] = (token: appToken, app: appObject, duration: existing.duration + appDuration)
+                        // Bounded app tracking: only keep top N apps to prevent memory explosion
+                        if let index = topApps.firstIndex(where: { $0.id == appId }) {
+                            // App already in top list, update duration
+                            topApps[index].duration += appDuration
+                        } else if topApps.count < maxAppsToTrack {
+                            // Haven't reached limit, add new app
+                            topApps.append((id: appId, token: appToken, app: appObject, duration: appDuration))
                         } else {
-                            // First time seeing this app
-                            appUsageMap[appId] = (token: appToken, app: appObject, duration: appDuration)
+                            // At capacity - only replace if this app has more usage than the minimum
+                            if let minIndex = topApps.indices.min(by: { topApps[$0].duration < topApps[$1].duration }),
+                               topApps[minIndex].duration < appDuration {
+                                topApps[minIndex] = (id: appId, token: appToken, app: appObject, duration: appDuration)
+                            }
                         }
                         appIndex += 1
                     }
@@ -210,24 +217,38 @@ struct TotalActivityReport: DeviceActivityReportScene {
             isWeekView = false
         }
 
+        // NOW calculate totals based on view type by summing from daily maps
+        let now = Date()
+        let startOfToday = calendar.startOfDay(for: now)
+
+        if isWeekView {
+            // Sum last 7 days (today + previous 6 days)
+            for dayOffset in 0...6 {
+                guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: startOfToday) else { continue }
+                let dayString = dayFormatter.string(from: date)
+                totalSeconds += dailyUsageMap[dayString] ?? 0
+            }
+        } else {
+            // Only today
+            let todayString = dayFormatter.string(from: startOfToday)
+            totalSeconds = dailyUsageMap[todayString] ?? 0
+        }
+
         let totalMinutes = max(0, Int(totalSeconds / 60))
         let blockedMinutes = max(0, Int(blockedSeconds / 60))
 
-        // For previous day/week comparison, estimate based on current data
-        let previousMinutes = totalMinutes > 0 ? Int(Double(totalMinutes) * 1.5) : (isWeekView ? 1820 : 270)
-        let previousBlockedMinutes = blockedMinutes > 0 ? Int(Double(blockedMinutes) * 1.5) : (isWeekView ? 496 : 44)
-
         // Generate daily data for the week using REAL data from dailyUsageMap
-        let today = Date()
         var dailyData: [DayData] = []
         var dailyDataWithFullNames: [(dayLabel: String, fullName: String, minutes: Int)] = []
 
+        // Create DateFormatter once outside loop for better performance
+        let labelFormatter = DateFormatter()
+        labelFormatter.dateFormat = "E"
+
         for dayOffset in (0..<7).reversed() {
-            guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: today) else { continue }
+            guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: startOfToday) else { continue }
             let isToday = dayOffset == 0
 
-            let labelFormatter = DateFormatter()
-            labelFormatter.dateFormat = "E"
             let fullDayName = labelFormatter.string(from: date) // e.g., "Mon", "Tue"
             let dayLabel = String(fullDayName.prefix(1))
 
@@ -243,16 +264,15 @@ struct TotalActivityReport: DeviceActivityReportScene {
             dailyDataWithFullNames.append((dayLabel: dayLabel, fullName: fullDayName, minutes: minutes))
         }
 
-        // Convert app usage map to sorted array (top 5 apps by duration)
-        var topApps: [AppData] = []
-
-        for (appId, appData) in appUsageMap.sorted(by: { $0.value.duration > $1.value.duration }).prefix(5) {
-            let minutes = Int(appData.duration / 60)
-            if minutes > 0 {
-                // Store both token (if available) and Application object
-                topApps.append(AppData(id: appId, token: appData.token, app: appData.app, minutes: minutes))
+        // Convert bounded app array to sorted array (top 5 apps by duration)
+        let topAppData = topApps
+            .sorted(by: { $0.duration > $1.duration })
+            .prefix(5)
+            .compactMap { appData -> AppData? in
+                let minutes = Int(appData.duration / 60)
+                guard minutes > 0 else { return nil }
+                return AppData(id: appData.id, token: appData.token, app: appData.app, minutes: minutes)
             }
-        }
 
         // Convert hourly usage map to array (all 24 hours)
         var hourlyData: [HourData] = []
@@ -263,8 +283,8 @@ struct TotalActivityReport: DeviceActivityReportScene {
         }
 
         // Calculate stats
-        let opens = max(1, totalPickups)
-        let blockedOpensCount = max(1, blockedPickups)
+        let opens = totalPickups
+        let blockedOpensCount = blockedPickups
         let longestSessionMinutes = longestSessionDuration > 0 ? Int(longestSessionDuration / 60) : nil
 
         // Find busiest day with full name
@@ -273,23 +293,21 @@ struct TotalActivityReport: DeviceActivityReportScene {
         let stats = ActivityStats(
             opens: opens,
             blockedOpens: blockedOpensCount,
-            perDay: max(1, blockedOpensCount / 7),
+            perDay: blockedOpensCount / 7,
             busiest: busiestDay,
             firstPickupTime: firstPickupTime,
             firstBlockedOpenTime: firstBlockedOpenTime,
             longestSessionMinutes: longestSessionMinutes
         )
 
-        logger.info("Report complete: \(totalMinutes)m total, \(blockedMinutes)m blocked (\(topApps.count) apps, \(opens) pickups)")
+        logger.info("Report complete: \(totalMinutes)m total, \(blockedMinutes)m blocked (\(topAppData.count) apps, \(opens) pickups)")
 
         return ActivityConfig(
             totalMinutes: totalMinutes,
             blockedMinutes: blockedMinutes,
-            previousMinutes: previousMinutes,
-            previousBlockedMinutes: previousBlockedMinutes,
             dailyData: dailyData,
             hourlyData: hourlyData,
-            topApps: topApps,
+            topApps: topAppData,
             stats: stats,
             isWeekView: isWeekView
         )
@@ -307,41 +325,17 @@ struct TodayStatsReport: DeviceActivityReportScene {
     let content: (TodayStatsConfig) -> TodayStatsView
 
     func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> TodayStatsConfig {
-        let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
         var blockedSeconds: TimeInterval = 0
 
-        // Load selected apps/categories tokens
-        var selectedAppTokens = Set<ApplicationToken>()
-        var selectedCategoryTokens = Set<ActivityCategoryToken>()
-
-        if let tokensData = sharedDefaults?.data(forKey: "com.screenfare.selectedApps"),
-           let tokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: tokensData) {
-            selectedAppTokens = tokens
-        }
-
-        if let tokensData = sharedDefaults?.data(forKey: "com.screenfare.selectedCategories"),
-           let tokens = try? JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: tokensData) {
-            selectedCategoryTokens = tokens
-        }
-
-        let canSeparateBlocked = !selectedAppTokens.isEmpty || !selectedCategoryTokens.isEmpty
-
-        // Iterate through activity data (hourly segments for today)
-        if canSeparateBlocked {
-            for await deviceData in data {
-                for await segment in deviceData.activitySegments {
-                    for await category in segment.categories {
-                        let categoryToken = category.category.token
-                        let isCategoryBlocked = categoryToken != nil && selectedCategoryTokens.contains(categoryToken!)
-
-                        for await app in category.applications {
-                            let appToken = app.application.token
-                            let isAppBlocked = appToken != nil && selectedAppTokens.contains(appToken!)
-
-                            if isAppBlocked || isCategoryBlocked {
-                                blockedSeconds += app.totalActivityDuration
-                            }
-                        }
+        // Data is pre-filtered to blocked apps/categories only
+        // We need to iterate through individual apps because segment.totalActivityDuration
+        // includes ALL apps, not just the filtered ones
+        for await deviceData in data {
+            for await segment in deviceData.activitySegments {
+                for await category in segment.categories {
+                    for await app in category.applications {
+                        // Sum individual app durations (data is already filtered, so no token check needed)
+                        blockedSeconds += app.totalActivityDuration
                     }
                 }
             }

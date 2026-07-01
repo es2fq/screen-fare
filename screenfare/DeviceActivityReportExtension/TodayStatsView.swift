@@ -11,10 +11,13 @@ struct TodayStatsView: View {
     let config: TodayStatsConfig
 
     var body: some View {
-        Text(formatMinutes(config.blockedMinutes))
-            .font(.custom("InstrumentSerif-Regular", size: 26))
-            .foregroundColor(Color(red: 0.1, green: 0.1, blue: 0.1))
-            .monospacedDigit()
+        VStack(alignment: .leading, spacing: 4) {
+            Text(formatMinutes(config.blockedMinutes))
+                .font(.custom("InstrumentSerif-Regular", size: 26))
+                .foregroundColor(Color(red: 0.1, green: 0.1, blue: 0.1))
+                .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func formatMinutes(_ minutes: Int) -> String {

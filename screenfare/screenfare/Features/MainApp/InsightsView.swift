@@ -129,7 +129,7 @@ struct InsightsView: View {
                 devices: .init([.iPhone, .iPad])
             )
         } else {
-            // Last 7 days (today + previous 6 days) - matches widget behavior
+            // Last 7 days (today + previous 6 days)
             let startOfToday = calendar.startOfDay(for: now)
             let weekAgo = calendar.date(byAdding: .day, value: -6, to: startOfToday)!
             let endOfToday = calendar.date(byAdding: .day, value: 1, to: startOfToday)!

@@ -65,7 +65,7 @@ struct TotalActivityView: View {
                 .tracking(0.12 * 11)
                 .textCase(.uppercase)
 
-            // Total time + delta
+            // Total time
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 // Total time in serif
                 if config.totalMinutes > 0 {
@@ -79,11 +79,6 @@ struct TotalActivityView: View {
                         .font(.custom("InstrumentSerif-Regular", size: 52))
                         .foregroundColor(Color(white: 0.8))
                         .fontWeight(.regular)
-                }
-
-                // Delta chip
-                if config.totalMinutes > 0 && config.previousMinutes > 0 {
-                    deltaChip
                 }
             }
             .padding(.top, 8)
@@ -306,32 +301,10 @@ struct TotalActivityView: View {
 
     // MARK: - Helpers
 
-    private var deltaChip: some View {
-        let delta = calculateDelta()
-        let isDown = delta > 0
-        let color = isDown ? Color.focusAccent : Color(white: 0.5)
-
-        return HStack(spacing: 4) {
-            // Arrow
-            Image(systemName: isDown ? "arrow.down" : "arrow.up")
-                .font(.system(size: 11, weight: .semibold))
-
-            Text("\(abs(delta))%")
-                .font(.system(size: 12.5, weight: .semibold))
-        }
-        .foregroundColor(color)
-        .fixedSize()
-    }
-
-    private func calculateDelta() -> Int {
-        guard config.previousMinutes > 0 else { return 0 }
-        return Int((1.0 - Double(config.totalMinutes) / Double(config.previousMinutes)) * 100)
-    }
-
     private var caption: String {
         config.isWeekView
-            ? "This week · last 7 days · vs last week"
-            : "Today so far · vs yesterday"
+            ? "This week · last 7 days"
+            : "Today so far"
     }
 
     // Stats for hero card (total device stats)
@@ -619,8 +592,6 @@ struct LockBadgeView: View {
     let mockConfig = ActivityConfig(
         totalMinutes: 208,
         blockedMinutes: 23,
-        previousMinutes: 270,
-        previousBlockedMinutes: 44,
         dailyData: [
             DayData(dayLabel: "M", minutes: 224, isToday: false),
             DayData(dayLabel: "T", minutes: 251, isToday: false),

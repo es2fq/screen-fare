@@ -491,10 +491,14 @@ struct TodayView: View {
         let now = Date()
         let interval = calendar.dateInterval(of: .day, for: now)!
 
+        // PRE-FILTER to only query blocked apps/categories
+        // This reduces data from 100+ apps to just the blocked subset
         return DeviceActivityFilter(
             segment: .hourly(during: interval),
             users: .all,
-            devices: .init([.iPhone, .iPad])
+            devices: .init([.iPhone, .iPad]),
+            applications: blockingManager.selectedApps.applicationTokens,
+            categories: blockingManager.selectedApps.categoryTokens
         )
     }
 }
