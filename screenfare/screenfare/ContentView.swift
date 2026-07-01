@@ -73,15 +73,21 @@ struct ContentView: View {
             if !settings.hasCompletedOnboarding {
                 showingLaunchAnimation = true
             } else if let launchTime = UserDefaults.standard.object(forKey: "appLaunchTime") as? TimeInterval {
+                // Single read operation on main thread (minimal I/O)
                 let launchScreenDuration = Date().timeIntervalSince1970 - launchTime
                 print("[ContentView] Launch screen was visible for: \(launchScreenDuration) seconds")
-                UserDefaults.standard.removeObject(forKey: "appLaunchTime")
 
                 // Show animation only if launch took longer than 2 seconds (cold start)
                 if launchScreenDuration > 2.0 {
                     showingLaunchAnimation = true
                 }
             }
+        }
+        .task {
+            // Clean up launch time key asynchronously (off main thread)
+            await Task.detached(priority: .utility) {
+                UserDefaults.standard.removeObject(forKey: "appLaunchTime")
+            }.value
         }
     }
 

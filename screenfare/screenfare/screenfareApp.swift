@@ -13,32 +13,23 @@ struct screenfareApp: App {
     @StateObject private var blockingManager = AppBlockingManager.shared
 
     init() {
-        // Store launch time for animation timing
+        // Capture launch time early (minimal I/O - just a write)
+        // This happens during app initialization, before views are rendered
+        // The time difference to onAppear indicates cold start duration
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "appLaunchTime")
 
-        // Setup notification categories
+        // Setup notification categories (no I/O)
         NotificationManager.shared.setupNotificationCategories()
-
-        // SYNCHRONOUS re-block check (safety net #3)
-        // Check if unlock timer expired while app was closed
-        if let expiryTimestamp = UserDefaults.appGroup?.double(forKey: "quotaEndTimestamp"),
-           UserDefaults.appGroup?.bool(forKey: "isCurrentlyUnlocked") == true {
-            let expiryTime = Date(timeIntervalSince1970: expiryTimestamp)
-            let now = Date()
-
-            if now >= expiryTime {
-                print("[App Init] ⏰ Unlock expired, re-locking synchronously")
-                // Re-block immediately before any async work
-                UserDefaults.appGroup?.set(false, forKey: "isCurrentlyUnlocked")
-                // The blockingManager will recalculate shields on startup
-            }
-        }
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(notificationManager)
+                .task {
+                    // Move UserDefaults operations to async context off main thread
+                    await performStartupTasks()
+                }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                     // Reload state when app becomes active
                     // Note: Re-locking is handled by DeviceActivityMonitor (survives app termination)
@@ -52,5 +43,25 @@ struct screenfareApp: App {
                     }
                 }
         }
+    }
+
+    private func performStartupTasks() async {
+        // Perform UserDefaults operations on background thread
+        await Task.detached(priority: .userInitiated) {
+            // SYNCHRONOUS re-block check (safety net #3)
+            // Check if unlock timer expired while app was closed
+            if let expiryTimestamp = UserDefaults.appGroup?.double(forKey: "quotaEndTimestamp"),
+               UserDefaults.appGroup?.bool(forKey: "isCurrentlyUnlocked") == true {
+                let expiryTime = Date(timeIntervalSince1970: expiryTimestamp)
+                let now = Date()
+
+                if now >= expiryTime {
+                    print("[App Init] ⏰ Unlock expired, re-locking asynchronously")
+                    // Re-block immediately before any async work
+                    UserDefaults.appGroup?.set(false, forKey: "isCurrentlyUnlocked")
+                    // The blockingManager will recalculate shields on startup
+                }
+            }
+        }.value
     }
 }

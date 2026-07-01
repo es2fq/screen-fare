@@ -17,6 +17,10 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
     private var categoryUnlocksCache: (data: Data, unlocks: [Data: Date], timestamp: Date)?
     private let cacheExpirySeconds: TimeInterval = 1.0 // Cache for 1 second
 
+    // Cache for brand icon to avoid repeated Bundle I/O
+    private static var cachedBrandIcon: UIImage?
+    private static var iconLoadAttempted = false
+
     override func configuration(shielding application: Application) -> ShieldConfiguration {
         // 1. Check schedule FIRST - if outside blocking window, no shield
         if !isBlockingCurrentlyActive() {
@@ -75,18 +79,34 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
         // #D8764A - Orange/terracotta accent for primary button (focusAccent)
         let buttonColor = UIColor(red: 0.847, green: 0.463, blue: 0.290, alpha: 1.0)
 
-        // Load and round the app icon
+        // Load and round the app icon (cached to avoid repeated Bundle I/O)
         let appIcon: UIImage? = {
+            // Return cached icon if available
+            if let cached = ShieldConfigurationExtension.cachedBrandIcon {
+                return cached
+            }
+
+            // Only attempt to load once
+            guard !ShieldConfigurationExtension.iconLoadAttempted else {
+                return nil
+            }
+
+            ShieldConfigurationExtension.iconLoadAttempted = true
+
             guard let image = UIImage(named: "BrandIcon") else { return nil }
             let size = CGSize(width: 60, height: 60)
             let cornerRadius: CGFloat = 13.5 // iOS app icon corner radius proportion
 
             let renderer = UIGraphicsImageRenderer(size: size)
-            return renderer.image { context in
+            let processedIcon = renderer.image { context in
                 let rect = CGRect(origin: .zero, size: size)
                 UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius).addClip()
                 image.draw(in: rect)
             }
+
+            // Cache the processed icon
+            ShieldConfigurationExtension.cachedBrandIcon = processedIcon
+            return processedIcon
         }()
 
         return ShieldConfiguration(

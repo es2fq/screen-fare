@@ -22,15 +22,8 @@ extension UserDefaults {
 struct TotalActivityView: View {
     let config: ActivityConfig
 
-    // Load blocked app tokens from shared UserDefaults
-    private var blockedAppTokens: Set<ApplicationToken> {
-        guard let sharedDefaults = UserDefaults.appGroup,
-              let data = sharedDefaults.data(forKey: "com.screenfare.selectedApps"),
-              let tokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: data) else {
-            return []
-        }
-        return tokens
-    }
+    // Load blocked app tokens from shared UserDefaults asynchronously to avoid main thread I/O
+    @State private var blockedAppTokens: Set<ApplicationToken> = []
 
     var body: some View {
         VStack(spacing: 16) {
@@ -49,6 +42,27 @@ struct TotalActivityView: View {
             Spacer()
         }
         .padding(.bottom, 20) // Bottom padding for last item
+        .task {
+            // Load blocked app tokens asynchronously on background thread to avoid main thread I/O
+            await loadBlockedAppTokens()
+        }
+    }
+
+    // MARK: - Async Token Loading
+
+    private func loadBlockedAppTokens() async {
+        // Run on background thread
+        let tokens = await Task.detached(priority: .userInitiated) {
+            guard let sharedDefaults = UserDefaults.appGroup,
+                  let data = sharedDefaults.data(forKey: "com.screenfare.selectedApps"),
+                  let tokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: data) else {
+                return Set<ApplicationToken>()
+            }
+            return tokens
+        }.value
+
+        // Update state on main thread
+        blockedAppTokens = tokens
     }
 
     // MARK: - Hero Card

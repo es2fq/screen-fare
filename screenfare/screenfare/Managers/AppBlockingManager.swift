@@ -114,21 +114,16 @@ class AppBlockingManager: ObservableObject {
 
     private var scheduleChangeObserver: NSObjectProtocol?
     private var memoryWarningObserver: NSObjectProtocol?
+    private var hasLoadedData = false
 
     private init() {
-        // Check authorization status on init
+        // Check authorization status on init (no I/O)
         checkAuthorizationStatus()
 
-        // Load persisted selected apps first
-        loadSelectedApps()
-
-        // Load persisted blocked apps state
-        loadBlockedApps()
-
-        // Load persisted temporary unlocks
-        loadTemporaryUnlocks()
-
-        // Note: Re-locking is handled by DeviceActivityMonitor (no need to restart timers)
+        // Defer data loading to async context
+        Task {
+            await loadDataAsync()
+        }
 
         // Listen for schedule changes
         scheduleChangeObserver = NotificationCenter.default.addObserver(
@@ -153,6 +148,21 @@ class AppBlockingManager: ObservableObject {
                 self.handleMemoryWarning()
             }
         }
+    }
+
+    private func loadDataAsync() async {
+        // Perform I/O operations on background thread
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+
+            // Load persisted data
+            await MainActor.run {
+                self.loadSelectedApps()
+                self.loadBlockedApps()
+                self.loadTemporaryUnlocks()
+                self.hasLoadedData = true
+            }
+        }.value
     }
 
     deinit {

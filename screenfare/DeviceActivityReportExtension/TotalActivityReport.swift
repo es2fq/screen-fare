@@ -75,9 +75,9 @@ struct TotalActivityReport: DeviceActivityReportScene {
         var totalSeconds: TimeInterval = 0
         var blockedSeconds: TimeInterval = 0
         // Use bounded array instead of unbounded map to prevent memory explosion
-        // Only track top 10 apps instead of storing all 100+ apps in memory
+        // Only track top 5 apps instead of storing all 100+ apps in memory
         var topApps: [(id: String, token: ApplicationToken?, app: Application, duration: TimeInterval)] = []
-        let maxAppsToTrack = 10
+        let maxAppsToTrack = 5
         var hourlyUsageMap: [Int: TimeInterval] = [:]  // Hour (0-23) -> duration
         var dailyUsageMap: [String: TimeInterval] = [:]  // Date string -> duration
         var totalPickups = 0
@@ -116,8 +116,19 @@ struct TotalActivityReport: DeviceActivityReportScene {
 
         // Iterate through all device activity data
         var appIndex = 0
+        var segmentCount = 0
+        let maxSegments = 1000 // Safety limit to prevent memory exhaustion
+
         for await deviceData in data {
             for await segment in deviceData.activitySegments {
+                segmentCount += 1
+
+                // Safety check: if we've processed too many segments, stop to avoid jetsam
+                if segmentCount > maxSegments {
+                    logger.warning("Reached segment limit (\(maxSegments)), stopping early to conserve memory")
+                    break
+                }
+
                 // Track date range for all segments
                 if minDate == nil || segment.dateInterval.start < minDate! {
                     minDate = segment.dateInterval.start
@@ -205,6 +216,11 @@ struct TotalActivityReport: DeviceActivityReportScene {
                         appIndex += 1
                     }
                 }
+            }
+
+            // Break outer loop if we hit segment limit
+            if segmentCount > maxSegments {
+                break
             }
         }
 

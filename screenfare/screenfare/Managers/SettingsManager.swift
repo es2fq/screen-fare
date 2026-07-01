@@ -138,89 +138,145 @@ class SettingsManager: ObservableObject {
     // MARK: - Subscription Status
     @Published var isProSubscriber: Bool = false
     private var subscriptionCancellable: AnyCancellable?
+    private var hasLoadedSettings = false
 
     private init() {
-        // Load saved settings or use defaults
-        let savedDuration = UserDefaults.standard.double(forKey: "unlockDuration")
-        self.unlockDuration = savedDuration > 0 ? savedDuration : 1800 // Default 30 minutes
+        // Initialize with defaults (no I/O for most, except critical UI state)
+        self.unlockDuration = 1800 // Default 30 minutes
+        self.challengeDifficulty = .medium
+        self.typingDifficulty = .medium
+        self.memoryGridSize = 3 // Default 3x3
+        self.memoryTilesToMatch = 4 // Default 4 tiles
+        self.breathingCycles = 3 // Default 3 cycles
+        self.challengeType = .math
 
-        if let savedDifficulty = UserDefaults.standard.string(forKey: "challengeDifficulty"),
-           let difficulty = ChallengeDifficulty(rawValue: savedDifficulty) {
-            self.challengeDifficulty = difficulty
-        } else {
-            self.challengeDifficulty = .medium
-        }
-
-        if let savedTypingDifficulty = UserDefaults.standard.string(forKey: "typingDifficulty"),
-           let difficulty = TypingDifficulty(rawValue: savedTypingDifficulty) {
-            self.typingDifficulty = difficulty
-        } else {
-            self.typingDifficulty = .medium
-        }
-
-        let savedGridSize = UserDefaults.standard.integer(forKey: "memoryGridSize")
-        self.memoryGridSize = savedGridSize > 0 ? savedGridSize : 3 // Default 3x3
-
-        let savedTilesToMatch = UserDefaults.standard.integer(forKey: "memoryTilesToMatch")
-        self.memoryTilesToMatch = savedTilesToMatch > 0 ? savedTilesToMatch : 4 // Default 4 tiles
-
-        let savedBreathingCycles = UserDefaults.standard.integer(forKey: "breathingCycles")
-        self.breathingCycles = savedBreathingCycles > 0 ? savedBreathingCycles : 3 // Default 3 cycles
-
-        if let savedType = UserDefaults.standard.string(forKey: "challengeType"),
-           let type = ChallengeType(rawValue: savedType) {
-            self.challengeType = type
-        } else {
-            self.challengeType = .math
-        }
-
+        // Load synchronously - needed immediately for ContentView onAppear animation logic
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
-        self.strictModeEnabled = UserDefaults.standard.bool(forKey: "strictModeEnabled")
+        self.strictModeEnabled = false
+        self.userName = "Screen Fare User"
+        self.userEmail = "user@example.com"
+        self.iCloudSyncEnabled = false
+        self.strictProtectOff = true
+        self.strictProtectRemove = false
+        self.strictProtectShorten = false
+        self.strictProtectChallenge = false
+        self.screenTimePermission = .granted
+        self.notificationPermission = .notDetermined
 
-        // Account settings
-        self.userName = UserDefaults.standard.string(forKey: "userName") ?? "Screen Fare User"
-        self.userEmail = UserDefaults.standard.string(forKey: "userEmail") ?? "user@example.com"
-        self.iCloudSyncEnabled = UserDefaults.standard.bool(forKey: "iCloudSyncEnabled")
-
-        // Strict mode protections (default to true for main protection, false for extras)
-        self.strictProtectOff = UserDefaults.standard.object(forKey: "strictProtectOff") as? Bool ?? true
-        self.strictProtectRemove = UserDefaults.standard.object(forKey: "strictProtectRemove") as? Bool ?? false
-        self.strictProtectShorten = UserDefaults.standard.object(forKey: "strictProtectShorten") as? Bool ?? false
-        self.strictProtectChallenge = UserDefaults.standard.object(forKey: "strictProtectChallenge") as? Bool ?? false
-
-        // Permissions
-        if let savedScreenTime = UserDefaults.standard.string(forKey: "screenTimePermission"),
-           let permission = PermissionStatus(rawValue: savedScreenTime) {
-            self.screenTimePermission = permission
-        } else {
-            self.screenTimePermission = .granted
+        // Load settings asynchronously
+        Task {
+            await loadSettingsAsync()
         }
-
-        // TODO: Re-enable once we have a step challenge
-        // if let savedHealth = UserDefaults.standard.string(forKey: "healthPermission"),
-        //    let permission = PermissionStatus(rawValue: savedHealth) {
-        //     self.healthPermission = permission
-        // } else {
-        //     self.healthPermission = .notDetermined
-        // }
-
-        if let savedNotification = UserDefaults.standard.string(forKey: "notificationPermission"),
-           let permission = PermissionStatus(rawValue: savedNotification) {
-            self.notificationPermission = permission
-        } else {
-            self.notificationPermission = .notDetermined
-        }
-
-        // Initial sync to App Group
-        UserDefaults.appGroup?.set(unlockDuration, forKey: "unlockDuration")
-        UserDefaults.appGroup?.set(challengeType.rawValue, forKey: "challengeType")
 
         // Subscribe to subscription manager changes
         subscriptionCancellable = SubscriptionManager.shared.$isProSubscriber
             .sink { [weak self] isProSubscriber in
                 self?.isProSubscriber = isProSubscriber
             }
+    }
+
+    private func loadSettingsAsync() async {
+        // Perform I/O operations on background thread
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+
+            // Read all settings from UserDefaults on background thread
+            // Note: hasCompletedOnboarding is loaded synchronously in init() for immediate UI needs
+            let savedDuration = UserDefaults.standard.double(forKey: "unlockDuration")
+            let savedDifficultyStr = UserDefaults.standard.string(forKey: "challengeDifficulty")
+            let savedTypingDifficultyStr = UserDefaults.standard.string(forKey: "typingDifficulty")
+            let savedGridSize = UserDefaults.standard.integer(forKey: "memoryGridSize")
+            let savedTilesToMatch = UserDefaults.standard.integer(forKey: "memoryTilesToMatch")
+            let savedBreathingCycles = UserDefaults.standard.integer(forKey: "breathingCycles")
+            let savedTypeStr = UserDefaults.standard.string(forKey: "challengeType")
+            let savedStrictMode = UserDefaults.standard.bool(forKey: "strictModeEnabled")
+            let savedUserName = UserDefaults.standard.string(forKey: "userName")
+            let savedUserEmail = UserDefaults.standard.string(forKey: "userEmail")
+            let savedICloudSync = UserDefaults.standard.bool(forKey: "iCloudSyncEnabled")
+            let savedProtectOff = UserDefaults.standard.object(forKey: "strictProtectOff") as? Bool
+            let savedProtectRemove = UserDefaults.standard.object(forKey: "strictProtectRemove") as? Bool
+            let savedProtectShorten = UserDefaults.standard.object(forKey: "strictProtectShorten") as? Bool
+            let savedProtectChallenge = UserDefaults.standard.object(forKey: "strictProtectChallenge") as? Bool
+            let savedScreenTimeStr = UserDefaults.standard.string(forKey: "screenTimePermission")
+            let savedNotificationStr = UserDefaults.standard.string(forKey: "notificationPermission")
+
+            // Update properties on main thread
+            await MainActor.run {
+                if savedDuration > 0 {
+                    self.unlockDuration = savedDuration
+                }
+
+                if let diffStr = savedDifficultyStr,
+                   let difficulty = ChallengeDifficulty(rawValue: diffStr) {
+                    self.challengeDifficulty = difficulty
+                }
+
+                if let typingDiffStr = savedTypingDifficultyStr,
+                   let difficulty = TypingDifficulty(rawValue: typingDiffStr) {
+                    self.typingDifficulty = difficulty
+                }
+
+                if savedGridSize > 0 {
+                    self.memoryGridSize = savedGridSize
+                }
+
+                if savedTilesToMatch > 0 {
+                    self.memoryTilesToMatch = savedTilesToMatch
+                }
+
+                if savedBreathingCycles > 0 {
+                    self.breathingCycles = savedBreathingCycles
+                }
+
+                if let typeStr = savedTypeStr,
+                   let type = ChallengeType(rawValue: typeStr) {
+                    self.challengeType = type
+                }
+
+                // hasCompletedOnboarding already loaded synchronously in init()
+                self.strictModeEnabled = savedStrictMode
+
+                if let userName = savedUserName {
+                    self.userName = userName
+                }
+
+                if let userEmail = savedUserEmail {
+                    self.userEmail = userEmail
+                }
+
+                self.iCloudSyncEnabled = savedICloudSync
+
+                if let protectOff = savedProtectOff {
+                    self.strictProtectOff = protectOff
+                }
+                if let protectRemove = savedProtectRemove {
+                    self.strictProtectRemove = protectRemove
+                }
+                if let protectShorten = savedProtectShorten {
+                    self.strictProtectShorten = protectShorten
+                }
+                if let protectChallenge = savedProtectChallenge {
+                    self.strictProtectChallenge = protectChallenge
+                }
+
+                if let screenTimeStr = savedScreenTimeStr,
+                   let permission = PermissionStatus(rawValue: screenTimeStr) {
+                    self.screenTimePermission = permission
+                }
+
+                if let notificationStr = savedNotificationStr,
+                   let permission = PermissionStatus(rawValue: notificationStr) {
+                    self.notificationPermission = permission
+                }
+
+                // Initial sync to App Group
+                UserDefaults.appGroup?.set(self.unlockDuration, forKey: "unlockDuration")
+                UserDefaults.appGroup?.set(self.challengeType.rawValue, forKey: "challengeType")
+
+                self.hasLoadedSettings = true
+            }
+        }.value
     }
 
     var unlockDurationText: String {
