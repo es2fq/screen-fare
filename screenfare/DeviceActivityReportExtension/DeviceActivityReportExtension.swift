@@ -21,5 +21,10 @@ struct ScreenFareReportExtension: DeviceActivityReportExtension {
         CompactActivityReport { compactActivity in
             CompactActivityView(config: compactActivity)
         }
+
+        // Today stats report (lightweight - only calculates blocked time for Today card)
+        TodayStatsReport { config in
+            TodayStatsView(config: config)
+        }
     }
 }

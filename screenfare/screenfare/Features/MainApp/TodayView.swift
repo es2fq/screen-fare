@@ -10,6 +10,7 @@ import SwiftUI
 import FamilyControls
 import ManagedSettings
 import Combine
+import DeviceActivity
 
 struct TodayView: View {
     @StateObject private var blockingManager = AppBlockingManager.shared
@@ -222,7 +223,25 @@ struct TodayView: View {
                         HStack(spacing: 0) {
                             StatPill(value: statsManager.blocksToday, label: "Blocks", textColor: .focusInk)
                             StatPill(value: statsManager.faresPaid, label: "Fares paid", textColor: .focusInk)
-                            StatPill(value: statsManager.timeSpent, label: "On blocked apps", textColor: .focusInk)
+
+                            // Blocked app time - embedded DeviceActivityReport
+                            ZStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    DeviceActivityReport(
+                                        DeviceActivityReport.Context("Today Blocked Apps Usage Time"),
+                                        filter: todayStatsFilter
+                                    )
+
+                                    Text("On blocked apps")
+                                        .font(.inter(11))
+                                        .foregroundColor(Color.focusInk.opacity(0.6))
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                                // Transparent overlay to allow tap handling
+                                Color.white.opacity(0.001)
+                                    .contentShape(Rectangle())
+                            }
                         }
                         .padding(.top, 22)
                         .overlay(
@@ -463,6 +482,20 @@ struct TodayView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
+    }
+
+    // MARK: - Activity Filter for Today Stats
+
+    private var todayStatsFilter: DeviceActivityFilter {
+        let calendar = Calendar.current
+        let now = Date()
+        let interval = calendar.dateInterval(of: .day, for: now)!
+
+        return DeviceActivityFilter(
+            segment: .hourly(during: interval),
+            users: .all,
+            devices: .init([.iPhone, .iPad])
+        )
     }
 }
 

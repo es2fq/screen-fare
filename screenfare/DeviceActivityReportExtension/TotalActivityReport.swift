@@ -15,6 +15,8 @@ import os
 extension DeviceActivityReport.Context {
     // Total activity context - shows total time on blocked apps
     static let totalActivity = Self("Total Activity")
+    // Today blocked apps usage time - calculates today's blocked app time only
+    static let todayBlockedAppsUsageTime = Self("Today Blocked Apps Usage Time")
 }
 
 // MARK: - Activity Data Configuration
@@ -291,5 +293,64 @@ struct TotalActivityReport: DeviceActivityReportScene {
             stats: stats,
             isWeekView: isWeekView
         )
+    }
+}
+
+// MARK: - Today Stats Report (Lightweight - only calculates blocked time)
+
+struct TodayStatsConfig: Sendable {
+    let blockedMinutes: Int
+}
+
+struct TodayStatsReport: DeviceActivityReportScene {
+    let context: DeviceActivityReport.Context = .todayBlockedAppsUsageTime
+    let content: (TodayStatsConfig) -> TodayStatsView
+
+    func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> TodayStatsConfig {
+        let sharedDefaults = UserDefaults(suiteName: "group.esong.screenfare.shared")
+        var blockedSeconds: TimeInterval = 0
+
+        // Load selected apps/categories tokens
+        var selectedAppTokens = Set<ApplicationToken>()
+        var selectedCategoryTokens = Set<ActivityCategoryToken>()
+
+        if let tokensData = sharedDefaults?.data(forKey: "com.screenfare.selectedApps"),
+           let tokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: tokensData) {
+            selectedAppTokens = tokens
+        }
+
+        if let tokensData = sharedDefaults?.data(forKey: "com.screenfare.selectedCategories"),
+           let tokens = try? JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: tokensData) {
+            selectedCategoryTokens = tokens
+        }
+
+        let canSeparateBlocked = !selectedAppTokens.isEmpty || !selectedCategoryTokens.isEmpty
+
+        // Iterate through activity data (hourly segments for today)
+        if canSeparateBlocked {
+            for await deviceData in data {
+                for await segment in deviceData.activitySegments {
+                    for await category in segment.categories {
+                        let categoryToken = category.category.token
+                        let isCategoryBlocked = categoryToken != nil && selectedCategoryTokens.contains(categoryToken!)
+
+                        for await app in category.applications {
+                            let appToken = app.application.token
+                            let isAppBlocked = appToken != nil && selectedAppTokens.contains(appToken!)
+
+                            if isAppBlocked || isCategoryBlocked {
+                                blockedSeconds += app.totalActivityDuration
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let blockedMinutes = max(0, Int(blockedSeconds / 60))
+
+        print("[TodayStatsReport] Blocked minutes today: \(blockedMinutes)")
+
+        return TodayStatsConfig(blockedMinutes: blockedMinutes)
     }
 }

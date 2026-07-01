@@ -177,20 +177,7 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         super.eventDidReachThreshold(event, activity: activity)
         print("[DeviceMonitor] eventDidReachThreshold: \(event.rawValue) for activity: \(activity.rawValue)")
-
-        // Check if this is a usage tracking event (format: "usage.Xmin")
-        if event.rawValue.starts(with: "usage."), event.rawValue.hasSuffix("min") {
-            // Extract minute number from event name
-            let minuteStr = event.rawValue
-                .replacingOccurrences(of: "usage.", with: "")
-                .replacingOccurrences(of: "min", with: "")
-
-            if let minute = Int(minuteStr) {
-                // Record 1 minute of usage (60 seconds)
-                recordTimeSpent(seconds: 60)
-                print("[DeviceMonitor] ⏱️ Minute \(minute) threshold reached, recorded 60s")
-            }
-        }
+        // Usage tracking removed - now using DeviceActivity comprehensive reporting
     }
 
     override func intervalWillStartWarning(for activity: DeviceActivityName) {
@@ -263,36 +250,6 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
     override func eventWillReachThresholdWarning(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         super.eventWillReachThresholdWarning(event, activity: activity)
-    }
-
-    private func recordTimeSpent(seconds: TimeInterval) {
-        let storageKey = "com.screenfare.dailyStats"
-        let today = Date.todayDateString()
-
-        var stats: DailyStats
-
-        // Read existing stats
-        if let data = sharedDefaults?.data(forKey: storageKey),
-           let decoded = try? JSONDecoder().decode(DailyStats.self, from: data),
-           decoded.date == today {
-            stats = decoded
-        } else {
-            stats = DailyStats(date: today)
-        }
-
-        // Add time spent
-        stats.timeSpentSeconds += Int(seconds)
-
-        // Save back to UserDefaults
-        if let encoded = try? JSONEncoder().encode(stats) {
-            sharedDefaults?.set(encoded, forKey: storageKey)
-            print("[DeviceMonitor] 📊 Time spent recorded: \(stats.timeSpentSeconds)s total")
-
-            // Notify main app that stats changed (for real-time UI updates)
-            let center = CFNotificationCenterGetDarwinNotifyCenter()
-            let notificationName = "com.screenfare.statsUpdated" as CFString
-            CFNotificationCenterPostNotification(center, CFNotificationName(notificationName), nil, nil, true)
-        }
     }
 
     // MARK: - Schedule Management
@@ -375,20 +332,5 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         sharedDefaults?.set(try? JSONEncoder().encode([Data: TimeInterval]()), forKey: "com.screenfare.unlockDurations")
 
         print("[DeviceMonitor] 🧹 Cleared all temporary unlocks")
-    }
-}
-
-// Local copy of DailyStats for the extension
-private struct DailyStats: Codable {
-    var date: String
-    var blocksToday: Int
-    var faresPaid: Int
-    var timeSpentSeconds: Int
-
-    init(date: String) {
-        self.date = date
-        self.blocksToday = 0
-        self.faresPaid = 0
-        self.timeSpentSeconds = 0
     }
 }
