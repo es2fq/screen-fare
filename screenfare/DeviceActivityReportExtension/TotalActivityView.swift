@@ -10,8 +10,27 @@ import SwiftUI
 import FamilyControls
 import ManagedSettings
 
+// MARK: - UserDefaults Extension
+
+extension UserDefaults {
+    /// Shared UserDefaults instance for the app group
+    fileprivate static var appGroup: UserDefaults? {
+        UserDefaults(suiteName: "group.esong.screenfare.shared")
+    }
+}
+
 struct TotalActivityView: View {
     let config: ActivityConfig
+
+    // Load blocked app tokens from shared UserDefaults
+    private var blockedAppTokens: Set<ApplicationToken> {
+        guard let sharedDefaults = UserDefaults.appGroup,
+              let data = sharedDefaults.data(forKey: "com.screenfare.selectedApps"),
+              let tokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: data) else {
+            return []
+        }
+        return tokens
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -224,12 +243,14 @@ struct TotalActivityView: View {
             // App rows
             VStack(spacing: 0) {
                 ForEach(Array(config.topApps.enumerated()), id: \.element.id) { index, appData in
+                    let isBlocked = appData.token.map { blockedAppTokens.contains($0) } ?? false
                     AppUsageRow(
                         token: appData.token,
                         app: appData.app,
                         minutes: appData.minutes,
                         maxMinutes: config.topApps.first?.minutes ?? 1,
-                        isLast: index == config.topApps.count - 1
+                        isLast: index == config.topApps.count - 1,
+                        isBlocked: isBlocked
                     )
                 }
             }
@@ -430,21 +451,30 @@ struct AppUsageRow: View {
     let minutes: Int
     let maxMinutes: Int
     let isLast: Bool
+    let isBlocked: Bool
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 4) {
                 // Icon: Use Label with token if available, else generic icon
-                if let token = token {
-                    Label(token)
-                        .labelStyle(.iconOnly)
-                        .frame(width: 48, height: 48)
-                        .scaleEffect(1.5)
-                } else {
-                    Image(systemName: "app.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(Color.gray)
-                        .frame(width: 48, height: 48)
+                ZStack(alignment: .topTrailing) {
+                    if let token = token {
+                        Label(token)
+                            .labelStyle(.iconOnly)
+                            .frame(width: 48, height: 48)
+                            .scaleEffect(1.5)
+                    } else {
+                        Image(systemName: "app.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(Color.gray)
+                            .frame(width: 48, height: 48)
+                    }
+
+                    // Lock badge for blocked apps
+                    if isBlocked {
+                        LockBadgeView()
+                            .offset(x: 4, y: -4)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 7) {
@@ -549,6 +579,26 @@ struct HourlyChart: View {
         if hour < 12 { return "\(hour)a" }
         if hour == 12 { return "12p" }
         return "\(hour - 12)p"
+    }
+}
+
+// MARK: - Lock Badge View
+
+struct LockBadgeView: View {
+    private let size: CGFloat = 22
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.focusAccent)
+                .frame(width: size, height: size)
+                .shadow(color: Color.black.opacity(0.28), radius: 4, x: 0, y: 1)
+
+            // Lock icon using SF Symbol (matches NUX flow)
+            Image(systemName: "lock.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color(hex: "E9E5DE"))
+        }
     }
 }
 
