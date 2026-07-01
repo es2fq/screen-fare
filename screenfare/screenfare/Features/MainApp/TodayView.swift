@@ -332,7 +332,7 @@ struct TodayView: View {
 
                     Spacer()
 
-                    if !historyManager.recentEvents.isEmpty {
+                    if !historyManager.todayEvents.isEmpty {
                         Button(action: {
                             HapticManager.shared.impact()
                             showingHistoryView = true
@@ -352,7 +352,7 @@ struct TodayView: View {
                 .padding(.bottom, 10)
 
                 AppCard(padding: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)) {
-                    if historyManager.recentEvents.isEmpty {
+                    if historyManager.todayEvents.isEmpty {
                         // Empty state - matches design from empty-states.jsx
                         EmptyState(
                             icon: EmptyStateIcons.recent(),
@@ -361,7 +361,7 @@ struct TodayView: View {
                         )
                     } else {
                         VStack(spacing: 0) {
-                            ForEach(Array(historyManager.recentEvents.prefix(3).enumerated()), id: \.element.id) { index, event in
+                            ForEach(Array(historyManager.todayEvents.prefix(3).enumerated()), id: \.element.id) { index, event in
                                 VStack(spacing: 0) {
                                     RecentActivityRow(
                                         app: event.appTokenData.flatMap { try? JSONDecoder().decode(ApplicationToken.self, from: $0) },
@@ -372,7 +372,7 @@ struct TodayView: View {
                                         duration: event.duration
                                     )
 
-                                    if index < historyManager.recentEvents.prefix(3).count - 1 {
+                                    if index < historyManager.todayEvents.prefix(3).count - 1 {
                                         Divider()
                                             .background(Color.focusLine)
                                     }
@@ -1099,6 +1099,7 @@ struct CustomToggleWithColors: View {
         .frame(width: 44, height: 26)
         .contentShape(Rectangle())
         .onTapGesture {
+            HapticManager.shared.impact()
             onToggle(!isOn)
         }
     }

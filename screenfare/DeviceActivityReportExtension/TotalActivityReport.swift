@@ -121,6 +121,9 @@ struct TotalActivityReport: DeviceActivityReportScene {
 
         for await deviceData in data {
             for await segment in deviceData.activitySegments {
+                // Check if task was cancelled (user navigated away or switched views)
+                try? Task.checkCancellation()
+
                 segmentCount += 1
 
                 // Safety check: if we've processed too many segments, stop to avoid jetsam

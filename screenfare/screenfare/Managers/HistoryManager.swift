@@ -47,6 +47,13 @@ class HistoryManager: ObservableObject {
 
     @Published private(set) var recentEvents: [HistoryEvent] = []
 
+    /// Events from today only (since midnight)
+    var todayEvents: [HistoryEvent] {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        return recentEvents.filter { $0.timestamp >= startOfToday }
+    }
+
     private let maxEvents = 10
     private let storageKey = "com.screenfare.history"
     private let sharedStorageKey = "com.screenfare.pendingHistoryEvents"
