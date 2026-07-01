@@ -45,9 +45,6 @@ struct TotalActivityView: View {
                 perAppSection
             }
 
-            // Blocked-app activity stats
-            blockedAppActivitySection
-
             // Spacer to push content to top
             Spacer()
         }
@@ -261,43 +258,6 @@ struct TotalActivityView: View {
         }
     }
 
-    // MARK: - Blocked-App Activity Section
-
-    private var blockedAppActivitySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Section title
-            Text("BLOCKED-APP ACTIVITY")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Color(white: 0.5))
-                .tracking(0.12 * 11)
-                .padding(.horizontal, 4)
-
-            HStack(spacing: 0) {
-                ForEach(Array(statItems.enumerated()), id: \.offset) { index, stat in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(stat.value)
-                            .font(.custom("InstrumentSerif-Regular", size: 28))
-                            .foregroundColor(Color(red: 0.1, green: 0.1, blue: 0.1))
-
-                        Text(stat.label)
-                            .font(.system(size: 10.5))
-                            .foregroundColor(Color(white: 0.5))
-                            .tracking(0.02 * 10.5)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color(white: 0.9), lineWidth: 1)
-                    )
-            )
-        }
-    }
 
     // MARK: - Helpers
 
@@ -311,32 +271,15 @@ struct TotalActivityView: View {
     private var heroStatItems: [(value: String, label: String)] {
         if config.isWeekView {
             return [
-                (value: "\(config.stats.opens * 7)", label: "Pickups"),  // Weekly pickups estimate
+                (value: "\(config.stats.opens * 7)", label: "Apps opened"),  // Weekly pickups estimate
                 (value: config.stats.longestSessionMinutes.map { formatMinutes($0) } ?? "—", label: "Longest session"),
                 (value: formatMinutes(config.totalMinutes / 7), label: "Daily avg")
             ]
         } else {
             return [
-                (value: "\(config.stats.opens)", label: "Pickups"),
+                (value: "\(config.stats.opens)", label: "Apps opened"),
                 (value: config.stats.longestSessionMinutes.map { formatMinutes($0) } ?? "—", label: "Longest session"),
                 (value: formatTime(config.stats.firstPickupTime), label: "First pickup")
-            ]
-        }
-    }
-
-    // Stats for blocked-app activity section
-    private var statItems: [(value: String, label: String)] {
-        if config.isWeekView {
-            return [
-                (value: "\(config.stats.blockedOpens)", label: "Opens"),
-                (value: "\(config.stats.perDay)", label: "Per day"),
-                (value: config.stats.busiest, label: "Busiest")
-            ]
-        } else {
-            return [
-                (value: "\(config.stats.blockedOpens)", label: "Opens"),
-                (value: formatTime(config.stats.firstBlockedOpenTime), label: "First open"),
-                (value: formatMinutes(config.topApps.first?.minutes ?? 0), label: "Longest")
             ]
         }
     }

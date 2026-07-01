@@ -73,7 +73,7 @@ struct InsightsView: View {
                             filter: totalActivityFilter
                         )
                         .padding(EdgeInsets(top: 0, leading: 22, bottom: 0, trailing: 22))
-                        .frame(height: 1200)
+                        .frame(height: 1100)
                         .allowsHitTesting(false)
 
                         // Transparent overlay to make scrolling work
