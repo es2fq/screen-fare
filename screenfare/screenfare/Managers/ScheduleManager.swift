@@ -42,6 +42,12 @@ class ScheduleManager: ObservableObject {
         }
     }
 
+    deinit {
+        // Clean up timer to prevent memory leak
+        scheduleChangeDebounceTimer?.invalidate()
+        scheduleChangeDebounceTimer = nil
+    }
+
     private func saveSchedule() {
         if let encoded = try? JSONEncoder().encode(schedule) {
             sharedDefaults?.set(encoded, forKey: scheduleKey)

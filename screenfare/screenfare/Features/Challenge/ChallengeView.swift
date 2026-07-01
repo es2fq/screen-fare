@@ -74,6 +74,7 @@ struct ChallengeView: View {
     @State private var currentTime = Date()
     @State private var countdownTimer: Timer?
     @State private var hasAutoDismissed = false // Prevent multiple dismiss calls
+    @State private var memoryCountdownTimer: Timer? // Store memory challenge timer to prevent leaks
 
     // Strict mode support
     @State private var isStrictMode: Bool = false
@@ -211,6 +212,13 @@ struct ChallengeView: View {
                     challengeType: challengeTypeName
                 )
             }
+        }
+        .onDisappear {
+            // Clean up timers to prevent memory leaks
+            countdownTimer?.invalidate()
+            countdownTimer = nil
+            memoryCountdownTimer?.invalidate()
+            memoryCountdownTimer = nil
         }
     }
 
@@ -1013,11 +1021,13 @@ struct ChallengeView: View {
     private func startMemoryCountdown() {
         memoryCountdown = 3
 
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+        // Store timer to prevent memory leak
+        memoryCountdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
             if memoryCountdown > 0 {
                 memoryCountdown -= 1
                 if memoryCountdown == 0 {
                     timer.invalidate()
+                    memoryCountdownTimer = nil
                     memoryStage = .recall
                 }
             }

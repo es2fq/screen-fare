@@ -255,6 +255,19 @@ struct TodayView: View {
                     .padding(.bottom, 2)
                 }
 
+                // Unlocked now section - show unlocked apps and categories with countdown
+                if hasActiveUnlocks {
+                    UnlockedNowSection(
+                        temporaryUnlocks: blockingManager.temporaryUnlocks,
+                        temporaryCategoryUnlocks: blockingManager.temporaryCategoryUnlocks,
+                        currentTime: currentTime,
+                        onLock: { appData in
+                            blockingManager.relockApp(appData: appData)
+                        }
+                    )
+                    .padding(.top, 22)
+                }
+
                 // Active fare section
                 SectionHeader(title: "Active fare")
                     .padding(.top, 22)
@@ -309,19 +322,6 @@ struct TodayView: View {
                 ScreenTimeWidget(onOpen: {
                     showingInsightsView = true
                 })
-
-                // Unlocked now section - show unlocked apps and categories with countdown
-                if hasActiveUnlocks {
-                    UnlockedNowSection(
-                        temporaryUnlocks: blockingManager.temporaryUnlocks,
-                        temporaryCategoryUnlocks: blockingManager.temporaryCategoryUnlocks,
-                        currentTime: currentTime,
-                        onLock: { appData in
-                            blockingManager.relockApp(appData: appData)
-                        }
-                    )
-                    .padding(.top, 22)
-                }
 
                 // Recent activity section
                 HStack(alignment: .lastTextBaseline) {
@@ -704,6 +704,10 @@ struct UnlockedNowSection: View {
     let currentTime: Date
     let onLock: (Data) -> Void
 
+    // Cache decoded tokens to avoid repeated JSON decoding on every render
+    @State private var decodedAppTokens: [Data: ApplicationToken] = [:]
+    @State private var decodedCategoryTokens: [Data: ActivityCategoryToken] = [:]
+
     private var sortedUnlocks: [(key: Data, value: Date)] {
         temporaryUnlocks
             .filter { $0.value > currentTime } // Only show non-expired unlocks
@@ -714,6 +718,36 @@ struct UnlockedNowSection: View {
         temporaryCategoryUnlocks
             .filter { $0.value > currentTime } // Only show non-expired unlocks
             .sorted(by: { $0.value < $1.value })
+    }
+
+    /// Get or decode app token with caching
+    private func getAppToken(for data: Data) -> ApplicationToken? {
+        if let cached = decodedAppTokens[data] {
+            return cached
+        }
+        guard let decoded = try? JSONDecoder().decode(ApplicationToken.self, from: data) else {
+            return nil
+        }
+        // Cache on next render cycle to avoid state mutation during view update
+        DispatchQueue.main.async {
+            decodedAppTokens[data] = decoded
+        }
+        return decoded
+    }
+
+    /// Get or decode category token with caching
+    private func getCategoryToken(for data: Data) -> ActivityCategoryToken? {
+        if let cached = decodedCategoryTokens[data] {
+            return cached
+        }
+        guard let decoded = try? JSONDecoder().decode(ActivityCategoryToken.self, from: data) else {
+            return nil
+        }
+        // Cache on next render cycle to avoid state mutation during view update
+        DispatchQueue.main.async {
+            decodedCategoryTokens[data] = decoded
+        }
+        return decoded
     }
 
     private var totalCount: Int {
@@ -770,7 +804,7 @@ struct UnlockedNowSection: View {
             VStack(spacing: 10) {
                 // Display unlocked apps
                 ForEach(sortedUnlocks, id: \.key) { unlock in
-                    if let appToken = try? JSONDecoder().decode(ApplicationToken.self, from: unlock.key) {
+                    if let appToken = getAppToken(for: unlock.key) {
                         let duration = AppBlockingManager.shared.unlockDurations[unlock.key] ?? 300
                         UnlockedSessionCard(
                             unlockType: .app(appToken),
@@ -785,7 +819,7 @@ struct UnlockedNowSection: View {
 
                 // Display unlocked categories
                 ForEach(sortedCategoryUnlocks, id: \.key) { unlock in
-                    if let categoryToken = try? JSONDecoder().decode(ActivityCategoryToken.self, from: unlock.key) {
+                    if let categoryToken = getCategoryToken(for: unlock.key) {
                         let duration = AppBlockingManager.shared.unlockDurations[unlock.key] ?? 300
                         UnlockedSessionCard(
                             unlockType: .category(categoryToken),
@@ -799,6 +833,15 @@ struct UnlockedNowSection: View {
                         .transition(.opacity.combined(with: .scale))
                     }
                 }
+            }
+        }
+        .onAppear {
+            // Pre-cache all tokens on appear for smoother rendering
+            for unlock in sortedUnlocks {
+                _ = getAppToken(for: unlock.key)
+            }
+            for unlock in sortedCategoryUnlocks {
+                _ = getCategoryToken(for: unlock.key)
             }
         }
     }

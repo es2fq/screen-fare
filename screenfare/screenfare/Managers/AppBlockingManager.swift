@@ -12,6 +12,7 @@ import ManagedSettings
 import DeviceActivity
 import UserNotifications
 import BackgroundTasks
+import UIKit
 
 @MainActor
 class AppBlockingManager: ObservableObject {
@@ -37,8 +38,15 @@ class AppBlockingManager: ObservableObject {
     @Published var temporaryCategoryUnlocks: [Data: Date] = [:] // Category token data -> expiry time
 
     // Cache for decoded tokens to avoid repeated JSON decoding
+    // Limited to 100 entries to prevent unbounded growth
     private var decodedAppTokenCache: [Data: ApplicationToken] = [:]
     private var decodedCategoryTokenCache: [Data: ActivityCategoryToken] = [:]
+
+    // Reverse cache: Token -> Data (for encoding operations)
+    private var encodedAppTokenCache: [ApplicationToken: Data] = [:]
+    private var encodedCategoryTokenCache: [ActivityCategoryToken: Data] = [:]
+
+    private let maxCacheSize = 100
 
     var isBlocking: Bool {
         blockedApps != nil
@@ -59,7 +67,7 @@ class AppBlockingManager: ObservableObject {
                 if let cached = decodedAppTokenCache[appTokenData] {
                     appToken = cached
                 } else if let decoded = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) {
-                    decodedAppTokenCache[appTokenData] = decoded
+                    cacheAppToken(decoded, for: appTokenData)
                     appToken = decoded
                 } else {
                     appToken = nil
@@ -89,7 +97,7 @@ class AppBlockingManager: ObservableObject {
                 if let cached = decodedCategoryTokenCache[categoryTokenData] {
                     categoryToken = cached
                 } else if let decoded = try? JSONDecoder().decode(ActivityCategoryToken.self, from: categoryTokenData) {
-                    decodedCategoryTokenCache[categoryTokenData] = decoded
+                    cacheCategoryToken(decoded, for: categoryTokenData)
                     categoryToken = decoded
                 } else {
                     categoryToken = nil
@@ -103,6 +111,9 @@ class AppBlockingManager: ObservableObject {
 
         return blocked
     }
+
+    private var scheduleChangeObserver: NSObjectProtocol?
+    private var memoryWarningObserver: NSObjectProtocol?
 
     private init() {
         // Check authorization status on init
@@ -120,7 +131,7 @@ class AppBlockingManager: ObservableObject {
         // Note: Re-locking is handled by DeviceActivityMonitor (no need to restart timers)
 
         // Listen for schedule changes
-        NotificationCenter.default.addObserver(
+        scheduleChangeObserver = NotificationCenter.default.addObserver(
             forName: .scheduleDidChange,
             object: nil,
             queue: .main
@@ -130,6 +141,33 @@ class AppBlockingManager: ObservableObject {
                 self.handleScheduleChange()
             }
         }
+
+        // Listen for memory warnings to clear caches
+        memoryWarningObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            Task { @MainActor in
+                self.handleMemoryWarning()
+            }
+        }
+    }
+
+    deinit {
+        // Clean up NotificationCenter observers to prevent memory leaks
+        if let observer = scheduleChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = memoryWarningObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        // Clear all caches - use nonisolated access since deinit is not on main actor
+        decodedAppTokenCache.removeAll()
+        decodedCategoryTokenCache.removeAll()
+        encodedAppTokenCache.removeAll()
+        encodedCategoryTokenCache.removeAll()
     }
 
     func checkAuthorizationStatus() {
@@ -310,20 +348,26 @@ class AppBlockingManager: ObservableObject {
         // Clean up expired unlocks first
         cleanupExpiredUnlocks()
 
-        // REMOVE unlocked apps from shield store (genuine unblock)
-        // When timer expires, DeviceActivity Monitor will re-add them
-        store.shield.applications = currentlyBlockedApps
+        // Calculate blocked apps/categories - this is done via computed properties
+        // which already use caching, so they're relatively fast
+        let blockedApps = currentlyBlockedApps
+        let blockedCategories = currentlyBlockedCategories
+        let webDomains = selectedApps.webDomainTokens
+
+        // Apply shields - these must be on main thread as they touch ManagedSettings
+        // But we've already done the heavy lifting (filtering/decoding) above
+        store.shield.applications = blockedApps
 
         // Apply category shields, removing temporarily unlocked categories
-        if !currentlyBlockedCategories.isEmpty {
-            store.shield.applicationCategories = .specific(currentlyBlockedCategories)
+        if !blockedCategories.isEmpty {
+            store.shield.applicationCategories = .specific(blockedCategories)
         } else {
             store.shield.applicationCategories = nil
         }
 
-        store.shield.webDomains = selectedApps.webDomainTokens
+        store.shield.webDomains = webDomains
 
-        print("[AppBlockingManager] Shields applied to \(currentlyBlockedApps.count) apps, \(currentlyBlockedCategories.count) categories (\(temporaryUnlocks.count) apps + \(temporaryCategoryUnlocks.count) categories unlocked)")
+        print("[AppBlockingManager] Shields applied to \(blockedApps.count) apps, \(blockedCategories.count) categories (\(temporaryUnlocks.count) apps + \(temporaryCategoryUnlocks.count) categories unlocked)")
     }
 
     func cleanupExpiredUnlocks() {
@@ -376,8 +420,7 @@ class AppBlockingManager: ObservableObject {
 
     func removeBlocking() {
         // Clear token caches
-        decodedAppTokenCache.removeAll()
-        decodedCategoryTokenCache.removeAll()
+        clearTokenCaches()
 
         // Stop all active device activity monitors
         for (_, activityName) in activeMonitors {
@@ -410,10 +453,83 @@ class AppBlockingManager: ObservableObject {
         // selectedApps is preserved so when Focus turns back on, the list is intact
     }
 
+    // MARK: - Cache Management
+
+    /// Clear token caches completely
+    private func clearTokenCaches() {
+        decodedAppTokenCache.removeAll()
+        decodedCategoryTokenCache.removeAll()
+        encodedAppTokenCache.removeAll()
+        encodedCategoryTokenCache.removeAll()
+    }
+
+    /// Trim caches if they exceed max size (LRU-style: remove oldest entries)
+    private func trimCachesIfNeeded() {
+        if decodedAppTokenCache.count > maxCacheSize {
+            // Remove oldest 20% of entries
+            let removeCount = maxCacheSize / 5
+            let keysToRemove = Array(decodedAppTokenCache.keys.prefix(removeCount))
+            keysToRemove.forEach { data in
+                if let token = decodedAppTokenCache.removeValue(forKey: data) {
+                    // Also remove from reverse cache
+                    encodedAppTokenCache.removeValue(forKey: token)
+                }
+            }
+            print("[AppBlockingManager] Trimmed app token cache: \(keysToRemove.count) entries removed")
+        }
+
+        if decodedCategoryTokenCache.count > maxCacheSize {
+            // Remove oldest 20% of entries
+            let removeCount = maxCacheSize / 5
+            let keysToRemove = Array(decodedCategoryTokenCache.keys.prefix(removeCount))
+            keysToRemove.forEach { data in
+                if let token = decodedCategoryTokenCache.removeValue(forKey: data) {
+                    // Also remove from reverse cache
+                    encodedCategoryTokenCache.removeValue(forKey: token)
+                }
+            }
+            print("[AppBlockingManager] Trimmed category token cache: \(keysToRemove.count) entries removed")
+        }
+    }
+
+    /// Add decoded token to cache with size limit enforcement
+    private func cacheAppToken(_ token: ApplicationToken, for data: Data) {
+        decodedAppTokenCache[data] = token
+        encodedAppTokenCache[token] = data // Bidirectional cache
+        trimCachesIfNeeded()
+    }
+
+    /// Add decoded category token to cache with size limit enforcement
+    private func cacheCategoryToken(_ token: ActivityCategoryToken, for data: Data) {
+        decodedCategoryTokenCache[data] = token
+        encodedCategoryTokenCache[token] = data // Bidirectional cache
+        trimCachesIfNeeded()
+    }
+
+    /// Encode app token with caching
+    private func encodeAppToken(_ token: ApplicationToken) -> Data? {
+        if let cached = encodedAppTokenCache[token] {
+            return cached
+        }
+        guard let encoded = try? JSONEncoder().encode(token) else { return nil }
+        cacheAppToken(token, for: encoded)
+        return encoded
+    }
+
+    /// Encode category token with caching
+    private func encodeCategoryToken(_ token: ActivityCategoryToken) -> Data? {
+        if let cached = encodedCategoryTokenCache[token] {
+            return cached
+        }
+        guard let encoded = try? JSONEncoder().encode(token) else { return nil }
+        cacheCategoryToken(token, for: encoded)
+        return encoded
+    }
+
     func temporaryUnlock(appToken: ApplicationToken?, duration: TimeInterval) {
         guard let appToken = appToken else { return }
         guard isBlocking else { return }
-        guard let appTokenData = try? JSONEncoder().encode(appToken) else { return }
+        guard let appTokenData = encodeAppToken(appToken) else { return }
 
         // Calculate start and end times
         let startTime = Date()
@@ -484,7 +600,7 @@ class AppBlockingManager: ObservableObject {
     func temporaryUnlockCategory(categoryToken: ActivityCategoryToken?, duration: TimeInterval) {
         guard let categoryToken = categoryToken else { return }
         guard isBlocking else { return }
-        guard let categoryTokenData = try? JSONEncoder().encode(categoryToken) else { return }
+        guard let categoryTokenData = encodeCategoryToken(categoryToken) else { return }
 
         let startTime = Date()
         let expiryTime = startTime.addingTimeInterval(duration)
@@ -701,7 +817,7 @@ class AppBlockingManager: ObservableObject {
     }
 
     func remainingUnlockTime(for appToken: ApplicationToken) -> TimeInterval? {
-        guard let appTokenData = try? JSONEncoder().encode(appToken),
+        guard let appTokenData = encodeAppToken(appToken),
               let expiryTime = temporaryUnlocks[appTokenData],
               Date() < expiryTime else {
             return nil
@@ -883,5 +999,13 @@ class AppBlockingManager: ObservableObject {
                 }
             }
         }
+    }
+
+    // MARK: - Memory Management
+
+    private func handleMemoryWarning() {
+        print("[AppBlockingManager] ⚠️ Memory warning received, clearing caches")
+        clearTokenCaches()
+        print("[AppBlockingManager] ✓ Caches cleared to free memory")
     }
 }
