@@ -73,6 +73,7 @@ struct ChallengeView: View {
     // Countdown timer - now uses current time to calculate from expiry
     @State private var currentTime = Date()
     @State private var countdownTimer: Timer?
+    @State private var hasAutoDismissed = false // Prevent multiple dismiss calls
 
     // Strict mode support
     @State private var isStrictMode: Bool = false
@@ -780,33 +781,38 @@ struct ChallengeView: View {
     }
 
     private func formatCountdown() -> String {
+        var remainingSeconds = 0
+
         // Check if this is a category unlock
         if let categoryToken = requestedCategory,
            let categoryTokenData = try? JSONEncoder().encode(categoryToken) {
             if let expiryTime = blockingManager.temporaryCategoryUnlocks[categoryTokenData] {
-                let remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
-                let mm = remainingSeconds / 60
-                let ss = remainingSeconds % 60
-                return String(format: "%d:%02d", mm, ss)
+                remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
             } else {
                 print("[ChallengeView] ⚠️ Category token exists but not in temporaryCategoryUnlocks")
                 print("[ChallengeView] temporaryCategoryUnlocks count: \(blockingManager.temporaryCategoryUnlocks.count)")
-                return "0:00"
+            }
+        }
+        // Otherwise check for app unlock
+        else if let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first,
+                let appTokenData = try? JSONEncoder().encode(appToken),
+                let expiryTime = blockingManager.temporaryUnlocks[appTokenData] {
+            remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
+        } else {
+            print("[ChallengeView] ⚠️ No valid unlock found for countdown")
+        }
+
+        // Auto-dismiss when countdown expires
+        if remainingSeconds == 0 && phase == .unlocked && !hasAutoDismissed {
+            hasAutoDismissed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                dismiss()
             }
         }
 
-        // Otherwise check for app unlock
-        if let appToken = requestedApp ?? Array(blockingManager.selectedApps.applicationTokens).first,
-           let appTokenData = try? JSONEncoder().encode(appToken),
-           let expiryTime = blockingManager.temporaryUnlocks[appTokenData] {
-            let remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
-            let mm = remainingSeconds / 60
-            let ss = remainingSeconds % 60
-            return String(format: "%d:%02d", mm, ss)
-        }
-
-        print("[ChallengeView] ⚠️ No valid unlock found for countdown")
-        return "0:00"
+        let mm = remainingSeconds / 60
+        let ss = remainingSeconds % 60
+        return String(format: "%d:%02d", mm, ss)
     }
 
     // MARK: - Actions
@@ -991,6 +997,12 @@ struct ChallengeView: View {
         currentTime = Date()
         countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             currentTime = Date()
+        }
+
+        // Clear tokens after unlock to prevent stale data on next challenge
+        if let sharedDefaults = UserDefaults.appGroup {
+            sharedDefaults.removeObject(forKey: "com.screenfare.requestedAppToken")
+            sharedDefaults.removeObject(forKey: "com.screenfare.requestedCategoryToken")
         }
     }
 

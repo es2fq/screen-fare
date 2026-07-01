@@ -27,6 +27,7 @@ struct ContentView: View {
                     .sheet(isPresented: $showingChallenge) {
                         ChallengeView()
                             .environment(\.selectedTab, $selectedTab)
+                            .id(showingChallenge) // Force re-init when sheet toggles
                     }
                     .onChange(of: notificationManager.shouldShowChallenge) { _, _ in
                         handleChallengeRequest(from: "NotificationManager")
