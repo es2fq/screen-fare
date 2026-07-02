@@ -58,6 +58,7 @@ struct ActivityStats: Sendable {
     let firstPickupTime: Date?  // Earliest activity timestamp (any app)
     let firstBlockedOpenTime: Date?  // Earliest blocked app activity timestamp
     let longestSessionMinutes: Int?  // Longest continuous session in minutes
+    let longestBreakMinutes: Int?  // Longest break between sessions (excluding midnight to first pickup)
 }
 
 // MARK: - Total Activity Report Scene
@@ -306,6 +307,43 @@ struct TotalActivityReport: DeviceActivityReportScene {
         let blockedOpensCount = blockedPickups
         let longestSessionMinutes = longestSessionDuration > 0 ? Int(longestSessionDuration / 60) : nil
 
+        // Calculate longest break (excluding midnight to first pickup AND last usage to midnight)
+        let longestBreakMinutes: Int? = {
+            guard let firstPickup = firstPickupTime else { return nil }
+
+            // Find the last hour with any usage
+            var lastUsageHour: Int?
+            for hour in (0..<24).reversed() {
+                if (hourlyUsageMap[hour] ?? 0) > 0 {
+                    lastUsageHour = hour
+                    break
+                }
+            }
+
+            guard let lastHour = lastUsageHour else { return nil }
+
+            let firstPickupHour = calendar.component(.hour, from: firstPickup)
+
+            // Only count breaks between first pickup and last usage
+            guard firstPickupHour < lastHour else { return nil }
+
+            var currentBreakHours = 0
+            var maxBreakHours = 0
+
+            // Start counting from the hour after first pickup, end at last usage hour
+            for hour in (firstPickupHour + 1)...lastHour {
+                let minutes = hourlyUsageMap[hour] ?? 0
+                if minutes == 0 {
+                    currentBreakHours += 1
+                    maxBreakHours = max(maxBreakHours, currentBreakHours)
+                } else {
+                    currentBreakHours = 0
+                }
+            }
+
+            return maxBreakHours > 0 ? maxBreakHours * 60 : nil
+        }()
+
         // Find busiest day with full name
         let busiestDay = dailyDataWithFullNames.max(by: { $0.minutes < $1.minutes })?.fullName ?? "Mon"
 
@@ -316,7 +354,8 @@ struct TotalActivityReport: DeviceActivityReportScene {
             busiest: busiestDay,
             firstPickupTime: firstPickupTime,
             firstBlockedOpenTime: firstBlockedOpenTime,
-            longestSessionMinutes: longestSessionMinutes
+            longestSessionMinutes: longestSessionMinutes,
+            longestBreakMinutes: longestBreakMinutes
         )
 
         logger.info("Report complete: \(totalMinutes)m total, \(blockedMinutes)m blocked (\(topAppData.count) apps, \(opens) pickups)")

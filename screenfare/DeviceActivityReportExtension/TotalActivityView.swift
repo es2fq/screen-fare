@@ -293,7 +293,7 @@ struct TotalActivityView: View {
             return [
                 (value: "\(config.stats.opens)", label: "Apps opened"),
                 (value: config.stats.longestSessionMinutes.map { formatMinutes($0) } ?? "—", label: "Longest session"),
-                (value: formatTime(config.stats.firstPickupTime), label: "First pickup")
+                (value: config.stats.longestBreakMinutes.map { formatMinutes($0) } ?? "—", label: "Longest break")
             ]
         }
     }
@@ -567,7 +567,8 @@ struct LockBadgeView: View {
             busiest: "Mon",
             firstPickupTime: Calendar.current.date(bySettingHour: 7, minute: 21, second: 0, of: Date()),
             firstBlockedOpenTime: Calendar.current.date(bySettingHour: 8, minute: 42, second: 0, of: Date()),
-            longestSessionMinutes: 22
+            longestSessionMinutes: 22,
+            longestBreakMinutes: 135
         ),
         isWeekView: false
     )
