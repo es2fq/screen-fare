@@ -14,10 +14,11 @@ enum ChallengeType: String, CaseIterable {
     case typing = "Typing"
     case memory = "Memory"
     case breathing = "Breathing"
+    case trivia = "Trivia"
 
     var isPro: Bool {
         switch self {
-        case .memory, .breathing:
+        case .memory, .breathing, .trivia:
             return true
         case .math, .typing:
             return false
@@ -324,5 +325,109 @@ struct BreathingChallenge: Challenge {
     // It's complete when all breaths are finished
     func isComplete(breathsCompleted: Int) -> Bool {
         breathsCompleted >= totalBreaths
+    }
+}
+
+// MARK: - Trivia Challenge
+
+enum TriviaDifficulty: String, CaseIterable {
+    case easy = "Easy"
+    case medium = "Medium"
+    case hard = "Hard"
+
+    var apiValue: String {
+        rawValue.lowercased()
+    }
+}
+
+enum TriviaCategory: String, CaseIterable, Codable, Hashable {
+    case general = "General"
+    case science = "Science"
+    case history = "History"
+    case geography = "Geography"
+    case arts = "Arts & Lit"
+    case sports = "Sports"
+    case film = "Film & TV"
+    case music = "Music"
+
+    var categoryID: String {
+        switch self {
+        case .general: return "9"          // General Knowledge
+        case .science: return "17"         // Science & Nature
+        case .history: return "23"         // History
+        case .geography: return "22"       // Geography
+        case .arts: return "25"            // Art
+        case .sports: return "21"          // Sports
+        case .film: return "11"            // Film
+        case .music: return "12"           // Music
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .general: return "questionmark.circle"
+        case .science: return "flask"
+        case .history: return "clock"
+        case .geography: return "globe"
+        case .arts: return "book.closed"
+        case .sports: return "figure.run"
+        case .film: return "play.rectangle"
+        case .music: return "music.note"
+        }
+    }
+}
+
+struct TriviaChallenge: Challenge {
+    let question: String
+    let answers: [String]
+    let correctAnswerIndex: Int
+    let category: TriviaCategory
+    let difficulty: TriviaDifficulty
+
+    var type: ChallengeType { .trivia }
+
+    var questionText: String {
+        question
+    }
+
+    /// Creates a trivia challenge by fetching from the API
+    /// Randomly selects one category from the provided set
+    static func fetch(categories: Set<TriviaCategory>, difficulty: TriviaDifficulty) async throws -> TriviaChallenge {
+        // Randomly select one category from the set
+        guard let randomCategory = categories.randomElement() else {
+            throw TriviaAPIError.invalidParameters
+        }
+
+        let apiQuestion = try await TriviaAPIService.shared.fetchQuestion(
+            categoryID: randomCategory.categoryID,
+            difficulty: difficulty.apiValue
+        )
+
+        // Decode HTML entities in question and answers
+        let decodedQuestion = apiQuestion.question.decodingHTMLEntities()
+        let decodedCorrect = apiQuestion.correctAnswer.decodingHTMLEntities()
+        let decodedIncorrect = apiQuestion.incorrectAnswers.map { $0.decodingHTMLEntities() }
+
+        // Shuffle answers and track correct index
+        let shuffled = TriviaQuestion(
+            type: apiQuestion.type,
+            difficulty: apiQuestion.difficulty,
+            category: apiQuestion.category,
+            question: decodedQuestion,
+            correctAnswer: decodedCorrect,
+            incorrectAnswers: decodedIncorrect
+        ).shuffledAnswers()
+
+        return TriviaChallenge(
+            question: decodedQuestion,
+            answers: shuffled.answers,
+            correctAnswerIndex: shuffled.correctIndex,
+            category: randomCategory,
+            difficulty: difficulty
+        )
+    }
+
+    func isCorrect(_ selectedIndex: Int) -> Bool {
+        selectedIndex == correctAnswerIndex
     }
 }

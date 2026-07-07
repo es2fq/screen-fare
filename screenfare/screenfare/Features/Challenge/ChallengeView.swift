@@ -57,6 +57,14 @@ struct ChallengeView: View {
     @State private var phaseProgress: Double = 0
     @State private var isBreathingAnimating: Bool = false
 
+    // Trivia challenge state
+    @State private var triviaChallenge: TriviaChallenge?
+    @State private var selectedTriviaAnswer: Int?
+    @State private var hasSubmittedTrivia = false
+    @State private var isTriviaLoading = false
+    @State private var triviaErrorCategory: ErrorCategory?
+    @State private var triviaCurrentQuestion: Int = 0
+
     // Common state
     @State private var attempts = 0
     @State private var shakeCount = 0
@@ -113,6 +121,9 @@ struct ChallengeView: View {
             _memoryChallenge = State(initialValue: MemoryChallenge(gridSize: settings.memoryGridSize, litCount: settings.memoryTilesToMatch))
         case .breathing:
             _breathingChallenge = State(initialValue: BreathingChallenge(totalBreaths: settings.breathingCycles))
+        case .trivia:
+            _isTriviaLoading = State(initialValue: true)
+            // Trivia will be loaded asynchronously in onAppear
         }
     }
 
@@ -194,6 +205,13 @@ struct ChallengeView: View {
                 startMemoryCountdown()
             }
 
+            // Load trivia challenge asynchronously
+            if challengeType == .trivia {
+                Task {
+                    await loadTriviaChallenge()
+                }
+            }
+
             // Record challenge started event when the challenge view actually appears (skip for strict mode)
             if !isStrictMode, let appToken = requestedApp {
                 let appTokenData = try? JSONEncoder().encode(appToken)
@@ -203,6 +221,7 @@ struct ChallengeView: View {
                     case .typing: return "Typing"
                     case .memory: return "Memory"
                     case .breathing: return "Breathing"
+                    case .trivia: return "Trivia"
                     }
                 }()
                 historyManager.recordEvent(
@@ -547,6 +566,8 @@ struct ChallengeView: View {
             memoryContent
         case .breathing:
             breathingContent
+        case .trivia:
+            triviaContent
         }
     }
 
@@ -655,6 +676,72 @@ struct ChallengeView: View {
         }
     }
 
+    @ViewBuilder
+    private var triviaContent: some View {
+        if isTriviaLoading {
+            VStack(spacing: 14) {
+                // Loading message with animated dots
+                HStack(spacing: 9) {
+                    TrivDots()
+                    Text("Fetching question...")
+                        .font(.inter(12.5, weight: .medium))
+                        .foregroundColor(.focusMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 1)
+
+                // Question text placeholder
+                VStack(spacing: 9) {
+                    TrivSkel(width: nil, height: 19)
+                    TrivSkel(width: UIScreen.main.bounds.width * 0.58 - 44, height: 19)
+                }
+                .padding(.bottom, 3)
+
+                // Option placeholders
+                VStack(spacing: 8) {
+                    ForEach(0..<4, id: \.self) { index in
+                        HStack(spacing: 11) {
+                            TrivSkel(width: 24, height: 24, cornerRadius: 7)
+                            TrivSkel(width: UIScreen.main.bounds.width * CGFloat(0.68 - Double(index) * 0.09) - 80, height: 12)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 11)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.focusInk.opacity(0.07), lineWidth: 1.5)
+                        )
+                        .cornerRadius(12)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else if let errorCategory = triviaErrorCategory {
+            TriviaErrorView(
+                isNoConnection: errorCategory == .noConnection,
+                onRetry: {
+                    Task {
+                        await loadTriviaChallenge()
+                    }
+                },
+                onSwitchToMath: {
+                    switchToMathChallenge()
+                }
+            )
+        } else if let challenge = triviaChallenge {
+            TriviaChallengeField(
+                triviaChallenge: challenge,
+                currentQuestion: triviaCurrentQuestion,
+                totalQuestions: settings.triviaQuestionsToAnswer,
+                selectedAnswerIndex: $selectedTriviaAnswer,
+                hasSubmitted: $hasSubmittedTrivia,
+                onSubmit: checkTriviaAnswer
+            )
+            .opacity(phase == .paying ? 0.5 : 1)
+        }
+    }
+
     // MARK: - Footer
 
     @ViewBuilder
@@ -679,6 +766,8 @@ struct ChallengeView: View {
                 EmptyView() // No button needed - auto-submits on completion
             case .breathing:
                 EmptyView() // No button needed - auto-completes on breath completion
+            case .trivia:
+                EmptyView() // Submit button is integrated within TriviaChallengeField
             }
         }
     }
@@ -706,6 +795,7 @@ struct ChallengeView: View {
             case .typing: return "TYPE"
             case .memory: return "MEM"
             case .breathing: return "BREATH"
+            case .trivia: return "TRIVIA"
             }
         }
     }
@@ -723,6 +813,8 @@ struct ChallengeView: View {
             }
         case .breathing:
             return "Follow the breath"
+        case .trivia:
+            return isTriviaLoading ? "Loading question" : "Answer the question"
         }
     }
 
@@ -740,6 +832,13 @@ struct ChallengeView: View {
         case .breathing:
             let total = breathingChallenge?.totalBreaths ?? settings.breathingCycles
             return "Breath \(currentBreath)/\(total)"
+        case .trivia:
+            if isTriviaLoading {
+                return "Please wait..."
+            } else if triviaChallenge != nil {
+                return "Question \(triviaCurrentQuestion + 1)/\(settings.triviaQuestionsToAnswer)"
+            }
+            return nil
         }
     }
 
@@ -757,6 +856,8 @@ struct ChallengeView: View {
             return "Not quite — watch the pattern again"
         case .breathing:
             return "" // Breathing challenge doesn't have errors
+        case .trivia:
+            return "Wrong answer — try another question"
         }
     }
 
@@ -836,6 +937,8 @@ struct ChallengeView: View {
                 break
             case .breathing:
                 break // Breathing starts when user taps the orb
+            case .trivia:
+                break // Trivia uses tappable buttons, no keyboard focus needed
             }
         }
     }
@@ -887,6 +990,85 @@ struct ChallengeView: View {
         if challenge.isComplete(breathsCompleted: currentBreath) {
             succeed()
         }
+    }
+
+    private func checkTriviaAnswer() {
+        guard let challenge = triviaChallenge,
+              let selectedIndex = selectedTriviaAnswer else {
+            return
+        }
+
+        hasSubmittedTrivia = true
+        let isFinalQuestion = triviaCurrentQuestion == settings.triviaQuestionsToAnswer - 1
+
+        if challenge.isCorrect(selectedIndex) {
+            // Correct answer
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.88) {
+                if isFinalQuestion {
+                    // Last question - succeed and unlock
+                    succeed()
+                } else {
+                    // Move to next question (cleared state)
+                    triviaCurrentQuestion += 1
+                    selectedTriviaAnswer = nil
+                    hasSubmittedTrivia = false
+                    Task {
+                        await loadTriviaChallenge()
+                    }
+                }
+            }
+        } else {
+            // Wrong answer - show red feedback, then load new question at same position
+            // Keep progress: stay at current question number, just get a fresh question
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                handleError()
+                // Don't reset triviaCurrentQuestion - keep user at same position
+                selectedTriviaAnswer = nil
+                hasSubmittedTrivia = false
+                Task {
+                    await loadTriviaChallenge()
+                }
+            }
+        }
+    }
+
+    private func loadTriviaChallenge() async {
+        isTriviaLoading = true
+        triviaErrorCategory = nil
+
+        do {
+            let challenge = try await TriviaChallenge.fetch(
+                categories: settings.triviaCategories,
+                difficulty: settings.triviaDifficulty
+            )
+            await MainActor.run {
+                triviaChallenge = challenge
+                isTriviaLoading = false
+            }
+        } catch let error as TriviaAPIError {
+            await MainActor.run {
+                triviaErrorCategory = error.errorCategory
+                isTriviaLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                triviaErrorCategory = .generic
+                isTriviaLoading = false
+            }
+        }
+    }
+
+    private func switchToMathChallenge() {
+        // Clear trivia state
+        triviaErrorCategory = nil
+        triviaChallenge = nil
+        triviaCurrentQuestion = 0
+        selectedTriviaAnswer = nil
+        hasSubmittedTrivia = false
+
+        // Switch to math challenge
+        challengeType = .math
+        mathChallenge = MathChallenge(difficulty: settings.challengeDifficulty)
     }
 
     private func succeed() {
@@ -968,6 +1150,7 @@ struct ChallengeView: View {
                 case .typing: return "Typing"
                 case .memory: return "Memory"
                 case .breathing: return "Breathing"
+                case .trivia: return "Trivia"
                 }
             }()
 
@@ -990,6 +1173,7 @@ struct ChallengeView: View {
                 case .typing: return "Typing"
                 case .memory: return "Memory"
                 case .breathing: return "Breathing"
+                case .trivia: return "Trivia"
                 }
             }()
 

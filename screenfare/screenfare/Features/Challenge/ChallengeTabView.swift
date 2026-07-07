@@ -23,6 +23,9 @@ struct ChallengeTabView: View {
     @State private var tempMemoryGridSize: Int
     @State private var tempMemoryTilesToMatch: Int
     @State private var tempBreathingCycles: Int
+    @State private var tempTriviaCategories: Set<TriviaCategory>
+    @State private var tempTriviaDifficulty: TriviaDifficulty
+    @State private var tempTriviaQuestionsToAnswer: Int
 
     // Challenge gate for strict mode
     @State private var showGate: ChallengeGateData?
@@ -48,6 +51,9 @@ struct ChallengeTabView: View {
         self._tempMemoryGridSize = State(initialValue: settings.memoryGridSize)
         self._tempMemoryTilesToMatch = State(initialValue: settings.memoryTilesToMatch)
         self._tempBreathingCycles = State(initialValue: settings.breathingCycles)
+        self._tempTriviaCategories = State(initialValue: settings.triviaCategories)
+        self._tempTriviaDifficulty = State(initialValue: settings.triviaDifficulty)
+        self._tempTriviaQuestionsToAnswer = State(initialValue: settings.triviaQuestionsToAnswer)
 
         // Pre-generate one challenge for each difficulty level
         var challenges: [ChallengeDifficulty: MathChallenge] = [:]
@@ -130,6 +136,9 @@ struct ChallengeTabView: View {
         settings.memoryGridSize = tempMemoryGridSize
         settings.memoryTilesToMatch = tempMemoryTilesToMatch
         settings.breathingCycles = tempBreathingCycles
+        settings.triviaCategories = tempTriviaCategories
+        settings.triviaDifficulty = tempTriviaDifficulty
+        settings.triviaQuestionsToAnswer = tempTriviaQuestionsToAnswer
 
         // Return to list view
         viewState = .list
@@ -173,6 +182,9 @@ struct ChallengeTabView: View {
                                 tempMemoryGridSize = settings.memoryGridSize
                                 tempMemoryTilesToMatch = settings.memoryTilesToMatch
                                 tempBreathingCycles = settings.breathingCycles
+                                tempTriviaCategories = settings.triviaCategories
+                                tempTriviaDifficulty = settings.triviaDifficulty
+                                tempTriviaQuestionsToAnswer = settings.triviaQuestionsToAnswer
                                 viewState = .config
                                 configViewCount += 1 // Increment to reset testers
                             }) {
@@ -323,7 +335,10 @@ struct ChallengeTabView: View {
                             tempTypingDifficulty: $tempTypingDifficulty,
                             tempMemoryGridSize: $tempMemoryGridSize,
                             tempMemoryTilesToMatch: $tempMemoryTilesToMatch,
-                            tempBreathingCycles: $tempBreathingCycles
+                            tempBreathingCycles: $tempBreathingCycles,
+                            tempTriviaCategories: $tempTriviaCategories,
+                            tempTriviaDifficulty: $tempTriviaDifficulty,
+                            tempTriviaQuestionsToAnswer: $tempTriviaQuestionsToAnswer
                         )
                         .padding(.horizontal, 22)
 
@@ -366,6 +381,7 @@ struct ChallengeTabView: View {
         case .typing: return "Type the prompt exactly"
         case .memory: return "Remember the pattern"
         case .breathing: return "Complete breathing cycles"
+        case .trivia: return "Answer trivia questions"
         }
     }
 
@@ -380,6 +396,9 @@ struct ChallengeTabView: View {
         case .breathing:
             let cycles = settings.breathingCycles
             return "\(cycles) breath\(cycles == 1 ? "" : "s")"
+        case .trivia:
+            let questions = settings.triviaQuestionsToAnswer
+            return "Trivia · \(questions) question\(questions == 1 ? "" : "s")"
         }
     }
 
@@ -400,6 +419,14 @@ struct ChallengeTabView: View {
         case .medium: return "Medium"
         case .long: return "Long"
         case .longest: return "Longest"
+        }
+    }
+
+    private func triviaDifficultyLabel(for difficulty: TriviaDifficulty) -> String {
+        switch difficulty {
+        case .easy: return "Easy"
+        case .medium: return "Medium"
+        case .hard: return "Hard"
         }
     }
 }
@@ -431,6 +458,7 @@ struct TypeIcon: View {
         case .typing: return "keyboard"
         case .memory: return "brain.head.profile"
         case .breathing: return "wind"
+        case .trivia: return "lightbulb"
         }
     }
 }
@@ -462,6 +490,9 @@ struct ConfigCard: View {
     @Binding var tempMemoryGridSize: Int
     @Binding var tempMemoryTilesToMatch: Int
     @Binding var tempBreathingCycles: Int
+    @Binding var tempTriviaCategories: Set<TriviaCategory>
+    @Binding var tempTriviaDifficulty: TriviaDifficulty
+    @Binding var tempTriviaQuestionsToAnswer: Int
 
     var body: some View {
         AppCard {
@@ -475,6 +506,8 @@ struct ConfigCard: View {
                     memoryConfig
                 case .breathing:
                     breathingConfig
+                case .trivia:
+                    triviaConfig
                 }
             }
         }
@@ -604,6 +637,164 @@ struct ConfigCard: View {
 
             BreathingTester(challenge: breathingChallenge)
                 .id("\(tempBreathingCycles)-\(configViewCount)")
+        }
+    }
+
+    private var triviaConfig: some View {
+        VStack(spacing: 16) {
+            // Difficulty - Segmented control
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Difficulty")
+                        .font(.inter(13))
+                        .foregroundColor(.focusMuted)
+                    Spacer()
+                }
+
+                // Segmented control for difficulty
+                HStack(spacing: 4) {
+                    ForEach([TriviaDifficulty.easy, .medium, .hard], id: \.self) { diff in
+                        Button(action: {
+                            HapticManager.shared.impact()
+                            tempTriviaDifficulty = diff
+                        }) {
+                            Text(diff.rawValue)
+                                .font(.inter(14.5, weight: .semibold))
+                                .foregroundColor(tempTriviaDifficulty == diff ? .focusInk : .focusMuted)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 40)
+                                .background(tempTriviaDifficulty == diff ? Color.white : Color.clear)
+                                .cornerRadius(10)
+                                .shadow(color: tempTriviaDifficulty == diff ? Color.black.opacity(0.1) : Color.clear, radius: 3, x: 0, y: 1)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(4)
+                .background(Color.focusInk.opacity(0.05))
+                .cornerRadius(13)
+            }
+
+            // Questions to answer slider
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Questions to answer")
+                        .font(.inter(13))
+                        .foregroundColor(.focusMuted)
+                    Spacer()
+                    Text("\(tempTriviaQuestionsToAnswer) question\(tempTriviaQuestionsToAnswer == 1 ? "" : "s")")
+                        .font(.inter(15, weight: .semibold))
+                        .foregroundColor(.focusInk)
+                }
+
+                CustomSlider(
+                    value: Binding(
+                        get: { Double(tempTriviaQuestionsToAnswer) },
+                        set: { newValue in
+                            tempTriviaQuestionsToAnswer = Int(newValue)
+                        }
+                    ),
+                    range: 1...5,
+                    step: 1
+                )
+            }
+
+            // Categories - Multi-select grid
+            VStack(spacing: 8) {
+                HStack {
+                    HStack(spacing: 4) {
+                        Text("CATEGORIES")
+                            .font(.inter(11, weight: .bold))
+                            .foregroundColor(.focusMuted)
+                            .tracking(0.7)
+                        Text("·")
+                            .foregroundColor(.focusMuted)
+                        Text("\(tempTriviaCategories.count)")
+                            .font(.inter(11, weight: .bold))
+                            .foregroundColor(.focusInk)
+                    }
+                    Spacer()
+                    Button(action: {
+                        if tempTriviaCategories.count == TriviaCategory.allCases.count {
+                            // Clear to just one category
+                            tempTriviaCategories = [.general]
+                        } else {
+                            // Select all
+                            tempTriviaCategories = Set(TriviaCategory.allCases)
+                        }
+                    }) {
+                        Text(tempTriviaCategories.count == TriviaCategory.allCases.count ? "Clear" : "Select all")
+                            .font(.inter(12.5, weight: .semibold))
+                            .foregroundColor(Color(red: 0.585, green: 0.125, blue: 0.04)) // Terracotta accent
+                    }
+                }
+
+                // 2-column grid
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    ForEach(TriviaCategory.allCases, id: \.self) { category in
+                        Button(action: {
+                            toggleCategory(category)
+                        }) {
+                            HStack(spacing: 9) {
+                                Image(systemName: category.icon)
+                                    .font(.system(size: 18))
+                                    .foregroundColor(tempTriviaCategories.contains(category) ? .white : .focusInk)
+                                    .opacity(tempTriviaCategories.contains(category) ? 1 : 0.85)
+                                    .frame(width: 18, height: 18)
+
+                                Text(category.rawValue)
+                                    .font(.inter(13.5, weight: .medium))
+                                    .foregroundColor(tempTriviaCategories.contains(category) ? .white : .focusInk)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                // Checkmark circle
+                                ZStack {
+                                    Circle()
+                                        .stroke(tempTriviaCategories.contains(category) ? Color.clear : Color.focusInk.opacity(0.2), lineWidth: 1.5)
+                                        .frame(width: 18, height: 18)
+
+                                    if tempTriviaCategories.contains(category) {
+                                        Circle()
+                                            .fill(Color.white)
+                                            .frame(width: 18, height: 18)
+
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.focusInk)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 11)
+                            .background(tempTriviaCategories.contains(category) ? Color.focusInk : Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(tempTriviaCategories.contains(category) ? Color.focusInk : Color.focusInk.opacity(0.12), lineWidth: 1.5)
+                            )
+                            .cornerRadius(12)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+
+            // Trivia tester
+            TriviaTester(
+                categories: tempTriviaCategories,
+                difficulty: tempTriviaDifficulty
+            )
+            .id("\(tempTriviaCategories.map { $0.rawValue }.sorted().joined())-\(tempTriviaDifficulty.rawValue)-\(configViewCount)")
+        }
+    }
+
+    private func toggleCategory(_ category: TriviaCategory) {
+        if tempTriviaCategories.contains(category) {
+            // Don't allow deselecting the last category
+            if tempTriviaCategories.count > 1 {
+                tempTriviaCategories.remove(category)
+            }
+        } else {
+            tempTriviaCategories.insert(category)
         }
     }
 
@@ -1190,6 +1381,134 @@ struct BreathingTester: View {
         currentPhase = .inhale
         phaseProgress = 0
         isAnimating = false
+    }
+}
+
+struct TriviaTester: View {
+    let categories: Set<TriviaCategory>
+    let difficulty: TriviaDifficulty
+
+    @State private var triviaChallenge: TriviaChallenge?
+    @State private var selectedAnswer: Int?
+    @State private var hasSubmitted = false
+    @State private var isLoading = false
+    @State private var error: String?
+
+    var body: some View {
+        TryShell(hint: hasSubmitted ? (isCorrect ? "Correct! This is how trivia works." : "Try again with a new question.") : nil) {
+            VStack(spacing: 12) {
+                if isLoading {
+                    // Loading state with TrivDots and TrivSkel
+                    VStack(spacing: 12) {
+                        // Loading message with animated dots
+                        HStack(spacing: 9) {
+                            TrivDots()
+                            Text("Fetching question...")
+                                .font(.inter(11.5, weight: .medium))
+                                .foregroundColor(.focusMuted)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        // Question text placeholder (smaller for config)
+                        VStack(spacing: 8) {
+                            TrivSkel(width: nil, height: 16)
+                            TrivSkel(width: UIScreen.main.bounds.width * 0.6 - 72, height: 16)
+                        }
+
+                        // Option placeholders (smaller for config)
+                        VStack(spacing: 7) {
+                            ForEach(0..<4, id: \.self) { index in
+                                HStack(spacing: 10) {
+                                    TrivSkel(width: 22, height: 22, cornerRadius: 6)
+                                    TrivSkel(width: UIScreen.main.bounds.width * CGFloat(0.65 - Double(index) * 0.08) - 90, height: 11)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 11)
+                                .padding(.vertical, 10)
+                                .background(Color.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 11)
+                                        .stroke(Color.focusInk.opacity(0.06), lineWidth: 1.5)
+                                )
+                                .cornerRadius(11)
+                            }
+                        }
+                    }
+                } else if error != nil {
+                    TriviaErrorView(
+                        isNoConnection: true,  // Simplified for config tester
+                        onRetry: { loadQuestion() },
+                        onSwitchToMath: nil  // No switch option in config view
+                    )
+                } else if let challenge = triviaChallenge {
+                    // Use TriviaChallengeField for consistent UI
+                    TriviaChallengeField(
+                        triviaChallenge: challenge,
+                        currentQuestion: 0,
+                        totalQuestions: 1,
+                        selectedAnswerIndex: $selectedAnswer,
+                        hasSubmitted: $hasSubmitted,
+                        onSubmit: submitAnswer
+                    )
+
+                    // Add "Try another" button after submission
+                    if hasSubmitted {
+                        Button(action: reset) {
+                            Text("Try another")
+                                .font(.inter(13, weight: .semibold))
+                                .foregroundColor(Color.focusInk)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 42)
+                                .background(Color.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 11)
+                                        .strokeBorder(Color.focusLine, lineWidth: 1.5)
+                                )
+                                .cornerRadius(11)
+                        }
+                        .padding(.top, 4)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            loadQuestion()
+        }
+    }
+
+    private var isCorrect: Bool {
+        guard let challenge = triviaChallenge,
+              let selected = selectedAnswer else { return false }
+        return challenge.isCorrect(selected)
+    }
+
+    private func loadQuestion() {
+        isLoading = true
+        error = nil
+        Task {
+            do {
+                let challenge = try await TriviaChallenge.fetch(categories: categories, difficulty: difficulty)
+                await MainActor.run {
+                    triviaChallenge = challenge
+                    isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.error = "Can't load question"
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    private func submitAnswer() {
+        hasSubmitted = true
+    }
+
+    private func reset() {
+        selectedAnswer = nil
+        hasSubmitted = false
+        loadQuestion()
     }
 }
 

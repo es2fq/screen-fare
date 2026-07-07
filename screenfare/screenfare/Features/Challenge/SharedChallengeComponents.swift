@@ -281,3 +281,330 @@ struct ShakeModifier: ViewModifier {
             }
     }
 }
+
+// MARK: - Trivia Challenge Field
+
+/// A reusable trivia challenge component with multiple-choice answers
+struct TriviaChallengeField: View {
+    let triviaChallenge: TriviaChallenge
+    let currentQuestion: Int
+    let totalQuestions: Int
+    @Binding var selectedAnswerIndex: Int?
+    @Binding var hasSubmitted: Bool
+    let onSubmit: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            // Progress indicator - matches memory challenge design
+            HStack(spacing: 5) {
+                ForEach(0..<totalQuestions, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(progressBarColor(for: i))
+                        .frame(width: i == currentQuestion ? nil : nil, height: 5)
+                        .frame(maxWidth: i == currentQuestion ? .infinity : .infinity)
+                        .frame(width: i == currentQuestion ? nil : (UIScreen.main.bounds.width - 88) / CGFloat(totalQuestions * 2 - 1))
+                }
+            }
+            .frame(height: 5)
+
+            // Question text
+            Text(triviaChallenge.question)
+                .font(.instrumentSerif(27))
+                .foregroundColor(.focusInk)
+                .lineSpacing(27 * 1.22 - 27) // Line height 1.22
+                .tracking(-0.01 * 27) // -0.01em letter spacing
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Answer choices
+            VStack(spacing: 8) {
+                ForEach(triviaChallenge.answers.indices, id: \.self) { index in
+                    TriviaAnswerButton(
+                        answer: triviaChallenge.answers[index],
+                        letterIndex: index,
+                        isSelected: selectedAnswerIndex == index,
+                        isCorrect: hasSubmitted ? index == triviaChallenge.correctAnswerIndex : nil,
+                        isWrong: hasSubmitted && selectedAnswerIndex == index && index != triviaChallenge.correctAnswerIndex
+                    ) {
+                        if !hasSubmitted {
+                            selectedAnswerIndex = index
+                        }
+                    }
+                }
+            }
+
+            // Submit button
+            if !hasSubmitted {
+                Button(action: onSubmit) {
+                    Text(buttonText)
+                        .font(.inter(15, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(selectedAnswerIndex != nil ? Color.focusInk : Color.focusInk.opacity(0.3))
+                        .cornerRadius(12)
+                }
+                .disabled(selectedAnswerIndex == nil)
+                .padding(.top, 4)
+            }
+        }
+    }
+
+    private func progressBarColor(for index: Int) -> Color {
+        if index < currentQuestion {
+            return Color(red: 0.55, green: 0.65, blue: 0.4) // GREEN_C - completed
+        } else if index == currentQuestion {
+            return Color.focusInk // Current question
+        } else {
+            return Color.focusInk.opacity(0.14) // Upcoming
+        }
+    }
+
+    private var buttonText: String {
+        if selectedAnswerIndex == nil {
+            return "Choose an answer"
+        } else if currentQuestion == totalQuestions - 1 {
+            return "Pay your fare"
+        } else {
+            return "Confirm answer"
+        }
+    }
+}
+
+/// Individual answer button for trivia questions
+struct TriviaAnswerButton: View {
+    let answer: String
+    let letterIndex: Int // 0=A, 1=B, 2=C, 3=D
+    let isSelected: Bool
+    let isCorrect: Bool?
+    let isWrong: Bool
+    let action: () -> Void
+
+    @State private var shakeCount = 0
+
+    private let letters = ["A", "B", "C", "D"]
+
+    var body: some View {
+        Button(action: {
+            if isCorrect == nil {
+                action()
+            }
+        }) {
+            HStack(spacing: 11) {
+                // Letter badge
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(badgeBackgroundColor)
+                        .frame(width: 24, height: 24)
+
+                    Text(letters[letterIndex])
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(badgeForegroundColor)
+                }
+
+                // Answer text
+                Text(answer)
+                    .font(.inter(14.5, weight: .medium))
+                    .foregroundColor(textColor)
+                    .tracking(-0.01 * 14.5) // -0.01em letter spacing
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
+            .background(backgroundColor)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(borderColor, lineWidth: 1.5)
+            )
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .modifier(ShakeModifier(trigger: shakeCount))
+        .onChange(of: isWrong) { _, newValue in
+            if newValue {
+                shakeCount += 1
+            }
+        }
+    }
+
+    private var backgroundColor: Color {
+        if isCorrect == true {
+            return Color(red: 0.94, green: 0.97, blue: 0.92) // Light green (TRIV_GREEN_SOFT)
+        } else if isWrong {
+            return Color(red: 0.99, green: 0.95, blue: 0.94) // Light red (TRIV_RED_SOFT)
+        } else if isSelected {
+            return Color.focusInk
+        }
+        return Color.white
+    }
+
+    private var borderColor: Color {
+        if isCorrect == true {
+            return Color(red: 0.55, green: 0.65, blue: 0.4) // GREEN_C
+        } else if isWrong {
+            return Color(red: 0.9, green: 0.5, blue: 0.4) // RED_C (TRIV_RED)
+        } else if isSelected {
+            return Color.focusInk
+        }
+        return Color.focusLine
+    }
+
+    private var textColor: Color {
+        if isCorrect == true {
+            return Color.focusInk // Dark text on light green background (visible)
+        } else if isWrong {
+            return Color(red: 0.9, green: 0.5, blue: 0.4) // TRIV_RED when wrong
+        } else if isSelected {
+            return Color.white // White text on dark background
+        }
+        return Color.focusInk
+    }
+
+    private var badgeBackgroundColor: Color {
+        if isCorrect == true {
+            return Color(red: 0.55, green: 0.65, blue: 0.4) // GREEN_C
+        } else if isWrong {
+            return Color(red: 0.9, green: 0.5, blue: 0.4) // TRIV_RED
+        } else if isSelected {
+            return Color.white.opacity(0.22)
+        }
+        return Color.focusInk.opacity(0.06)
+    }
+
+    private var badgeForegroundColor: Color {
+        if isCorrect == true || isWrong || isSelected {
+            return Color.white
+        }
+        return Color.focusMuted
+    }
+}
+
+// MARK: - Trivia Loading Components
+
+/// Animated bouncing dots for trivia loading state
+struct TrivDots: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(Color.focusInk)
+                    .frame(width: 5, height: 5)
+                    .modifier(BounceModifier(delay: Double(index) * 0.16))
+            }
+        }
+    }
+}
+
+/// Bounce animation modifier for bouncing dots
+private struct BounceModifier: ViewModifier {
+    let delay: Double
+    @State private var isAnimating = false
+
+    func body(content: Content) -> some View {
+        content
+            .offset(y: isAnimating ? -7 : 0)
+            .opacity(isAnimating ? 1.0 : 0.4)
+            .onAppear {
+                withAnimation(
+                    .easeInOut(duration: 0.55)
+                    .repeatForever(autoreverses: true)
+                    .delay(delay)
+                ) {
+                    isAnimating = true
+                }
+            }
+    }
+}
+
+/// Skeleton placeholder for trivia loading (static gray)
+struct TrivSkel: View {
+    var width: CGFloat? = nil
+    var height: CGFloat = 13
+    var cornerRadius: CGFloat = 6
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius)
+            .fill(Color.focusInk.opacity(0.08))
+            .frame(width: width, height: height)
+    }
+}
+
+// MARK: - Trivia Error State
+
+/// Shared error state for trivia challenges when network connection fails
+struct TriviaErrorView: View {
+    let isNoConnection: Bool
+    let onRetry: () -> Void
+    let onSwitchToMath: (() -> Void)?
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // Icon container with background circle
+            ZStack {
+                Circle()
+                    .fill(Color.focusInk.opacity(0.05))
+                    .frame(width: 56, height: 56)
+
+                Image(systemName: isNoConnection ? "wifi.slash" : "exclamationmark.triangle")
+                    .font(.system(size: 26))
+                    .foregroundColor(Color(red: 0.9, green: 0.5, blue: 0.4)) // TRIV_RED
+            }
+
+            // Title
+            Text(isNoConnection ? "No connection" : "Can't load trivia")
+                .font(.instrumentSerif(27))
+                .foregroundColor(.focusInk)
+                .lineSpacing(27 * 1.1 - 27)
+
+            // Description
+            Text(isNoConnection
+                ? "Check your internet connection and try again."
+                : "Unable to load trivia questions right now. Try the math challenge instead — it works offline.")
+                .font(.inter(13.5))
+                .foregroundColor(.focusMuted)
+                .lineSpacing(13.5 * 1.5 - 13.5)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 250)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Button(s)
+            if let switchToMath = onSwitchToMath {
+                // Challenge view: Show both options
+                VStack(spacing: 8) {
+                    Button("Switch to Math") {
+                        switchToMath()
+                    }
+                    .font(.inter(14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.focusInk)
+                    .cornerRadius(10)
+
+                    Button("Try again") {
+                        onRetry()
+                    }
+                    .font(.inter(13, weight: .medium))
+                    .foregroundColor(.focusMuted)
+                }
+            } else {
+                // Config tester: Just "Try again" as primary button
+                Button("Try again") {
+                    onRetry()
+                }
+                .font(.inter(14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Color.focusInk)
+                .cornerRadius(10)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 6)
+    }
+}

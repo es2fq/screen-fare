@@ -51,6 +51,25 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var triviaCategories: Set<TriviaCategory> {
+        didSet {
+            let rawValues = triviaCategories.map { $0.rawValue }
+            UserDefaults.standard.set(rawValues, forKey: "triviaCategories")
+        }
+    }
+
+    @Published var triviaDifficulty: TriviaDifficulty {
+        didSet {
+            UserDefaults.standard.set(triviaDifficulty.rawValue, forKey: "triviaDifficulty")
+        }
+    }
+
+    @Published var triviaQuestionsToAnswer: Int {
+        didSet {
+            UserDefaults.standard.set(triviaQuestionsToAnswer, forKey: "triviaQuestionsToAnswer")
+        }
+    }
+
     @Published var challengeType: ChallengeType {
         didSet {
             UserDefaults.standard.set(challengeType.rawValue, forKey: "challengeType")
@@ -148,6 +167,9 @@ class SettingsManager: ObservableObject {
         self.memoryGridSize = 3 // Default 3x3
         self.memoryTilesToMatch = 4 // Default 4 tiles
         self.breathingCycles = 3 // Default 3 cycles
+        self.triviaCategories = [.general, .science, .history, .geography] // Default 4 categories
+        self.triviaDifficulty = .medium
+        self.triviaQuestionsToAnswer = 3 // Default 3 questions
         self.challengeType = .math
 
         // Load synchronously - needed immediately for ContentView onAppear animation logic
@@ -189,6 +211,9 @@ class SettingsManager: ObservableObject {
             let savedGridSize = UserDefaults.standard.integer(forKey: "memoryGridSize")
             let savedTilesToMatch = UserDefaults.standard.integer(forKey: "memoryTilesToMatch")
             let savedBreathingCycles = UserDefaults.standard.integer(forKey: "breathingCycles")
+            let savedTriviaCategoriesRaw = UserDefaults.standard.array(forKey: "triviaCategories") as? [String]
+            let savedTriviaDifficultyStr = UserDefaults.standard.string(forKey: "triviaDifficulty")
+            let savedTriviaQuestionsToAnswer = UserDefaults.standard.integer(forKey: "triviaQuestionsToAnswer")
             let savedTypeStr = UserDefaults.standard.string(forKey: "challengeType")
             let savedStrictMode = UserDefaults.standard.bool(forKey: "strictModeEnabled")
             let savedUserName = UserDefaults.standard.string(forKey: "userName")
@@ -227,6 +252,22 @@ class SettingsManager: ObservableObject {
 
                 if savedBreathingCycles > 0 {
                     self.breathingCycles = savedBreathingCycles
+                }
+
+                if let categoriesRaw = savedTriviaCategoriesRaw, !categoriesRaw.isEmpty {
+                    let categories = Set(categoriesRaw.compactMap { TriviaCategory(rawValue: $0) })
+                    if !categories.isEmpty {
+                        self.triviaCategories = categories
+                    }
+                }
+
+                if let triviaDifficultyStr = savedTriviaDifficultyStr,
+                   let difficulty = TriviaDifficulty(rawValue: triviaDifficultyStr) {
+                    self.triviaDifficulty = difficulty
+                }
+
+                if savedTriviaQuestionsToAnswer > 0 {
+                    self.triviaQuestionsToAnswer = savedTriviaQuestionsToAnswer
                 }
 
                 if let typeStr = savedTypeStr,
