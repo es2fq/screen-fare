@@ -9,6 +9,7 @@
 import SwiftUI
 import FamilyControls
 import ManagedSettings
+import ScreenFareShared
 
 // MARK: - UserDefaults Extension
 

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScreenFareShared
 
 // View state for challenge tab navigation
 enum ChallengeViewState {

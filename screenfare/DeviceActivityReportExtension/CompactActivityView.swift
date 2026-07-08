@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScreenFareShared
 
 struct CompactActivityView: View {
     let config: CompactActivityConfig

@@ -13,6 +13,7 @@ import DeviceActivity
 import UserNotifications
 import BackgroundTasks
 import UIKit
+import ScreenFareShared
 
 @MainActor
 class AppBlockingManager: ObservableObject {
@@ -25,28 +26,31 @@ class AppBlockingManager: ObservableObject {
     private let temporaryUnlocksKey = "com.screenfare.temporaryUnlocks"
     private let unlockDurationsKey = "com.screenfare.unlockDurations"
     private let blockedAppsKey = "com.screenfare.blockedApps"
-    private var activeMonitors: [Data: DeviceActivityName] = [:] // Track active device activity monitors
-    private var activeScheduleMonitors: [DeviceActivityName] = [] // Track active schedule monitors
+
+    // Token cache manager for encoding/decoding operations
+    private let tokenCache = TokenCacheManager()
+
+    // Persistence manager for UserDefaults I/O
+    private let persistence = BlockingPersistenceManager()
+
+    // Scheduling manager for DeviceActivity monitors
+    private let scheduling = DeviceActivitySchedulingManager()
+
+    // Temporary unlock manager for unlock/relock operations
+    private lazy var unlockManager: TemporaryUnlockManager = {
+        TemporaryUnlockManager(tokenCache: tokenCache, scheduling: scheduling, persistence: persistence)
+    }()
 
     @Published var isAuthorized = false
     @Published var selectedApps = FamilyActivitySelection()
     @Published var blockedApps: FamilyActivitySelection?
-    @Published var unlockExpiryTime: Date?
-    @Published var temporaryUnlocks: [Data: Date] = [:] // App/Category token data -> expiry time
-    @Published var unlockDurations: [Data: TimeInterval] = [:] // App/Category token data -> original duration
-    @Published var unlockStartTimes: [Data: Date] = [:] // App/Category token data -> when unlock started
-    @Published var temporaryCategoryUnlocks: [Data: Date] = [:] // Category token data -> expiry time
 
-    // Cache for decoded tokens to avoid repeated JSON decoding
-    // Limited to 100 entries to prevent unbounded growth
-    private var decodedAppTokenCache: [Data: ApplicationToken] = [:]
-    private var decodedCategoryTokenCache: [Data: ActivityCategoryToken] = [:]
-
-    // Reverse cache: Token -> Data (for encoding operations)
-    private var encodedAppTokenCache: [ApplicationToken: Data] = [:]
-    private var encodedCategoryTokenCache: [ActivityCategoryToken: Data] = [:]
-
-    private let maxCacheSize = 100
+    // Re-export unlock state from TemporaryUnlockManager for UI binding
+    var unlockExpiryTime: Date? { unlockManager.unlockExpiryTime }
+    var temporaryUnlocks: [Data: Date] { unlockManager.temporaryUnlocks }
+    var unlockDurations: [Data: TimeInterval] { unlockManager.unlockDurations }
+    var unlockStartTimes: [Data: Date] { unlockManager.unlockStartTimes }
+    var temporaryCategoryUnlocks: [Data: Date] { unlockManager.temporaryCategoryUnlocks }
 
     var isBlocking: Bool {
         blockedApps != nil
@@ -58,22 +62,12 @@ class AppBlockingManager: ObservableObject {
         // Start with all selected apps
         var blocked = Set(selectedApps.applicationTokens)
 
-        // Remove apps with active temporary unlocks
+        // Remove apps with active temporary unlocks (from unlock manager)
         let now = Date()
-        for (appTokenData, expiryTime) in temporaryUnlocks {
+        for (appTokenData, expiryTime) in unlockManager.temporaryUnlocks {
             if now < expiryTime {
-                // Use cached token if available, otherwise decode and cache
-                let appToken: ApplicationToken?
-                if let cached = decodedAppTokenCache[appTokenData] {
-                    appToken = cached
-                } else if let decoded = try? JSONDecoder().decode(ApplicationToken.self, from: appTokenData) {
-                    cacheAppToken(decoded, for: appTokenData)
-                    appToken = decoded
-                } else {
-                    appToken = nil
-                }
-
-                if let token = appToken {
+                // Use token cache for decoding
+                if let token = tokenCache.decodeAppToken(from: appTokenData) {
                     blocked.remove(token)
                 }
             }
@@ -88,22 +82,12 @@ class AppBlockingManager: ObservableObject {
         // Start with all selected categories
         var blocked = Set(selectedApps.categoryTokens)
 
-        // Remove categories with active temporary unlocks
+        // Remove categories with active temporary unlocks (from unlock manager)
         let now = Date()
-        for (categoryTokenData, expiryTime) in temporaryCategoryUnlocks {
+        for (categoryTokenData, expiryTime) in unlockManager.temporaryCategoryUnlocks {
             if now < expiryTime {
-                // Use cached token if available, otherwise decode and cache
-                let categoryToken: ActivityCategoryToken?
-                if let cached = decodedCategoryTokenCache[categoryTokenData] {
-                    categoryToken = cached
-                } else if let decoded = try? JSONDecoder().decode(ActivityCategoryToken.self, from: categoryTokenData) {
-                    cacheCategoryToken(decoded, for: categoryTokenData)
-                    categoryToken = decoded
-                } else {
-                    categoryToken = nil
-                }
-
-                if let token = categoryToken {
+                // Use token cache for decoding
+                if let token = tokenCache.decodeCategoryToken(from: categoryTokenData) {
                     blocked.remove(token)
                 }
             }
@@ -173,11 +157,7 @@ class AppBlockingManager: ObservableObject {
         if let observer = memoryWarningObserver {
             NotificationCenter.default.removeObserver(observer)
         }
-        // Clear all caches - use nonisolated access since deinit is not on main actor
-        decodedAppTokenCache.removeAll()
-        decodedCategoryTokenCache.removeAll()
-        encodedAppTokenCache.removeAll()
-        encodedCategoryTokenCache.removeAll()
+        // Note: Token cache cleanup is handled by TokenCacheManager
     }
 
     func checkAuthorizationStatus() {
@@ -199,27 +179,12 @@ class AppBlockingManager: ObservableObject {
         }
     }
 
-    // MARK: - Persistence
+    // MARK: - Persistence (Delegated to BlockingPersistenceManager)
 
     private func loadSelectedApps() {
-        // Load the persisted selected apps
-        var selection = FamilyActivitySelection()
+        let selection = persistence.loadSelectedApps()
 
-        // Load app tokens
-        if let data = sharedDefaults?.data(forKey: "com.screenfare.selectedApps"),
-           let appTokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: data),
-           !appTokens.isEmpty {
-            selection.applicationTokens = appTokens
-        }
-
-        // Load category tokens
-        if let data = sharedDefaults?.data(forKey: "com.screenfare.selectedCategories"),
-           let categoryTokens = try? JSONDecoder().decode(Set<ActivityCategoryToken>.self, from: data),
-           !categoryTokens.isEmpty {
-            selection.categoryTokens = categoryTokens
-        }
-
-        // Only update if we loaded something
+        // Only update if we loaded something (preserve original behavior)
         if !selection.applicationTokens.isEmpty || !selection.categoryTokens.isEmpty {
             selectedApps = selection
         }
@@ -227,16 +192,12 @@ class AppBlockingManager: ObservableObject {
 
     private func saveBlockedApps() {
         // Save a simple boolean flag for whether focus is on/off
-        if blockedApps != nil {
-            sharedDefaults?.set(true, forKey: blockedAppsKey)
-        } else {
-            sharedDefaults?.set(false, forKey: blockedAppsKey)
-        }
+        persistence.saveBlockingState(isBlocking: blockedApps != nil)
     }
 
     private func loadBlockedApps() {
         // Check if focus mode was active
-        let focusWasOn = sharedDefaults?.bool(forKey: blockedAppsKey) ?? false
+        let focusWasOn = persistence.loadBlockingState()
 
         if focusWasOn && !selectedApps.applicationTokens.isEmpty {
             // Focus was on and we have selected apps - restore the blocking state
@@ -247,49 +208,8 @@ class AppBlockingManager: ObservableObject {
         }
     }
 
-    private func saveTemporaryUnlocks() {
-        // Save app unlocks
-        guard let encoded = try? JSONEncoder().encode(temporaryUnlocks) else { return }
-        sharedDefaults?.set(encoded, forKey: temporaryUnlocksKey)
-
-        // Save category unlocks
-        guard let encodedCategories = try? JSONEncoder().encode(temporaryCategoryUnlocks) else { return }
-        sharedDefaults?.set(encodedCategories, forKey: "com.screenfare.temporaryCategoryUnlocks")
-
-        // Save durations
-        guard let encodedDurations = try? JSONEncoder().encode(unlockDurations) else { return }
-        sharedDefaults?.set(encodedDurations, forKey: unlockDurationsKey)
-    }
-
     func loadTemporaryUnlocks() {
-        print("[loadTemporaryUnlocks] Starting load - current in-memory: \(temporaryUnlocks.count) apps, \(temporaryCategoryUnlocks.count) categories")
-
-        // Load app unlocks
-        if let data = sharedDefaults?.data(forKey: temporaryUnlocksKey),
-           let decoded = try? JSONDecoder().decode([Data: Date].self, from: data) {
-            print("[loadTemporaryUnlocks] Loaded \(decoded.count) app unlocks from disk")
-            for (_, expiryTime) in decoded {
-                let remaining = expiryTime.timeIntervalSince(Date())
-                print("[loadTemporaryUnlocks]   - Unlock expires in \(remaining)s (at \(expiryTime))")
-            }
-            temporaryUnlocks = decoded
-        } else {
-            print("[loadTemporaryUnlocks] No app unlocks found in UserDefaults")
-        }
-
-        // Load category unlocks
-        if let data = sharedDefaults?.data(forKey: "com.screenfare.temporaryCategoryUnlocks"),
-           let decoded = try? JSONDecoder().decode([Data: Date].self, from: data) {
-            print("[loadTemporaryUnlocks] Loaded \(decoded.count) category unlocks from disk")
-            temporaryCategoryUnlocks = decoded
-        }
-
-        // Load durations
-        if let durationsData = sharedDefaults?.data(forKey: unlockDurationsKey),
-           let decodedDurations = try? JSONDecoder().decode([Data: TimeInterval].self, from: durationsData) {
-            print("[loadTemporaryUnlocks] Loaded \(decodedDurations.count) unlock durations")
-            unlockDurations = decodedDurations
-        }
+        unlockManager.loadUnlocks()
     }
 
 
@@ -312,26 +232,11 @@ class AppBlockingManager: ObservableObject {
         // Setup insights monitoring for screen time tracking
         setupInsightsMonitoring()
 
-        // Move all heavy work to background to keep UI responsive
-        let appsToEncode = selectedApps.applicationTokens
-        let categoriesToEncode = selectedApps.categoryTokens
-        let defaults = sharedDefaults
+        // Save selected apps to shared storage (async on background thread)
+        persistence.saveSelectedApps(selectedApps)
+
+        // Apply shields on background thread, then switch to main actor
         Task.detached(priority: .userInitiated) {
-            // Save selectedApps to shared storage (disk I/O on background thread)
-            if let encoded = try? JSONEncoder().encode(appsToEncode) {
-                defaults?.set(encoded, forKey: "com.screenfare.selectedApps")
-            }
-
-            // Save selectedCategories to shared storage
-            if let encoded = try? JSONEncoder().encode(categoriesToEncode) {
-                defaults?.set(encoded, forKey: "com.screenfare.selectedCategories")
-            }
-
-            // Note: The tokens themselves are already saved above with keys:
-            // - "com.screenfare.selectedApps" (ApplicationToken set)
-            // - "com.screenfare.selectedCategories" (ActivityCategoryToken set)
-            // The report extension will decode these tokens directly and compare them
-
             // Apply shields on main actor (only if within schedule)
             await MainActor.run { [weak self] in
                 guard let self = self else { return }
@@ -345,7 +250,7 @@ class AppBlockingManager: ObservableObject {
     }
 
     private func recalculateShields() {
-        print("[recalculateShields] 🛡️ Called - current unlocks: \(temporaryUnlocks.count) apps, \(temporaryCategoryUnlocks.count) categories")
+        print("[recalculateShields] 🛡️ Called - current unlocks: \(unlockManager.temporaryUnlocks.count) apps, \(unlockManager.temporaryCategoryUnlocks.count) categories")
 
         guard isBlocking else {
             // If blocking is off, clear all shields
@@ -381,585 +286,124 @@ class AppBlockingManager: ObservableObject {
     }
 
     func cleanupExpiredUnlocks() {
-        let now = Date()
-        let originalAppCount = temporaryUnlocks.count
-        let originalCategoryCount = temporaryCategoryUnlocks.count
+        // Delegate to unlock manager - it returns true if state changed
+        let stateChanged = unlockManager.cleanupExpiredUnlocks()
 
-        print("[cleanupExpiredUnlocks] Starting cleanup at \(now)")
-        print("[cleanupExpiredUnlocks] Current state: \(temporaryUnlocks.count) app unlocks, \(temporaryCategoryUnlocks.count) category unlocks")
-
-        // Log each app unlock before filtering
-        for (_, expiryTime) in temporaryUnlocks {
-            let remaining = expiryTime.timeIntervalSince(now)
-            let isExpired = expiryTime <= now
-            print("[cleanupExpiredUnlocks]   App unlock: expires at \(expiryTime), remaining \(remaining)s, expired=\(isExpired)")
-        }
-
-        // Get expired app tokens
-        let expiredTokens = temporaryUnlocks.filter { $0.value <= now }.map { $0.key }
-        print("[cleanupExpiredUnlocks] Found \(expiredTokens.count) expired app unlocks")
-
-        // Remove expired app unlocks
-        temporaryUnlocks = temporaryUnlocks.filter { $0.value > now }
-
-        // Also remove durations for expired unlocks
-        for token in expiredTokens {
-            unlockDurations.removeValue(forKey: token)
-        }
-
-        // Get expired category tokens
-        let expiredCategoryTokens = temporaryCategoryUnlocks.filter { $0.value <= now }.map { $0.key }
-        print("[cleanupExpiredUnlocks] Found \(expiredCategoryTokens.count) expired category unlocks")
-
-        // Remove expired category unlocks
-        temporaryCategoryUnlocks = temporaryCategoryUnlocks.filter { $0.value > now }
-
-        // Also remove durations for expired category unlocks
-        for token in expiredCategoryTokens {
-            unlockDurations.removeValue(forKey: token)
-        }
-
-        if temporaryUnlocks.count != originalAppCount || temporaryCategoryUnlocks.count != originalCategoryCount {
-            print("[cleanupExpiredUnlocks] State changed: \(originalAppCount) -> \(temporaryUnlocks.count) apps, \(originalCategoryCount) -> \(temporaryCategoryUnlocks.count) categories")
-            saveTemporaryUnlocks()
+        // Only recalculate shields if something changed
+        if stateChanged {
             recalculateShields()
-        } else {
-            print("[cleanupExpiredUnlocks] No changes needed")
         }
     }
 
     func removeBlocking() {
         // Clear token caches
-        clearTokenCaches()
+        tokenCache.clearTokenCaches()
 
-        // Stop all active device activity monitors
-        for (_, activityName) in activeMonitors {
-            activityCenter.stopMonitoring([activityName])
-        }
-        activeMonitors.removeAll()
+        // Stop all unlock timers (delegated to scheduling manager)
+        scheduling.stopAllUnlockTimers()
 
-        // Stop schedule monitors
+        // Stop schedule monitors (delegated to scheduling manager)
         stopScheduleMonitoring()
 
-        // Stop insights monitoring
+        // Stop insights monitoring (delegated to scheduling manager)
         stopInsightsMonitoring()
 
         // Clear all shields
         store.shield.applications = nil
         store.shield.applicationCategories = nil
         store.shield.webDomains = nil
-        unlockExpiryTime = nil
         blockedApps = nil
 
         // Save that focus is now off
         saveBlockedApps()
 
-        // Clear all temporary unlocks (user manually turned off Focus)
-        temporaryUnlocks.removeAll()
-        temporaryCategoryUnlocks.removeAll()
-        unlockDurations.removeAll()
-        saveTemporaryUnlocks()
+        // Clear all temporary unlocks (delegated to unlock manager)
+        unlockManager.clearAllUnlocks()
 
         // selectedApps is preserved so when Focus turns back on, the list is intact
     }
 
-    // MARK: - Cache Management
-
-    /// Clear token caches completely
-    private func clearTokenCaches() {
-        decodedAppTokenCache.removeAll()
-        decodedCategoryTokenCache.removeAll()
-        encodedAppTokenCache.removeAll()
-        encodedCategoryTokenCache.removeAll()
-    }
-
-    /// Trim caches if they exceed max size (LRU-style: remove oldest entries)
-    private func trimCachesIfNeeded() {
-        if decodedAppTokenCache.count > maxCacheSize {
-            // Remove oldest 20% of entries
-            let removeCount = maxCacheSize / 5
-            let keysToRemove = Array(decodedAppTokenCache.keys.prefix(removeCount))
-            keysToRemove.forEach { data in
-                if let token = decodedAppTokenCache.removeValue(forKey: data) {
-                    // Also remove from reverse cache
-                    encodedAppTokenCache.removeValue(forKey: token)
-                }
-            }
-            print("[AppBlockingManager] Trimmed app token cache: \(keysToRemove.count) entries removed")
-        }
-
-        if decodedCategoryTokenCache.count > maxCacheSize {
-            // Remove oldest 20% of entries
-            let removeCount = maxCacheSize / 5
-            let keysToRemove = Array(decodedCategoryTokenCache.keys.prefix(removeCount))
-            keysToRemove.forEach { data in
-                if let token = decodedCategoryTokenCache.removeValue(forKey: data) {
-                    // Also remove from reverse cache
-                    encodedCategoryTokenCache.removeValue(forKey: token)
-                }
-            }
-            print("[AppBlockingManager] Trimmed category token cache: \(keysToRemove.count) entries removed")
-        }
-    }
-
-    /// Add decoded token to cache with size limit enforcement
-    private func cacheAppToken(_ token: ApplicationToken, for data: Data) {
-        decodedAppTokenCache[data] = token
-        encodedAppTokenCache[token] = data // Bidirectional cache
-        trimCachesIfNeeded()
-    }
-
-    /// Add decoded category token to cache with size limit enforcement
-    private func cacheCategoryToken(_ token: ActivityCategoryToken, for data: Data) {
-        decodedCategoryTokenCache[data] = token
-        encodedCategoryTokenCache[token] = data // Bidirectional cache
-        trimCachesIfNeeded()
-    }
-
-    /// Encode app token with caching
-    private func encodeAppToken(_ token: ApplicationToken) -> Data? {
-        if let cached = encodedAppTokenCache[token] {
-            return cached
-        }
-        guard let encoded = try? JSONEncoder().encode(token) else { return nil }
-        cacheAppToken(token, for: encoded)
-        return encoded
-    }
-
-    /// Encode category token with caching
-    private func encodeCategoryToken(_ token: ActivityCategoryToken) -> Data? {
-        if let cached = encodedCategoryTokenCache[token] {
-            return cached
-        }
-        guard let encoded = try? JSONEncoder().encode(token) else { return nil }
-        cacheCategoryToken(token, for: encoded)
-        return encoded
-    }
+    // MARK: - Cache Management (Delegated to TokenCacheManager)
+    // Token encoding/decoding is now handled by TokenCacheManager
 
     func temporaryUnlock(appToken: ApplicationToken?, duration: TimeInterval) {
         guard let appToken = appToken else { return }
-        guard isBlocking else { return }
-        guard let appTokenData = encodeAppToken(appToken) else { return }
 
-        // Calculate start and end times
-        let startTime = Date()
-        let _ = startTime.addingTimeInterval(duration) // endTime unused
-
-        // Create unique activity name for this unlock
-        let activityName = DeviceActivityName("unlock.\(UUID().uuidString)")
-
-        // Store app token data in shared storage for the monitor extension
-        sharedDefaults?.set(appTokenData, forKey: "deviceActivity.\(activityName.rawValue).appToken")
-
-        // Store expiry timestamp and unlock flag for Shield Extension
-        let expiryTime = Date().addingTimeInterval(duration)
-        print("[temporaryUnlock] 🔓 Creating unlock - start: \(startTime), expiry: \(expiryTime), duration: \(duration)s")
-        sharedDefaults?.set(expiryTime.timeIntervalSince1970, forKey: "quotaEndTimestamp")
-        sharedDefaults?.set(true, forKey: "isCurrentlyUnlocked")
-
-        // Track this monitor
-        activeMonitors[appTokenData] = activityName
-
-        // Update temporary unlocks for UI tracking
-        temporaryUnlocks[appTokenData] = expiryTime
-        unlockDurations[appTokenData] = duration
-        unlockStartTimes[appTokenData] = startTime // Track when unlock started
-        print("[temporaryUnlock] Saving unlock to UserDefaults")
-        saveTemporaryUnlocks()
-
-        // Schedule chaining for reliable re-locking (especially for short timers)
-        scheduleReblockChain(appTokenData: appTokenData, activityName: activityName, expiryTime: expiryTime)
+        // Delegate to unlock manager
+        unlockManager.temporaryUnlock(appToken: appToken, duration: duration, isBlocking: isBlocking)
 
         // IMMEDIATELY update shields to remove this app
         recalculateShields()
     }
 
     private func removeTemporaryUnlock(appTokenData: Data) {
-        print("[removeTemporaryUnlock] 🔒 Removing unlock - had \(temporaryUnlocks.count) unlocks")
+        // Delegate to unlock manager
+        unlockManager.removeTemporaryUnlock(appTokenData: appTokenData)
 
-        // Clear cached decoded token
-        decodedAppTokenCache.removeValue(forKey: appTokenData)
-
-        // Stop monitoring if active
-        if let activityName = activeMonitors[appTokenData] {
-            print("[removeTemporaryUnlock] Stopping monitor: \(activityName.rawValue)")
-            activityCenter.stopMonitoring([activityName])
-            activeMonitors.removeValue(forKey: appTokenData)
-        }
-
-        temporaryUnlocks.removeValue(forKey: appTokenData)
-        unlockDurations.removeValue(forKey: appTokenData)
-        unlockStartTimes.removeValue(forKey: appTokenData)
-        print("[removeTemporaryUnlock] Now have \(temporaryUnlocks.count) unlocks, saving and recalculating")
-        saveTemporaryUnlocks()
+        // Recalculate shields after removal
         recalculateShields()
     }
 
     /// Re-lock an app by immediately removing its temporary unlock
     func relockApp(appData: Data) {
-        removeTemporaryUnlock(appTokenData: appData)
+        unlockManager.relockApp(appData: appData)
+        recalculateShields()
     }
 
     /// Re-lock a category by immediately removing its temporary unlock
     func relockCategory(categoryData: Data) {
-        removeTemporaryCategoryUnlock(categoryTokenData: categoryData)
+        unlockManager.relockCategory(categoryData: categoryData)
+        recalculateShields()
     }
 
     // MARK: - Category Unlock
 
     func temporaryUnlockCategory(categoryToken: ActivityCategoryToken?, duration: TimeInterval) {
         guard let categoryToken = categoryToken else { return }
-        guard isBlocking else { return }
-        guard let categoryTokenData = encodeCategoryToken(categoryToken) else { return }
 
-        let startTime = Date()
-        let expiryTime = startTime.addingTimeInterval(duration)
-
-        // Create unique activity name for this category unlock
-        let activityName = DeviceActivityName("unlock.category.\(UUID().uuidString)")
-
-        // Store category token data in shared storage for the monitor extension
-        sharedDefaults?.set(categoryTokenData, forKey: "deviceActivity.\(activityName.rawValue).categoryToken")
-
-        // Update temporary category unlocks
-        temporaryCategoryUnlocks[categoryTokenData] = expiryTime
-        unlockDurations[categoryTokenData] = duration
-        unlockStartTimes[categoryTokenData] = startTime
-        saveTemporaryUnlocks()
-
-        print("[AppBlockingManager] 🔓 Category unlock started: expiry=\(expiryTime), remaining=\(Int(duration))s")
-
-        // Track this monitor
-        activeMonitors[categoryTokenData] = activityName
-
-        // Schedule DeviceActivityMonitor for reliable re-locking
-        scheduleReblockChainForCategory(categoryTokenData: categoryTokenData, activityName: activityName, expiryTime: expiryTime)
+        // Delegate to unlock manager
+        unlockManager.temporaryUnlockCategory(categoryToken: categoryToken, duration: duration, isBlocking: isBlocking)
 
         // IMMEDIATELY update shields to remove this category
         recalculateShields()
-
-        print("[AppBlockingManager] ✓ Category temporarily unlocked for \(Int(duration / 60)) minutes")
     }
 
     private func removeTemporaryCategoryUnlock(categoryTokenData: Data) {
-        // Clear cached decoded token
-        decodedCategoryTokenCache.removeValue(forKey: categoryTokenData)
+        // Delegate to unlock manager
+        unlockManager.removeTemporaryCategoryUnlock(categoryTokenData: categoryTokenData)
 
-        // Stop monitoring if active
-        if let activityName = activeMonitors[categoryTokenData] {
-            activityCenter.stopMonitoring([activityName])
-            activeMonitors.removeValue(forKey: categoryTokenData)
-        }
-
-        temporaryCategoryUnlocks.removeValue(forKey: categoryTokenData)
-        unlockDurations.removeValue(forKey: categoryTokenData)
-        unlockStartTimes.removeValue(forKey: categoryTokenData)
-        saveTemporaryUnlocks()
+        // Recalculate shields after removal
         recalculateShields()
-
-        print("[AppBlockingManager] 🔒 Category re-locked after temporary unlock expired")
     }
 
-    /// Schedule DeviceActivity monitor to re-lock at expiry time
-    /// For short timers (<15 min), uses warningTime trick
-    /// For long timers (≥15 min), uses direct intervalDidEnd
-    private func scheduleReblockChain(appTokenData: Data, activityName: DeviceActivityName, expiryTime: Date) {
-        let duration = expiryTime.timeIntervalSinceNow
-
-        guard duration > 0 else {
-            print("[AppBlockingManager] ⚠️ Expiry time already passed")
-            return
-        }
-
-        let calendar = Calendar.current
-        let now = Date()
-
-        // THE TRICK: For short unlocks, set interval to 15 min but use warningTime
-        // to fire at the actual expiry time
-        if duration < 15 * 60 {
-            // Short timer: Use warningTime trick (like Opal/Jomo)
-            let intervalEnd = now.addingTimeInterval(15 * 60) // Always 15 min (minimum)
-            let warningMinutes = Int((15 * 60 - duration) / 60) // Fire warning at actual expiry
-
-            let start = DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: now),
-                minute: calendar.component(.minute, from: now),
-                second: calendar.component(.second, from: now)
-            )
-
-            let end = DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: intervalEnd),
-                minute: calendar.component(.minute, from: intervalEnd),
-                second: calendar.component(.second, from: intervalEnd)
-            )
-
-            let schedule = DeviceActivitySchedule(
-                intervalStart: start,
-                intervalEnd: end,
-                repeats: false,
-                warningTime: DateComponents(minute: warningMinutes) // Fires at actual expiry
-            )
-
-            do {
-                try activityCenter.startMonitoring(activityName, during: schedule)
-                print("[AppBlockingManager] ✓ Short timer: interval=15min, warningTime=\(warningMinutes)min")
-            } catch {
-                print("[AppBlockingManager] ⚠️ Failed to schedule: \(error)")
-            }
-        } else {
-            // Long timer: Use direct intervalDidEnd
-            let intervalEnd = expiryTime
-
-            let start = DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: now),
-                minute: calendar.component(.minute, from: now),
-                second: calendar.component(.second, from: now)
-            )
-
-            let end = DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: intervalEnd),
-                minute: calendar.component(.minute, from: intervalEnd),
-                second: calendar.component(.second, from: intervalEnd)
-            )
-
-            let schedule = DeviceActivitySchedule(
-                intervalStart: start,
-                intervalEnd: end,
-                repeats: false
-            )
-
-            do {
-                try activityCenter.startMonitoring(activityName, during: schedule)
-                print("[AppBlockingManager] ✓ Long timer: interval ends in \(Int(duration))s")
-            } catch {
-                print("[AppBlockingManager] ⚠️ Failed to schedule: \(error)")
-            }
-        }
-    }
-
-    /// Schedule DeviceActivity monitor to re-lock category at expiry time
-    /// Similar to scheduleReblockChain but for categories (no usage tracking events)
-    private func scheduleReblockChainForCategory(categoryTokenData: Data, activityName: DeviceActivityName, expiryTime: Date) {
-        let duration = expiryTime.timeIntervalSinceNow
-
-        guard duration > 0 else {
-            print("[AppBlockingManager] ⚠️ Category expiry time already passed")
-            return
-        }
-
-        let calendar = Calendar.current
-        let now = Date()
-
-        // Use same approach as apps: warningTime trick for short timers, intervalDidEnd for long
-        if duration < 15 * 60 {
-            // Short timer: Use warningTime trick
-            let intervalEnd = now.addingTimeInterval(15 * 60)
-            let warningMinutes = Int((15 * 60 - duration) / 60)
-
-            let start = DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: now),
-                minute: calendar.component(.minute, from: now),
-                second: calendar.component(.second, from: now)
-            )
-
-            let end = DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: intervalEnd),
-                minute: calendar.component(.minute, from: intervalEnd),
-                second: calendar.component(.second, from: intervalEnd)
-            )
-
-            let schedule = DeviceActivitySchedule(
-                intervalStart: start,
-                intervalEnd: end,
-                repeats: false,
-                warningTime: DateComponents(minute: warningMinutes)
-            )
-
-            // No usage tracking events for categories (empty dict)
-            let events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
-
-            do {
-                try activityCenter.startMonitoring(activityName, during: schedule, events: events)
-                print("[AppBlockingManager] ✓ Category short timer: interval=15min, warningTime=\(warningMinutes)min (fires in \(Int(duration))s)")
-            } catch {
-                print("[AppBlockingManager] ⚠️ Failed to schedule category timer: \(error)")
-            }
-        } else {
-            // Long timer: Use direct intervalDidEnd
-            let intervalEnd = expiryTime
-
-            let start = DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: now),
-                minute: calendar.component(.minute, from: now),
-                second: calendar.component(.second, from: now)
-            )
-
-            let end = DateComponents(
-                calendar: calendar,
-                hour: calendar.component(.hour, from: intervalEnd),
-                minute: calendar.component(.minute, from: intervalEnd),
-                second: calendar.component(.second, from: intervalEnd)
-            )
-
-            let schedule = DeviceActivitySchedule(
-                intervalStart: start,
-                intervalEnd: end,
-                repeats: false
-            )
-
-            // No usage tracking events for categories (empty dict)
-            let events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
-
-            do {
-                try activityCenter.startMonitoring(activityName, during: schedule, events: events)
-                print("[AppBlockingManager] ✓ Category long timer: interval ends in \(Int(duration))s")
-            } catch {
-                print("[AppBlockingManager] ⚠️ Failed to schedule category timer: \(error)")
-            }
-        }
-    }
+    // MARK: - Unlock Time Query
 
     func remainingUnlockTime(for appToken: ApplicationToken) -> TimeInterval? {
-        guard let appTokenData = encodeAppToken(appToken),
-              let expiryTime = temporaryUnlocks[appTokenData],
-              Date() < expiryTime else {
-            return nil
-        }
-        return expiryTime.timeIntervalSince(Date())
+        return unlockManager.remainingUnlockTime(for: appToken)
     }
 
-    // MARK: - Schedule Monitoring
+    // MARK: - Schedule Monitoring (Delegated to DeviceActivitySchedulingManager)
 
     func setupScheduleMonitoring() {
         let schedule = ScheduleManager.shared.schedule
-
-        // Only setup monitors if in scheduled mode
-        guard schedule.mode == .scheduled else {
-            print("[AppBlockingManager] Schedule mode is 'all day', no monitors needed")
-            return
-        }
-
-        _ = Calendar.current
-        _ = Date()
-
-        for window in schedule.windows {
-            // Convert minutes to hour/minute components
-            let startHour = window.start / 60
-            let startMinute = window.start % 60
-            let endHour = window.end / 60
-            let endMinute = window.end % 60
-
-            // Check if this is an overnight window (e.g., 10 PM - 2 AM)
-            if window.end < window.start {
-                // Split into two monitors:
-                // 1. Same-day portion: start time - 11:59 PM
-                // 2. Next-day portion: 12:00 AM - end time
-
-                // Monitor 1: start - 23:59
-                let activityName1 = DeviceActivityName("schedule.\(window.id).part1")
-                let start1 = DateComponents(hour: startHour, minute: startMinute)
-                let end1 = DateComponents(hour: 23, minute: 59)
-
-                let deviceSchedule1 = DeviceActivitySchedule(
-                    intervalStart: start1,
-                    intervalEnd: end1,
-                    repeats: true
-                )
-
-                do {
-                    try activityCenter.startMonitoring(activityName1, during: deviceSchedule1)
-                    activeScheduleMonitors.append(activityName1)
-                    print("[AppBlockingManager] ✅ Schedule monitor created (part 1): \(window.id) (\(startHour):\(String(format: "%02d", startMinute)) - 23:59)")
-                } catch {
-                    print("[AppBlockingManager] ⚠️ Failed to create schedule monitor part 1: \(error)")
-                }
-
-                // Monitor 2: 00:00 - end time
-                let activityName2 = DeviceActivityName("schedule.\(window.id).part2")
-                let start2 = DateComponents(hour: 0, minute: 0)
-                let end2 = DateComponents(hour: endHour, minute: endMinute)
-
-                let deviceSchedule2 = DeviceActivitySchedule(
-                    intervalStart: start2,
-                    intervalEnd: end2,
-                    repeats: true
-                )
-
-                do {
-                    try activityCenter.startMonitoring(activityName2, during: deviceSchedule2)
-                    activeScheduleMonitors.append(activityName2)
-                    print("[AppBlockingManager] ✅ Schedule monitor created (part 2): \(window.id) (00:00 - \(endHour):\(String(format: "%02d", endMinute)))")
-                } catch {
-                    print("[AppBlockingManager] ⚠️ Failed to create schedule monitor part 2: \(error)")
-                }
-            } else {
-                // Normal same-day window
-                let activityName = DeviceActivityName("schedule.\(window.id)")
-                let start = DateComponents(hour: startHour, minute: startMinute)
-                let end = DateComponents(hour: endHour, minute: endMinute)
-
-                let deviceSchedule = DeviceActivitySchedule(
-                    intervalStart: start,
-                    intervalEnd: end,
-                    repeats: true
-                )
-
-                do {
-                    try activityCenter.startMonitoring(activityName, during: deviceSchedule)
-                    activeScheduleMonitors.append(activityName)
-                    print("[AppBlockingManager] ✅ Schedule monitor created: \(window.id) (\(startHour):\(String(format: "%02d", startMinute)) - \(endHour):\(String(format: "%02d", endMinute)))")
-                } catch {
-                    print("[AppBlockingManager] ⚠️ Failed to create schedule monitor: \(error)")
-                }
-            }
-        }
+        scheduling.setupScheduleMonitoring(schedule: schedule)
     }
 
     func stopScheduleMonitoring() {
-        // Stop all tracked schedule monitors (handles deleted/changed windows)
-        if !activeScheduleMonitors.isEmpty {
-            activityCenter.stopMonitoring(activeScheduleMonitors)
-            print("[AppBlockingManager] 🛑 Stopped \(activeScheduleMonitors.count) schedule monitors")
-            activeScheduleMonitors.removeAll()
-        }
+        scheduling.stopScheduleMonitoring()
     }
 
-    // MARK: - Insights Monitoring
+    // MARK: - Insights Monitoring (Delegated to DeviceActivitySchedulingManager)
 
     func setupInsightsMonitoring() {
-        // Set up DeviceActivity monitoring for screen time insights
-        // This runs 24/7 to track usage of ALL apps for reporting
-
-        let activityName = DeviceActivityName("insights.daily")
-
-        // Create a daily schedule that resets at midnight
-        let schedule = DeviceActivitySchedule(
-            intervalStart: DateComponents(hour: 0, minute: 0),
-            intervalEnd: DateComponents(hour: 23, minute: 59),
-            repeats: true
-        )
-
-        do {
-            // Monitor all apps (no filter = all apps)
-            try activityCenter.startMonitoring(activityName, during: schedule)
-            print("[AppBlockingManager] ✅ Insights monitoring started for all apps")
-        } catch {
-            print("[AppBlockingManager] ⚠️ Failed to start insights monitoring: \(error)")
-        }
+        scheduling.setupInsightsMonitoring()
     }
 
     func stopInsightsMonitoring() {
-        let activityName = DeviceActivityName("insights.daily")
-        activityCenter.stopMonitoring([activityName])
-        print("[AppBlockingManager] 🛑 Stopped insights monitoring")
+        scheduling.stopInsightsMonitoring()
     }
+
+    // MARK: - Schedule Change Handler
 
     private func handleScheduleChange() {
         // Only handle schedule changes if we have apps selected to block
@@ -1015,7 +459,7 @@ class AppBlockingManager: ObservableObject {
 
     private func handleMemoryWarning() {
         print("[AppBlockingManager] ⚠️ Memory warning received, clearing caches")
-        clearTokenCaches()
+        tokenCache.clearTokenCaches()
         print("[AppBlockingManager] ✓ Caches cleared to free memory")
     }
 }

@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import ScreenFareShared
 
 struct DailyStats: Codable {
     var date: String // "YYYY-MM-DD"

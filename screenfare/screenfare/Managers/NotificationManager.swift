@@ -2,6 +2,26 @@
 //  NotificationManager.swift
 //  Screen Fare
 //
+//  Manages user-visible notifications (alerts, banners, sounds)
+//  via iOS UserNotifications framework (UNUserNotificationCenter)
+//
+//  ⚠️ NOTE: This is different from DarwinNotificationManager!
+//
+//  ## Purpose
+//  - Handles user-facing notifications that appear in notification center
+//  - Requests notification permissions from the user
+//  - Configures notification actions (e.g., "Pay Your Fare" button)
+//  - Responds to user interactions with notifications
+//
+//  ## Use Cases
+//  - Unlock challenge notifications when app is in background
+//  - Reminder notifications for schedule changes
+//  - Any notification that needs user permission and appears in notification center
+//
+//  ## Related Managers
+//  - **DarwinNotificationManager**: For cross-process communication (extension → app)
+//    without user permission or visible UI
+//
 //  Created by Erik Song on 5/3/26.
 //
 
@@ -10,10 +30,12 @@ import Combine
 import UserNotifications
 import SwiftUI
 
+/// Manages user-visible notifications through iOS UserNotifications framework
 @MainActor
 class NotificationManager: NSObject, ObservableObject {
     static let shared = NotificationManager()
 
+    /// Triggers challenge view when user taps notification or when foreground notification arrives
     @Published var shouldShowChallenge = false
 
     override private init() {
@@ -22,6 +44,8 @@ class NotificationManager: NSObject, ObservableObject {
         // Don't auto-request authorization - let onboarding handle it
     }
 
+    /// Requests permission to show alerts, sounds, and badges
+    /// Called during onboarding flow after user understands what they're for
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
@@ -30,11 +54,14 @@ class NotificationManager: NSObject, ObservableObject {
         }
     }
 
+    /// Configures notification categories with custom actions
+    /// Currently defines:
+    /// - "UNLOCK_CHALLENGE" category with "Pay Your Fare" action button
     func setupNotificationCategories() {
         let unlockAction = UNNotificationAction(
             identifier: "UNLOCK_ACTION",
             title: "Pay Your Fare",
-            options: [.foreground]
+            options: [.foreground]  // Opens app when tapped
         )
 
         let unlockCategory = UNNotificationCategory(
@@ -47,6 +74,8 @@ class NotificationManager: NSObject, ObservableObject {
         UNUserNotificationCenter.current().setNotificationCategories([unlockCategory])
     }
 }
+
+// MARK: - UNUserNotificationCenterDelegate
 
 extension NotificationManager: UNUserNotificationCenterDelegate {
     // Handle notification when app is in foreground

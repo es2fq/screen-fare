@@ -9,6 +9,7 @@ import ManagedSettings
 import ManagedSettingsUI
 import FamilyControls
 import UIKit
+import ScreenFareShared
 
 /// Defines the appearance of the shield shown when blocked apps are accessed
 class ShieldConfigurationExtension: ShieldConfigurationDataSource {

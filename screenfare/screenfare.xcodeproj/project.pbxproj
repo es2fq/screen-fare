@@ -8,6 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		98AD5BCB2FF2131F00CF0E4B /* DeviceActivityReportExtension.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 98AD5BBF2FF2131F00CF0E4B /* DeviceActivityReportExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		98AD5C062FFD95BB00CF0E4B /* ScreenFareShared in Frameworks */ = {isa = PBXBuildFile; productRef = 98AD5C052FFD95BB00CF0E4B /* ScreenFareShared */; };
+		98AD5C092FFD960800CF0E4B /* ScreenFareShared in Frameworks */ = {isa = PBXBuildFile; productRef = 98AD5C082FFD960800CF0E4B /* ScreenFareShared */; };
+		98AD5C0C2FFD962A00CF0E4B /* ScreenFareShared in Frameworks */ = {isa = PBXBuildFile; productRef = 98AD5C0B2FFD962A00CF0E4B /* ScreenFareShared */; };
+		98AD5C0E2FFD964F00CF0E4B /* ScreenFareShared in Frameworks */ = {isa = PBXBuildFile; productRef = 98AD5C0D2FFD964F00CF0E4B /* ScreenFareShared */; };
+		98AD5C102FFD965200CF0E4B /* ScreenFareShared in Frameworks */ = {isa = PBXBuildFile; productRef = 98AD5C0F2FFD965200CF0E4B /* ScreenFareShared */; };
+		98AD5C122FFD965600CF0E4B /* ScreenFareShared in Frameworks */ = {isa = PBXBuildFile; productRef = 98AD5C112FFD965600CF0E4B /* ScreenFareShared */; };
 		98B0B5502FD9BBFC00933948 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B0B54F2FD9BBFC00933948 /* ManagedSettings.framework */; };
 		98B0B5522FD9BBFC00933948 /* ManagedSettingsUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B0B5512FD9BBFC00933948 /* ManagedSettingsUI.framework */; };
 		98B0B55A2FD9BBFC00933948 /* ShieldConfigurationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 98B0B54D2FD9BBFC00933948 /* ShieldConfigurationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -201,6 +207,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				98AD5C062FFD95BB00CF0E4B /* ScreenFareShared in Frameworks */,
+				98AD5C0C2FFD962A00CF0E4B /* ScreenFareShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -208,6 +216,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				98AD5C122FFD965600CF0E4B /* ScreenFareShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -217,6 +226,7 @@
 			files = (
 				98B0B5502FD9BBFC00933948 /* ManagedSettings.framework in Frameworks */,
 				98B0B5522FD9BBFC00933948 /* ManagedSettingsUI.framework in Frameworks */,
+				98AD5C092FFD960800CF0E4B /* ScreenFareShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,6 +235,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				98B0B5692FD9BCCC00933948 /* ManagedSettings.framework in Frameworks */,
+				98AD5C0E2FFD964F00CF0E4B /* ScreenFareShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -233,6 +244,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				98B0B58A2FDA594900933948 /* DeviceActivity.framework in Frameworks */,
+				98AD5C102FFD965200CF0E4B /* ScreenFareShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -300,6 +312,8 @@
 			);
 			name = screenfare;
 			packageProductDependencies = (
+				98AD5C052FFD95BB00CF0E4B /* ScreenFareShared */,
+				98AD5C0B2FFD962A00CF0E4B /* ScreenFareShared */,
 			);
 			productName = screenfare;
 			productReference = 986783A52FA82DC20091CF6D /* screenfare.app */;
@@ -322,6 +336,7 @@
 			);
 			name = DeviceActivityReportExtension;
 			packageProductDependencies = (
+				98AD5C112FFD965600CF0E4B /* ScreenFareShared */,
 			);
 			productName = DeviceActivityReportExtension;
 			productReference = 98AD5BBF2FF2131F00CF0E4B /* DeviceActivityReportExtension.appex */;
@@ -344,6 +359,7 @@
 			);
 			name = ShieldConfigurationExtension;
 			packageProductDependencies = (
+				98AD5C082FFD960800CF0E4B /* ScreenFareShared */,
 			);
 			productName = ShieldConfigurationExtension;
 			productReference = 98B0B54D2FD9BBFC00933948 /* ShieldConfigurationExtension.appex */;
@@ -366,6 +382,7 @@
 			);
 			name = ShieldActionExtension;
 			packageProductDependencies = (
+				98AD5C0D2FFD964F00CF0E4B /* ScreenFareShared */,
 			);
 			productName = ShieldActionExtension;
 			productReference = 98B0B5682FD9BCCC00933948 /* ShieldActionExtension.appex */;
@@ -388,6 +405,7 @@
 			);
 			name = DeviceMonitorActivityExtension;
 			packageProductDependencies = (
+				98AD5C0F2FFD965200CF0E4B /* ScreenFareShared */,
 			);
 			productName = DeviceMonitorActivityExtension;
 			productReference = 98B0B5882FDA594900933948 /* DeviceMonitorActivityExtension.appex */;
@@ -429,6 +447,9 @@
 			);
 			mainGroup = 9867839C2FA82DC20091CF6D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				98AD5C0A2FFD962A00CF0E4B /* XCLocalSwiftPackageReference "../ScreenFareShared" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 986783A62FA82DC20091CF6D /* Products */;
 			projectDirPath = "";
@@ -1042,6 +1063,43 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		98AD5C0A2FFD962A00CF0E4B /* XCLocalSwiftPackageReference "../ScreenFareShared" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../ScreenFareShared;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		98AD5C052FFD95BB00CF0E4B /* ScreenFareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScreenFareShared;
+		};
+		98AD5C082FFD960800CF0E4B /* ScreenFareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScreenFareShared;
+		};
+		98AD5C0B2FFD962A00CF0E4B /* ScreenFareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScreenFareShared;
+		};
+		98AD5C0D2FFD964F00CF0E4B /* ScreenFareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 98AD5C0A2FFD962A00CF0E4B /* XCLocalSwiftPackageReference "../ScreenFareShared" */;
+			productName = ScreenFareShared;
+		};
+		98AD5C0F2FFD965200CF0E4B /* ScreenFareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 98AD5C0A2FFD962A00CF0E4B /* XCLocalSwiftPackageReference "../ScreenFareShared" */;
+			productName = ScreenFareShared;
+		};
+		98AD5C112FFD965600CF0E4B /* ScreenFareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 98AD5C0A2FFD962A00CF0E4B /* XCLocalSwiftPackageReference "../ScreenFareShared" */;
+			productName = ScreenFareShared;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9867839D2FA82DC20091CF6D /* Project object */;
 }

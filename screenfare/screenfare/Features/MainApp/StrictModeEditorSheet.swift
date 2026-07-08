@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScreenFareShared
 
 struct StrictModeEditorSheet: View {
     @ObservedObject var settings: SettingsManager

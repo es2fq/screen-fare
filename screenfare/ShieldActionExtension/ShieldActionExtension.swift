@@ -10,6 +10,7 @@ import ManagedSettingsUI
 import FamilyControls
 import UserNotifications
 import Foundation
+import ScreenFareShared
 
 /// Handles actions when user taps buttons on the shield
 class ShieldActionExtension: ShieldActionDelegate {

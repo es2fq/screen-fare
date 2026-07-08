@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 import FamilyControls
+import ScreenFareShared
 
 struct HistoryEvent: Codable, Identifiable {
     let id: UUID

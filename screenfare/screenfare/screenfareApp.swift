@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScreenFareShared
 
 @main
 struct screenfareApp: App {

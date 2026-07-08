@@ -9,6 +9,7 @@ import Foundation
 import Combine
 import UserNotifications
 import FamilyControls
+import ScreenFareShared
 
 class SettingsManager: ObservableObject {
     static let shared = SettingsManager()

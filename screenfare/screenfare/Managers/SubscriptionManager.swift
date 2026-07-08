@@ -8,6 +8,7 @@
 import Foundation
 import StoreKit
 import Combine
+import ScreenFareShared
 
 @MainActor
 class SubscriptionManager: ObservableObject {

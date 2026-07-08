@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScreenFareShared
 
 struct TimelineBar: View {
     let windows: [BlockingWindow]

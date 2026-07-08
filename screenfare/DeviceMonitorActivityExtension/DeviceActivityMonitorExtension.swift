@@ -9,6 +9,7 @@ import DeviceActivity
 import ManagedSettings
 import FamilyControls
 import Foundation
+import ScreenFareShared
 
 // This extension runs with system privileges and can forcibly lock apps
 // even when the user is actively using them

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScreenFareShared
 
 struct ScheduleEditorSheet: View {
     @ObservedObject var scheduleManager: ScheduleManager

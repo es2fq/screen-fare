@@ -356,7 +356,7 @@ struct TodayView: View {
                         // Empty state - matches design from empty-states.jsx
                         EmptyState(
                             icon: EmptyStateIcons.recent(),
-                            title: Text("Nothing ") + Text("yet").font(.instrumentSerif(22, italic: true)).foregroundColor(.focusAccent),
+                            title: Text("Nothing yet ") + Text("today").font(.instrumentSerif(22, italic: true)).foregroundColor(.focusAccent),
                             message: "Open or walk away from a blocked app and it'll show up here."
                         )
                     } else {

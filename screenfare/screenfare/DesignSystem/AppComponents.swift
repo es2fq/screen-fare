@@ -1,9 +1,8 @@
 //
-//  MainAppDesignSystem.swift
+//  AppComponents.swift
 //  Screen Fare
 //
-//  Design system for Screen Fare main app screens
-//  Matches the Anthropic design specifications exactly
+//  Reusable UI components for main app screens
 //
 
 import SwiftUI

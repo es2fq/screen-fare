@@ -9,6 +9,7 @@
 import SwiftUI
 import FamilyControls
 import ManagedSettings
+import ScreenFareShared
 
 struct BlocksView: View {
     @StateObject private var blockingManager = AppBlockingManager.shared

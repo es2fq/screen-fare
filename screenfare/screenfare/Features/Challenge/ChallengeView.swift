@@ -9,6 +9,7 @@
 import SwiftUI
 import FamilyControls
 import ManagedSettings
+import ScreenFareShared
 
 struct ChallengeView: View {
     @Environment(\.dismiss) private var dismiss

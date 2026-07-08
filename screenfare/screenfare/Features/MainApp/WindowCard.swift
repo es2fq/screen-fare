@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScreenFareShared
 
 struct WindowCard: View {
     @Binding var window: BlockingWindow
