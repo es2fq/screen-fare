@@ -317,6 +317,10 @@ class SettingsManager: ObservableObject {
                 UserDefaults.appGroup?.set(self.challengeType.rawValue, forKey: "challengeType")
 
                 self.hasLoadedSettings = true
+
+                // Update permission statuses from actual system authorization (not cached values)
+                // This ensures the UI reflects current state, not stale UserDefaults data
+                self.updateAllPermissions()
             }
         }.value
     }
