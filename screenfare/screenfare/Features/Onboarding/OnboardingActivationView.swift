@@ -85,7 +85,7 @@ struct OnboardingActivationView: View {
         OnboardingScreen {
             VStack(spacing: 0) {
                 Spacer()
-                    .frame(height: 18)
+                    .frame(height: 24)
 
                 // Status / headline — crossfades from "arming" to "on"
                 ZStack {
