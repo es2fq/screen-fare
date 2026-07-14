@@ -30,7 +30,7 @@ struct PaywallView: View {
         var price: String {
             switch self {
             case .monthly: return "$4.99"
-            case .annual: return "$49.99"
+            case .annual: return "$39.99"
             }
         }
 
@@ -44,14 +44,14 @@ struct PaywallView: View {
         var note: String {
             switch self {
             case .monthly: return "Billed monthly"
-            case .annual: return "Just $4.17/mo, billed yearly"
+            case .annual: return "Just $3.33/mo, billed yearly"
             }
         }
 
         var badge: String? {
             switch self {
             case .monthly: return nil
-            case .annual: return "Save 17%"
+            case .annual: return "Save 33%"
             }
         }
     }
@@ -110,7 +110,7 @@ struct PaywallView: View {
                                 FeatureRow(
                                     iconName: "ticket",
                                     title: "Access to all fares",
-                                    subtitle: "Every kind of friction — pick what fits the moment."
+                                    subtitle: "Pick what friction fits the moment."
                                 )
 
                                 FeatureRow(
@@ -122,7 +122,7 @@ struct PaywallView: View {
                                 FeatureRow(
                                     iconName: "lock.fill",
                                     title: "Strict mode",
-                                    subtitle: "Stay committed by locking changes behind a fare."
+                                    subtitle: "Stay committed by locking changes."
                                 )
                             }
                             .padding(.bottom, 20)
@@ -209,12 +209,12 @@ struct PaywallView: View {
 
 struct ChallengeProofPanel: View {
     let challenges = [
+        ("Math", "plus.forwardslash.minus"),
         ("Typing", "keyboard"),
         ("Memory", "brain.head.profile"),
         ("Breathing", "wind"),
-        ("Intent", "bubble.left.fill"),
-        ("Patience", "hourglass"),
-        ("Walk", "figure.walk")
+        ("Trivia", "lightbulb"),
+        ("Walking", "figure.walk")
     ]
 
     var body: some View {
@@ -241,6 +241,28 @@ struct ChallengeProofPanel: View {
                     .padding(.vertical, 10)
                     .padding(.horizontal, 4)
                 }
+            }
+
+            // "New fares on the way" hint
+            VStack(spacing: 0) {
+                // Separator line
+                Rectangle()
+                    .fill(Color.focusLine)
+                    .frame(height: 1)
+                    .padding(.top, 12)
+
+                // Hint with dot indicator
+                HStack(spacing: 6) {
+                    // Accent dot
+                    Circle()
+                        .fill(Color.focusAccent)
+                        .frame(width: 5, height: 5)
+
+                    Text("New fares on the way — all included")
+                        .font(.inter(11.5, weight: .medium))
+                        .foregroundColor(.focusMuted)
+                }
+                .padding(.top, 12)
             }
         }
         .padding(14)

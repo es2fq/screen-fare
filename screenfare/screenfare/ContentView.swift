@@ -25,9 +25,16 @@ struct ContentView: View {
                 MainTabView(selectedTab: $selectedTab)
                     .environment(\.selectedTab, $selectedTab)
                     .sheet(isPresented: $showingChallenge) {
-                        ChallengeView()
-                            .environment(\.selectedTab, $selectedTab)
-                            .id(showingChallenge) // Force re-init when sheet toggles
+                        ChallengeView(
+                            onNavigateToSettings: {
+                                showingChallenge = false
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    selectedTab = 3
+                                }
+                            }
+                        )
+                        .environment(\.selectedTab, $selectedTab)
+                        .id(showingChallenge) // Force re-init when sheet toggles
                     }
                     .onChange(of: notificationManager.shouldShowChallenge) { _, _ in
                         handleChallengeRequest(from: "NotificationManager")

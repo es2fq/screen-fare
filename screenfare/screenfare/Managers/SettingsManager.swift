@@ -9,6 +9,7 @@ import Foundation
 import Combine
 import UserNotifications
 import FamilyControls
+import CoreMotion
 import ScreenFareShared
 
 class SettingsManager: ObservableObject {
@@ -68,6 +69,12 @@ class SettingsManager: ObservableObject {
     @Published var triviaQuestionsToAnswer: Int {
         didSet {
             UserDefaults.standard.set(triviaQuestionsToAnswer, forKey: "triviaQuestionsToAnswer")
+        }
+    }
+
+    @Published var walkingStepsRequired: Int {
+        didSet {
+            UserDefaults.standard.set(walkingStepsRequired, forKey: "walkingStepsRequired")
         }
     }
 
@@ -142,12 +149,11 @@ class SettingsManager: ObservableObject {
         }
     }
 
-    // TODO: Re-enable once we have a step challenge
-    // @Published var healthPermission: PermissionStatus {
-    //     didSet {
-    //         UserDefaults.standard.set(healthPermission.rawValue, forKey: "healthPermission")
-    //     }
-    // }
+    @Published var motionPermission: PermissionStatus {
+        didSet {
+            UserDefaults.standard.set(motionPermission.rawValue, forKey: "motionPermission")
+        }
+    }
 
     @Published var notificationPermission: PermissionStatus {
         didSet {
@@ -171,6 +177,7 @@ class SettingsManager: ObservableObject {
         self.triviaCategories = [.general, .science, .history, .geography] // Default 4 categories
         self.triviaDifficulty = .medium
         self.triviaQuestionsToAnswer = 3 // Default 3 questions
+        self.walkingStepsRequired = 20 // Default 20 steps
         self.challengeType = .math
 
         // Load synchronously - needed immediately for ContentView onAppear animation logic
@@ -185,6 +192,7 @@ class SettingsManager: ObservableObject {
         self.strictProtectShorten = false
         self.strictProtectChallenge = false
         self.screenTimePermission = .granted
+        self.motionPermission = .notDetermined
         self.notificationPermission = .notDetermined
 
         // Load settings asynchronously
@@ -215,6 +223,7 @@ class SettingsManager: ObservableObject {
             let savedTriviaCategoriesRaw = UserDefaults.standard.array(forKey: "triviaCategories") as? [String]
             let savedTriviaDifficultyStr = UserDefaults.standard.string(forKey: "triviaDifficulty")
             let savedTriviaQuestionsToAnswer = UserDefaults.standard.integer(forKey: "triviaQuestionsToAnswer")
+            let savedWalkingStepsRequired = UserDefaults.standard.integer(forKey: "walkingStepsRequired")
             let savedTypeStr = UserDefaults.standard.string(forKey: "challengeType")
             let savedStrictMode = UserDefaults.standard.bool(forKey: "strictModeEnabled")
             let savedUserName = UserDefaults.standard.string(forKey: "userName")
@@ -225,6 +234,7 @@ class SettingsManager: ObservableObject {
             let savedProtectShorten = UserDefaults.standard.object(forKey: "strictProtectShorten") as? Bool
             let savedProtectChallenge = UserDefaults.standard.object(forKey: "strictProtectChallenge") as? Bool
             let savedScreenTimeStr = UserDefaults.standard.string(forKey: "screenTimePermission")
+            let savedMotionStr = UserDefaults.standard.string(forKey: "motionPermission")
             let savedNotificationStr = UserDefaults.standard.string(forKey: "notificationPermission")
 
             // Update properties on main thread
@@ -271,6 +281,10 @@ class SettingsManager: ObservableObject {
                     self.triviaQuestionsToAnswer = savedTriviaQuestionsToAnswer
                 }
 
+                if savedWalkingStepsRequired > 0 {
+                    self.walkingStepsRequired = savedWalkingStepsRequired
+                }
+
                 if let typeStr = savedTypeStr,
                    let type = ChallengeType(rawValue: typeStr) {
                     self.challengeType = type
@@ -305,6 +319,11 @@ class SettingsManager: ObservableObject {
                 if let screenTimeStr = savedScreenTimeStr,
                    let permission = PermissionStatus(rawValue: screenTimeStr) {
                     self.screenTimePermission = permission
+                }
+
+                if let motionStr = savedMotionStr,
+                   let permission = PermissionStatus(rawValue: motionStr) {
+                    self.motionPermission = permission
                 }
 
                 if let notificationStr = savedNotificationStr,
@@ -365,12 +384,38 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    /// Updates motion permission status based on actual system authorization
+    func updateMotionPermission() {
+        // Check if step counting is available
+        guard CMPedometer.isStepCountingAvailable() else {
+            self.motionPermission = .denied
+            return
+        }
+
+        // Check authorization status (iOS 11+)
+        if #available(iOS 11.0, *) {
+            let status = CMPedometer.authorizationStatus()
+            switch status {
+            case .authorized:
+                self.motionPermission = .granted
+            case .denied, .restricted:
+                self.motionPermission = .denied
+            case .notDetermined:
+                self.motionPermission = .notDetermined
+            @unknown default:
+                self.motionPermission = .notDetermined
+            }
+        } else {
+            // Pre-iOS 11, motion permission is always granted if hardware available
+            self.motionPermission = .granted
+        }
+    }
+
     /// Updates all permission statuses
     func updateAllPermissions() {
         updateNotificationPermission()
         updateScreenTimePermission()
-        // TODO: Re-enable once we have a step challenge
-        // Health permission would go here if HealthKit is added
+        updateMotionPermission()
     }
 }
 

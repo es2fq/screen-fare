@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UserNotifications
+import CoreMotion
 
 struct PermissionsDetailView: View {
     @ObservedObject var settings: SettingsManager
@@ -47,32 +48,26 @@ struct PermissionsDetailView: View {
                                 tone: settings.notificationPermission == .granted ? .on : .warn
                             )
                         ),
-                        last: true,
                         action: {
                             handleNotificationPermission()
                         }
                     )
 
-                    // TODO: Re-enable once we have a step challenge
-                    // SettingsRow(
-                    //     icon: SettIcon(path: "M11 18s-6-4-6-8a3.5 3.5 0 016-2 3.5 3.5 0 016 2c0 4-6 8-6 8z"),
-                    //     label: "Health — steps",
-                    //     sub: "Only for the \"Take a walk\" challenge",
-                    //     right: AnyView(
-                    //         StatusPill(
-                    //             text: settings.healthPermission.displayText,
-                    //             tone: settings.healthPermission == .granted ? .on : .warn
-                    //         )
-                    //     ),
-                    //     last: true,
-                    //     action: {
-                    //         if settings.healthPermission == .granted {
-                    //             showToast = ToastData(message: "Manage in iOS Settings → Health")
-                    //         } else {
-                    //             openAppSettings()
-                    //         }
-                    //     }
-                    // )
+                    SettingsRow(
+                        icon: SettIcon(path: "M12 2L8 8h3v6h2V8h3l-4-6zm-6 16h12v2H6v-2z"),
+                        label: "Motion & Fitness",
+                        sub: "Required for walking challenge",
+                        right: AnyView(
+                            StatusPill(
+                                text: settings.motionPermission.displayText,
+                                tone: settings.motionPermission == .granted ? .on : .warn
+                            )
+                        ),
+                        last: true,
+                        action: {
+                            handleMotionPermission()
+                        }
+                    )
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18))
             }
@@ -117,6 +112,42 @@ struct PermissionsDetailView: View {
             DispatchQueue.main.async {
                 // Update permission status
                 settings.updateNotificationPermission()
+            }
+        }
+    }
+
+    private func handleMotionPermission() {
+        // Check if step counting is available
+        guard CMPedometer.isStepCountingAvailable() else {
+            showToast = ToastData(message: "Motion tracking not available on this device")
+            return
+        }
+
+        switch settings.motionPermission {
+        case .granted:
+            // Already granted - show message
+            showToast = ToastData(message: "Motion permission already granted")
+
+        case .notDetermined:
+            // Request permission by starting the pedometer (this triggers the permission dialog)
+            requestMotionPermission()
+
+        case .denied:
+            // Denied - must go to settings to enable
+            openAppSettings()
+        }
+    }
+
+    private func requestMotionPermission() {
+        // Start and immediately stop pedometer to trigger permission prompt
+        let pedometer = CMPedometer()
+        pedometer.startUpdates(from: Date()) { _, _ in
+            // Stop immediately - we just wanted to trigger the permission
+            pedometer.stopUpdates()
+
+            // Update permission status after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                settings.updateMotionPermission()
             }
         }
     }

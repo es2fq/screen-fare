@@ -608,3 +608,155 @@ struct TriviaErrorView: View {
         .padding(.horizontal, 6)
     }
 }
+
+// MARK: - Walking Challenge Field
+
+/// A reusable walking challenge field showing step progress
+struct WalkingChallengeField: View {
+    let currentSteps: Int
+    let targetSteps: Int
+    let hasPermission: Bool
+    let isHardwareAvailable: Bool
+    let isCountingSteps: Bool
+    let onOpenSettings: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            if MotionManager.shared.isRunningOnSimulator {
+                // Simulator detected
+                walkingErrorView(
+                    icon: "iphone",
+                    title: "Simulator Detected",
+                    message: "Step counting requires a physical iPhone. Please test on a real device."
+                )
+            } else if !isHardwareAvailable {
+                // Hardware not available error
+                walkingErrorView(
+                    icon: "figure.walk.slash",
+                    title: "Not available",
+                    message: "Step counting is not available on this device."
+                )
+            } else if !hasPermission {
+                // Permission error
+                walkingErrorView(
+                    icon: "figure.walk.circle.fill",
+                    title: "Permission required",
+                    message: "Grant motion permission in Settings to use the walking challenge.",
+                    showButton: true
+                )
+            } else {
+                // Normal step counter display
+                VStack(spacing: 16) {
+                    // Circular progress indicator
+                    ZStack {
+                        // Background circle
+                        Circle()
+                            .stroke(Color.focusLine, lineWidth: 8)
+                            .frame(width: 160, height: 160)
+
+                        // Progress circle
+                        Circle()
+                            .trim(from: 0, to: progressPercentage)
+                            .stroke(
+                                Color(red: 0.55, green: 0.65, blue: 0.4), // GREEN_C
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            )
+                            .frame(width: 160, height: 160)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 0.3), value: progressPercentage)
+
+                        // Step count
+                        VStack(spacing: 4) {
+                            Text("\(currentSteps)")
+                                .font(.instrumentSerif(42))
+                                .foregroundColor(.focusInk)
+                                .monospacedDigit()
+                                .opacity(isCountingSteps && currentSteps < targetSteps ? 0.7 : 1.0)
+                                .animation(
+                                    isCountingSteps && currentSteps < targetSteps
+                                    ? .easeInOut(duration: 1.5).repeatForever(autoreverses: true)
+                                    : .default,
+                                    value: isCountingSteps
+                                )
+
+                            Text("/ \(targetSteps) steps")
+                                .font(.inter(13, weight: .medium))
+                                .foregroundColor(.focusMuted)
+                        }
+                    }
+
+                    // Motivational text
+                    Text(motivationalText)
+                        .font(.inter(14, weight: .medium))
+                        .foregroundColor(.focusMuted)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 240)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+    }
+
+    private var progressPercentage: CGFloat {
+        guard targetSteps > 0 else { return 0 }
+        return min(CGFloat(currentSteps) / CGFloat(targetSteps), 1.0)
+    }
+
+    private var motivationalText: String {
+        let remaining = max(0, targetSteps - currentSteps)
+        if currentSteps >= targetSteps {
+            return "Done! You'd unlock the app after \(targetSteps) steps."
+        } else if currentSteps == 0 {
+            return "Start walking to unlock · Steps update every few seconds"
+        } else if remaining <= 5 {
+            return "Almost there! Just \(remaining) more \(remaining == 1 ? "step" : "steps")."
+        } else {
+            return "\(remaining) steps to go"
+        }
+    }
+
+    @ViewBuilder
+    private func walkingErrorView(icon: String, title: String, message: String, showButton: Bool = false) -> some View {
+        VStack(spacing: 16) {
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(Color(red: 0.9, green: 0.5, blue: 0.4).opacity(0.12)) // RED_C
+                    .frame(width: 60, height: 60)
+
+                Image(systemName: icon)
+                    .font(.system(size: 26))
+                    .foregroundColor(Color(red: 0.9, green: 0.5, blue: 0.4)) // RED_C
+            }
+
+            // Title
+            Text(title)
+                .font(.instrumentSerif(27))
+                .foregroundColor(.focusInk)
+
+            // Message
+            Text(message)
+                .font(.inter(13.5))
+                .foregroundColor(.focusMuted)
+                .lineSpacing(13.5 * 1.5 - 13.5)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 250)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Settings button
+            if showButton {
+                Button("Settings") {
+                    onOpenSettings()
+                }
+                .font(.inter(14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Color.focusInk)
+                .cornerRadius(10)
+            }
+        }
+        .padding(.vertical, 10)
+    }
+}

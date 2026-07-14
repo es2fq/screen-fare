@@ -9,6 +9,7 @@
 import SwiftUI
 import FamilyControls
 import ManagedSettings
+import CoreMotion
 import ScreenFareShared
 
 struct ChallengeView: View {
@@ -66,6 +67,10 @@ struct ChallengeView: View {
     @State private var triviaErrorCategory: ErrorCategory?
     @State private var triviaCurrentQuestion: Int = 0
 
+    // Walking challenge state
+    @State private var walkingChallenge: WalkingChallenge?
+    @StateObject private var motionManager = MotionManager.shared
+
     // Common state
     @State private var attempts = 0
     @State private var shakeCount = 0
@@ -89,14 +94,16 @@ struct ChallengeView: View {
     @State private var isStrictMode: Bool = false
     @State private var strictModeTitle: String = ""
     var onStrictModePass: (() -> Void)?
+    var onNavigateToSettings: (() -> Void)?
 
-    init(challengeType: ChallengeType? = nil, isStrictMode: Bool = false, strictModeTitle: String? = nil, onStrictModePass: (() -> Void)? = nil) {
+    init(challengeType: ChallengeType? = nil, isStrictMode: Bool = false, strictModeTitle: String? = nil, onStrictModePass: (() -> Void)? = nil, onNavigateToSettings: (() -> Void)? = nil) {
         let settings = SettingsManager.shared
         let selectedType = challengeType ?? settings.challengeType
         _challengeType = State(initialValue: selectedType)
         _isStrictMode = State(initialValue: isStrictMode)
         _strictModeTitle = State(initialValue: strictModeTitle ?? "")
         self.onStrictModePass = onStrictModePass
+        self.onNavigateToSettings = onNavigateToSettings
 
         // Load requested app token (skip if strict mode)
         if !isStrictMode, let sharedDefaults = UserDefaults.appGroup {
@@ -125,6 +132,8 @@ struct ChallengeView: View {
         case .trivia:
             _isTriviaLoading = State(initialValue: true)
             // Trivia will be loaded asynchronously in onAppear
+        case .walking:
+            _walkingChallenge = State(initialValue: WalkingChallenge(targetSteps: settings.walkingStepsRequired))
         }
     }
 
@@ -213,6 +222,28 @@ struct ChallengeView: View {
                 }
             }
 
+            // Start pedometer for walking challenge
+            if challengeType == .walking {
+                if settings.motionPermission == .granted && motionManager.isStepCountingAvailable {
+                    motionManager.startCounting()
+                }
+            }
+        }
+        .onDisappear {
+            // Stop pedometer when view disappears
+            if challengeType == .walking {
+                motionManager.stopCounting()
+            }
+        }
+        .onChange(of: motionManager.currentSteps) { _, newSteps in
+            // Auto-complete walking challenge when steps reached
+            if challengeType == .walking,
+               let challenge = walkingChallenge,
+               newSteps >= challenge.targetSteps,
+               phase == .challenge {
+                succeed()
+            }
+
             // Record challenge started event when the challenge view actually appears (skip for strict mode)
             if !isStrictMode, let appToken = requestedApp {
                 let appTokenData = try? JSONEncoder().encode(appToken)
@@ -223,6 +254,7 @@ struct ChallengeView: View {
                     case .memory: return "Memory"
                     case .breathing: return "Breathing"
                     case .trivia: return "Trivia"
+                    case .walking: return "Walking"
                     }
                 }()
                 historyManager.recordEvent(
@@ -569,6 +601,8 @@ struct ChallengeView: View {
             breathingContent
         case .trivia:
             triviaContent
+        case .walking:
+            walkingContent
         }
     }
 
@@ -743,6 +777,21 @@ struct ChallengeView: View {
         }
     }
 
+    @ViewBuilder
+    private var walkingContent: some View {
+        if let challenge = walkingChallenge {
+            WalkingChallengeField(
+                currentSteps: motionManager.currentSteps,
+                targetSteps: challenge.targetSteps,
+                hasPermission: settings.motionPermission == .granted,
+                isHardwareAvailable: motionManager.isStepCountingAvailable,
+                isCountingSteps: motionManager.isCountingSteps,
+                onOpenSettings: openAppSettings
+            )
+            .opacity(phase == .paying ? 0.5 : 1)
+        }
+    }
+
     // MARK: - Footer
 
     @ViewBuilder
@@ -769,6 +818,8 @@ struct ChallengeView: View {
                 EmptyView() // No button needed - auto-completes on breath completion
             case .trivia:
                 EmptyView() // Submit button is integrated within TriviaChallengeField
+            case .walking:
+                EmptyView() // No button needed - auto-completes when steps reached
             }
         }
     }
@@ -797,6 +848,7 @@ struct ChallengeView: View {
             case .memory: return "MEM"
             case .breathing: return "BREATH"
             case .trivia: return "TRIVIA"
+            case .walking: return "WALK"
             }
         }
     }
@@ -816,6 +868,8 @@ struct ChallengeView: View {
             return "Follow the breath"
         case .trivia:
             return isTriviaLoading ? "Loading question" : "Answer the question"
+        case .walking:
+            return "Walk to unlock"
         }
     }
 
@@ -840,6 +894,11 @@ struct ChallengeView: View {
                 return "Question \(triviaCurrentQuestion + 1)/\(settings.triviaQuestionsToAnswer)"
             }
             return nil
+        case .walking:
+            if let challenge = walkingChallenge {
+                return "\(motionManager.currentSteps)/\(challenge.targetSteps) steps"
+            }
+            return nil
         }
     }
 
@@ -859,6 +918,8 @@ struct ChallengeView: View {
             return "" // Breathing challenge doesn't have errors
         case .trivia:
             return "Wrong answer — try another question"
+        case .walking:
+            return "" // Walking challenge doesn't have errors
         }
     }
 
@@ -940,6 +1001,8 @@ struct ChallengeView: View {
                 break // Breathing starts when user taps the orb
             case .trivia:
                 break // Trivia uses tappable buttons, no keyboard focus needed
+            case .walking:
+                break // Walking uses pedometer, no input needed
             }
         }
     }
@@ -1152,6 +1215,7 @@ struct ChallengeView: View {
                 case .memory: return "Memory"
                 case .breathing: return "Breathing"
                 case .trivia: return "Trivia"
+                case .walking: return "Walking"
                 }
             }()
 
@@ -1175,6 +1239,7 @@ struct ChallengeView: View {
                 case .memory: return "Memory"
                 case .breathing: return "Breathing"
                 case .trivia: return "Trivia"
+                case .walking: return "Walking"
                 }
             }()
 
@@ -1201,6 +1266,18 @@ struct ChallengeView: View {
 
     private func openUnlockedApp() {
         countdownTimer?.invalidate()
+    }
+
+    private func openAppSettings() {
+        // If we have a navigation callback for settings tab, use it
+        if let onNavigateToSettings = onNavigateToSettings {
+            onNavigateToSettings()
+        } else {
+            // Fallback to iOS system settings
+            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(settingsUrl)
+            }
+        }
     }
 
     private func startMemoryCountdown() {

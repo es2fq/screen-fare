@@ -64,7 +64,7 @@ class SubscriptionManager: ObservableObject {
         var price: String {
             switch self {
             case .monthly: return "$4.99"
-            case .annual: return "$49.99"
+            case .annual: return "$39.99"
             }
         }
 

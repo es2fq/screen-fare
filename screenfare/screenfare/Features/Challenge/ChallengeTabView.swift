@@ -26,6 +26,7 @@ struct ChallengeTabView: View {
     @State private var tempTriviaCategories: Set<TriviaCategory>
     @State private var tempTriviaDifficulty: TriviaDifficulty
     @State private var tempTriviaQuestionsToAnswer: Int
+    @State private var tempWalkingStepsRequired: Int
 
     // Challenge gate for strict mode
     @State private var showGate: ChallengeGateData?
@@ -38,6 +39,7 @@ struct ChallengeTabView: View {
     @State private var typingChallenge: TypingChallenge
     @State private var memoryChallenge: MemoryChallenge
     @State private var breathingChallenge: BreathingChallenge
+    @State private var walkingChallenge: WalkingChallenge
 
     init(selectedTab: Binding<Int> = .constant(2), viewState: Binding<ChallengeViewState> = .constant(.list), selectedType: Binding<ChallengeType> = .constant(.math)) {
         _selectedTab = selectedTab
@@ -54,6 +56,7 @@ struct ChallengeTabView: View {
         self._tempTriviaCategories = State(initialValue: settings.triviaCategories)
         self._tempTriviaDifficulty = State(initialValue: settings.triviaDifficulty)
         self._tempTriviaQuestionsToAnswer = State(initialValue: settings.triviaQuestionsToAnswer)
+        self._tempWalkingStepsRequired = State(initialValue: settings.walkingStepsRequired)
 
         // Pre-generate one challenge for each difficulty level
         var challenges: [ChallengeDifficulty: MathChallenge] = [:]
@@ -64,6 +67,7 @@ struct ChallengeTabView: View {
         self._typingChallenge = State(initialValue: TypingChallenge(difficulty: settings.typingDifficulty))
         self._memoryChallenge = State(initialValue: MemoryChallenge())
         self._breathingChallenge = State(initialValue: BreathingChallenge(totalBreaths: settings.breathingCycles))
+        self._walkingChallenge = State(initialValue: WalkingChallenge(targetSteps: settings.walkingStepsRequired))
     }
 
     var body: some View {
@@ -99,6 +103,12 @@ struct ChallengeTabView: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }
+        .onDisappear {
+            // Stop pedometer when leaving Challenge tab entirely
+            if selectedType == .walking {
+                MotionManager.shared.stopCounting()
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -112,7 +122,8 @@ struct ChallengeTabView: View {
                          (tempTypingDifficulty != settings.typingDifficulty) ||
                          (tempMemoryGridSize != settings.memoryGridSize) ||
                          (tempMemoryTilesToMatch != settings.memoryTilesToMatch) ||
-                         (tempBreathingCycles != settings.breathingCycles)
+                         (tempBreathingCycles != settings.breathingCycles) ||
+                         (tempWalkingStepsRequired != settings.walkingStepsRequired)
 
         // If strict mode is on and challenge protection is enabled, show gate
         if hasChanges && settings.strictModeEnabled && settings.strictProtectChallenge {
@@ -139,6 +150,7 @@ struct ChallengeTabView: View {
         settings.triviaCategories = tempTriviaCategories
         settings.triviaDifficulty = tempTriviaDifficulty
         settings.triviaQuestionsToAnswer = tempTriviaQuestionsToAnswer
+        settings.walkingStepsRequired = tempWalkingStepsRequired
 
         // Return to list view
         viewState = .list
@@ -185,6 +197,7 @@ struct ChallengeTabView: View {
                                 tempTriviaCategories = settings.triviaCategories
                                 tempTriviaDifficulty = settings.triviaDifficulty
                                 tempTriviaQuestionsToAnswer = settings.triviaQuestionsToAnswer
+                                tempWalkingStepsRequired = settings.walkingStepsRequired
                                 viewState = .config
                                 configViewCount += 1 // Increment to reset testers
                             }) {
@@ -329,6 +342,7 @@ struct ChallengeTabView: View {
                             typingChallenge: $typingChallenge,
                             memoryChallenge: $memoryChallenge,
                             breathingChallenge: $breathingChallenge,
+                            walkingChallenge: $walkingChallenge,
                             isAnyFieldFocused: $isAnyFieldFocused,
                             configViewCount: configViewCount,
                             tempChallengeDifficulty: $tempChallengeDifficulty,
@@ -338,27 +352,32 @@ struct ChallengeTabView: View {
                             tempBreathingCycles: $tempBreathingCycles,
                             tempTriviaCategories: $tempTriviaCategories,
                             tempTriviaDifficulty: $tempTriviaDifficulty,
-                            tempTriviaQuestionsToAnswer: $tempTriviaQuestionsToAnswer
+                            tempTriviaQuestionsToAnswer: $tempTriviaQuestionsToAnswer,
+                            tempWalkingStepsRequired: $tempWalkingStepsRequired,
+                            selectedTab: $selectedTab,
+                            challengeViewState: $viewState
                         )
                         .padding(.horizontal, 22)
 
-                        // Select/Done button
-                        Button(action: {
-                            HapticManager.shared.impact()
-                            isAnyFieldFocused = false
-                            handleSaveChanges()
-                        }) {
-                            Text(selectedType == settings.challengeType ? "Done" : "Select")
-                                .font(.inter(15, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.focusInk)
-                                .cornerRadius(14)
+                        // Select/Done button (hidden for walking if permission not granted)
+                        if !(selectedType == .walking && settings.motionPermission != .granted) {
+                            Button(action: {
+                                HapticManager.shared.impact()
+                                isAnyFieldFocused = false
+                                handleSaveChanges()
+                            }) {
+                                Text(selectedType == settings.challengeType ? "Done" : "Select")
+                                    .font(.inter(15, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.focusInk)
+                                    .cornerRadius(14)
+                            }
+                            .padding(.horizontal, 22)
+                            .padding(.top, 22)
+                            .padding(.bottom, 100)
                         }
-                        .padding(.horizontal, 22)
-                        .padding(.top, 22)
-                        .padding(.bottom, 100)
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -382,6 +401,7 @@ struct ChallengeTabView: View {
         case .memory: return "Remember the pattern"
         case .breathing: return "Complete breathing cycles"
         case .trivia: return "Answer trivia questions"
+        case .walking: return "Walk a certain number of steps"
         }
     }
 
@@ -399,6 +419,9 @@ struct ChallengeTabView: View {
         case .trivia:
             let questions = settings.triviaQuestionsToAnswer
             return "Trivia · \(questions) question\(questions == 1 ? "" : "s")"
+        case .walking:
+            let steps = settings.walkingStepsRequired
+            return "\(steps) step\(steps == 1 ? "" : "s")"
         }
     }
 
@@ -459,6 +482,7 @@ struct TypeIcon: View {
         case .memory: return "brain.head.profile"
         case .breathing: return "wind"
         case .trivia: return "lightbulb"
+        case .walking: return "figure.walk"
         }
     }
 }
@@ -483,6 +507,7 @@ struct ConfigCard: View {
     @Binding var typingChallenge: TypingChallenge
     @Binding var memoryChallenge: MemoryChallenge
     @Binding var breathingChallenge: BreathingChallenge
+    @Binding var walkingChallenge: WalkingChallenge
     @FocusState.Binding var isAnyFieldFocused: Bool
     let configViewCount: Int
     @Binding var tempChallengeDifficulty: ChallengeDifficulty
@@ -493,6 +518,9 @@ struct ConfigCard: View {
     @Binding var tempTriviaCategories: Set<TriviaCategory>
     @Binding var tempTriviaDifficulty: TriviaDifficulty
     @Binding var tempTriviaQuestionsToAnswer: Int
+    @Binding var tempWalkingStepsRequired: Int
+    @Binding var selectedTab: Int
+    @Binding var challengeViewState: ChallengeViewState
 
     var body: some View {
         AppCard {
@@ -508,6 +536,8 @@ struct ConfigCard: View {
                     breathingConfig
                 case .trivia:
                     triviaConfig
+                case .walking:
+                    walkingConfig
                 }
             }
         }
@@ -784,6 +814,47 @@ struct ConfigCard: View {
                 difficulty: tempTriviaDifficulty
             )
             .id("\(tempTriviaCategories.map { $0.rawValue }.sorted().joined())-\(tempTriviaDifficulty.rawValue)-\(configViewCount)")
+        }
+    }
+
+    @ViewBuilder
+    private var walkingConfig: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Steps required")
+                    .font(.inter(13))
+                    .foregroundColor(.focusMuted)
+                Spacer()
+                Text("\(tempWalkingStepsRequired) step\(tempWalkingStepsRequired == 1 ? "" : "s")")
+                    .font(.inter(15, weight: .semibold))
+                    .foregroundColor(.focusInk)
+            }
+
+            CustomSlider(
+                value: Binding(
+                    get: { Double(tempWalkingStepsRequired) },
+                    set: { newValue in
+                        tempWalkingStepsRequired = Int(newValue)
+                        // Regenerate walking challenge
+                        walkingChallenge = WalkingChallenge(targetSteps: tempWalkingStepsRequired)
+                    }
+                ),
+                range: 20...70,
+                step: 10
+            )
+
+            WalkingTester(
+                challenge: walkingChallenge,
+                settings: settings,
+                onNavigateToSettings: {
+                    // Navigate to Settings tab
+                    challengeViewState = .list
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        selectedTab = 3
+                    }
+                }
+            )
+            .id("\(tempWalkingStepsRequired)-\(configViewCount)")
         }
     }
 
@@ -1509,6 +1580,33 @@ struct TriviaTester: View {
         selectedAnswer = nil
         hasSubmitted = false
         loadQuestion()
+    }
+}
+
+struct WalkingTester: View {
+    let challenge: WalkingChallenge
+    @ObservedObject var settings: SettingsManager
+    @ObservedObject var motionManager = MotionManager.shared
+    let onNavigateToSettings: () -> Void
+
+    var body: some View {
+        TryShell(hint: nil) {
+            // Reuse the same component as the actual challenge for consistent UX
+            WalkingChallengeField(
+                currentSteps: motionManager.currentSteps,
+                targetSteps: challenge.targetSteps,
+                hasPermission: settings.motionPermission == .granted,
+                isHardwareAvailable: motionManager.isStepCountingAvailable,
+                isCountingSteps: motionManager.isCountingSteps,
+                onOpenSettings: onNavigateToSettings
+            )
+        }
+        .onAppear {
+            // Start pedometer if permission granted
+            if settings.motionPermission == .granted && motionManager.isStepCountingAvailable {
+                motionManager.startCounting()
+            }
+        }
     }
 }
 

@@ -15,12 +15,13 @@ enum ChallengeType: String, CaseIterable {
     case memory = "Memory"
     case breathing = "Breathing"
     case trivia = "Trivia"
+    case walking = "Walking"
 
     var isPro: Bool {
         switch self {
-        case .memory, .breathing, .trivia:
+        case .memory, .breathing, .trivia, .walking, .typing:
             return true
-        case .math, .typing:
+        case .math:
             return false
         }
     }
@@ -429,5 +430,40 @@ struct TriviaChallenge: Challenge {
 
     func isCorrect(_ selectedIndex: Int) -> Bool {
         selectedIndex == correctAnswerIndex
+    }
+}
+
+// MARK: - Walking Challenge
+
+struct WalkingChallenge: Challenge {
+    let targetSteps: Int
+    var currentSteps: Int
+
+    var type: ChallengeType { .walking }
+
+    var questionText: String {
+        "Walk \(targetSteps) steps to unlock"
+    }
+
+    var question: String {
+        questionText
+    }
+
+    init(targetSteps: Int = 20) {
+        self.targetSteps = targetSteps
+        self.currentSteps = 0
+    }
+
+    mutating func updateSteps(_ steps: Int) {
+        self.currentSteps = steps
+    }
+
+    func isComplete() -> Bool {
+        currentSteps >= targetSteps
+    }
+
+    var progressPercentage: Double {
+        guard targetSteps > 0 else { return 0 }
+        return min(Double(currentSteps) / Double(targetSteps), 1.0)
     }
 }

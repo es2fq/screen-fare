@@ -433,6 +433,7 @@ struct TodayView: View {
         case .memory: return "Memory"
         case .breathing: return "Breathing"
         case .trivia: return "Trivia"
+        case .walking: return "Walking"
         }
     }
 
@@ -443,6 +444,7 @@ struct TodayView: View {
         case .memory: return "brain.head.profile"
         case .breathing: return "wind"
         case .trivia: return "lightbulb"
+        case .walking: return "figure.walk"
         }
     }
 
@@ -474,6 +476,9 @@ struct TodayView: View {
         case .trivia:
             let count = settings.triviaQuestionsToAnswer
             return "\(count) question\(count == 1 ? "" : "s")"
+        case .walking:
+            let steps = settings.walkingStepsRequired
+            return "\(steps) step\(steps == 1 ? "" : "s")"
         }
     }
 
