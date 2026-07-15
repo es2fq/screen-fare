@@ -1,0 +1,65 @@
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 56px 28px 96px;
+}
+
+.back {
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 40px;
+}
+
+.page h1 {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.05;
+  margin: 0 0 10px;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 40px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.page h2 {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+  margin: 40px 0 12px;
+}
+
+.page p,
+.page li {
+  color: #3d3a35;
+}
+
+.page ul {
+  padding-left: 22px;
+}
+
+.callout {
+  background: #FBF9F5;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin: 28px 0;
+}
+
+.callout p {
+  margin: 0;
+}
+
+.footer-note {
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+}
