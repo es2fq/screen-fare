@@ -12,6 +12,7 @@ enum SettingsDetailScreen {
     case permissions
     case dataPrivacy
     case about
+    case feedback
 }
 
 struct SettingsTabView: View {
@@ -21,6 +22,7 @@ struct SettingsTabView: View {
     @Binding var selectedTab: Int
     @Binding var activeDetail: SettingsDetailScreen?
     @State private var dragOffset: CGFloat = 0
+    @FocusState private var isFeedbackFocused: Bool
 
     init(selectedTab: Binding<Int> = .constant(3), activeDetail: Binding<SettingsDetailScreen?> = .constant(nil)) {
         _selectedTab = selectedTab
@@ -147,12 +149,34 @@ struct SettingsTabView: View {
 
                             SettingsRow(
                                 icon: SettIcon(path: "M11 16v0M8.5 8.5a2.5 2.5 0 014.6 1.3c0 1.7-2.1 1.9-2.1 3.2", circle: "11,11,8"),
-                                label: "About & support",
+                                label: "About",
                                 sub: "Version 1.0.0",
                                 right: AnyView(Chevron()),
                                 last: true,
                                 action: {
                                     activeDetail = .about
+                                }
+                            )
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                    }
+
+                    Spacer()
+                        .frame(height: 22)
+
+                    // Support section
+                    SectionTitle(text: "Support")
+
+                    AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
+                        VStack(spacing: 0) {
+                            SettingsRow(
+                                icon: SettIcon(systemName: "envelope.fill"),
+                                label: "Send feedback",
+                                sub: "We read every message",
+                                right: AnyView(Chevron()),
+                                last: true,
+                                action: {
+                                    activeDetail = .feedback
                                 }
                             )
                         }
@@ -242,6 +266,25 @@ struct SettingsTabView: View {
             .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
             .animation(.interactiveSpring(), value: dragOffset)
             .swipeBackGesture(isActive: activeDetail == .about, dragOffset: $dragOffset, onDismiss: { activeDetail = nil })
+
+            // Feedback detail
+            DetailPanel(
+                title: "Send feedback",
+                onBack: {
+                    isFeedbackFocused = false
+                    activeDetail = nil
+                }
+            ) {
+                FeedbackDetailView(showToast: $showToast, isFeedbackFocused: $isFeedbackFocused)
+            }
+            .offset(x: activeDetail == .feedback ? dragOffset : UIScreen.main.bounds.width)
+            .shadow(color: Color.black.opacity(activeDetail == .feedback ? 0.06 : 0), radius: 15, x: -6, y: 0)
+            .animation(.spring(response: 0.36, dampingFraction: 0.88), value: activeDetail)
+            .animation(.interactiveSpring(), value: dragOffset)
+            .swipeBackGesture(isActive: activeDetail == .feedback, dragOffset: $dragOffset, onDismiss: {
+                isFeedbackFocused = false
+                activeDetail = nil
+            })
         }
     }
 

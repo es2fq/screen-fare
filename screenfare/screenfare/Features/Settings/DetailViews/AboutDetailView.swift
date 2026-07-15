@@ -33,37 +33,6 @@ struct AboutDetailView: View {
             }
             .padding(.bottom, 4)
 
-            // MARK: - Support section (commented out)
-            /*
-            SectionTitle(text: "Support")
-
-            AppCard(padding: EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)) {
-                VStack(spacing: 0) {
-                    SettingsRow(
-                        icon: SettIcon(path: "M11 16v0M8.5 8.5a2.5 2.5 0 014.6 1.3c0 1.7-2.1 1.9-2.1 3.2", circle: "11,11,8"),
-                        label: "Help center",
-                        sub: "Guides & common questions",
-                        right: AnyView(Chevron()),
-                        action: {
-                            showToast = ToastData(message: "Opens in Safari")
-                        }
-                    )
-
-                    SettingsRow(
-                        icon: SettIcon(path: "M4 6h14v10H4zM4 7l7 5 7-5"),
-                        label: "Contact support",
-                        sub: "We read every message",
-                        right: AnyView(Chevron()),
-                        last: true,
-                        action: {
-                            showToast = ToastData(message: "Opens Mail")
-                        }
-                    )
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-            }
-            */
-
             // MARK: - Spread the word section (commented out)
             /*
             SectionTitle(text: "Spread the word")
