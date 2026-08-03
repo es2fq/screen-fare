@@ -67,11 +67,15 @@ struct InsightsView: View {
                 ScrollView {
                     // Total activity report (unfiltered - ALL apps)
                     // TotalActivityReport will manually separate blocked vs total
+                    // Use different context based on selected range
                     ZStack(alignment: .top) {
                         DeviceActivityReport(
-                            DeviceActivityReport.Context("Total Activity"),
+                            range == .today ?
+                                DeviceActivityReport.Context("Total Activity") :
+                                DeviceActivityReport.Context("Total Activity Week"),
                             filter: totalActivityFilter
                         )
+                        .id(range) // Force re-creation when range changes
                         .padding(EdgeInsets(top: 0, leading: 22, bottom: 0, trailing: 22))
                         .frame(height: 1100)
                         .allowsHitTesting(false)

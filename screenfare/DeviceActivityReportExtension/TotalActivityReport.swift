@@ -13,8 +13,10 @@ import ManagedSettings
 import os
 
 extension DeviceActivityReport.Context {
-    // Total activity context - shows total time on blocked apps
+    // Total activity context - shows today's activity
     static let totalActivity = Self("Total Activity")
+    // Total activity week context - shows this week's activity
+    static let totalActivityWeek = Self("Total Activity Week")
     // Today blocked apps usage time - calculates today's blocked app time only
     static let todayBlockedAppsUsageTime = Self("Today Blocked Apps Usage Time")
 }
@@ -68,6 +70,24 @@ struct TotalActivityReport: DeviceActivityReportScene {
     let content: (ActivityConfig) -> TotalActivityView
 
     func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> ActivityConfig {
+        return await makeActivityConfig(data: data, isWeekView: false)
+    }
+}
+
+// MARK: - Total Activity Week Report Scene
+
+struct TotalActivityWeekReport: DeviceActivityReportScene {
+    let context: DeviceActivityReport.Context = .totalActivityWeek
+    let content: (ActivityConfig) -> TotalActivityView
+
+    func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> ActivityConfig {
+        return await makeActivityConfig(data: data, isWeekView: true)
+    }
+}
+
+// MARK: - Shared Configuration Logic
+
+fileprivate func makeActivityConfig(data: DeviceActivityResults<DeviceActivityData>, isWeekView: Bool) async -> ActivityConfig {
         // Create logger for this extension
         let logger = Logger(subsystem: "esong.screenfare", category: "TotalActivityReport")
 
@@ -111,10 +131,6 @@ struct TotalActivityReport: DeviceActivityReportScene {
         let dayFormatter = DateFormatter()
         dayFormatter.dateFormat = "yyyy-MM-dd"
 
-        // Track min/max dates to determine if this is today or week
-        var minDate: Date?
-        var maxDate: Date?
-
         // Iterate through all device activity data
         var appIndex = 0
         var segmentCount = 0
@@ -132,16 +148,6 @@ struct TotalActivityReport: DeviceActivityReportScene {
                     logger.warning("Reached segment limit (\(maxSegments)), stopping early to conserve memory")
                     break
                 }
-
-                // Track date range for all segments
-                if minDate == nil || segment.dateInterval.start < minDate! {
-                    minDate = segment.dateInterval.start
-                }
-                if maxDate == nil || segment.dateInterval.end > maxDate! {
-                    maxDate = segment.dateInterval.end
-                }
-
-                // Don't add to totalSeconds here - we'll calculate it later after determining if it's week view
 
                 // Extract hour from segment for hourly chart
                 let hour = calendar.component(.hour, from: segment.dateInterval.start)
@@ -228,16 +234,7 @@ struct TotalActivityReport: DeviceActivityReportScene {
             }
         }
 
-        // Determine if this is a week view (7 days) or today view (1 day)
-        let isWeekView: Bool
-        if let min = minDate, let max = maxDate {
-            let daysDiff = calendar.dateComponents([.day], from: min, to: max).day ?? 0
-            isWeekView = daysDiff >= 6  // 7 days = 6 day difference
-        } else {
-            isWeekView = false
-        }
-
-        // NOW calculate totals based on view type by summing from daily maps
+        // Calculate totals based on explicitly passed view type
         let now = Date()
         let startOfToday = calendar.startOfDay(for: now)
 
@@ -369,7 +366,6 @@ struct TotalActivityReport: DeviceActivityReportScene {
             stats: stats,
             isWeekView: isWeekView
         )
-    }
 }
 
 // MARK: - Today Stats Report (Lightweight - only calculates blocked time)

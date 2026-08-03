@@ -12,8 +12,13 @@ import SwiftUI
 @main
 struct ScreenFareReportExtension: DeviceActivityReportExtension {
     nonisolated var body: some DeviceActivityReportScene {
-        // Full insights report (unfiltered - manually separates total vs blocked)
+        // Full insights report - Today view (unfiltered - manually separates total vs blocked)
         TotalActivityReport { totalActivity in
+            TotalActivityView(config: totalActivity)
+        }
+
+        // Full insights report - Week view (unfiltered - manually separates total vs blocked)
+        TotalActivityWeekReport { totalActivity in
             TotalActivityView(config: totalActivity)
         }
 
