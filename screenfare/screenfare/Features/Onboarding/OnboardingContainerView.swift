@@ -14,7 +14,7 @@ struct OnboardingContainerView: View {
     @StateObject private var settings = SettingsManager.shared
     @State private var currentPage = 0
     @State private var selectedApps = FamilyActivitySelection()
-    @State private var selectedDifficulty: ChallengeDifficulty = .medium
+    @State private var selectedGridSize: Int = 4
     @State private var selectedDuration: TimeInterval = 1800 // 30 minutes
     @State private var showActivationAnimation = false
 
@@ -57,7 +57,7 @@ struct OnboardingContainerView: View {
                         OnboardingAppSelectionView(selectedApps: $selectedApps, onContinue: nextPage)
                             .tag(3)
 
-                        OnboardingDifficultyView(selectedDifficulty: $selectedDifficulty, onContinue: nextPage)
+                        OnboardingDifficultyView(selectedGridSize: $selectedGridSize, onContinue: nextPage)
                             .id("difficulty-view") // Maintain view identity to prevent recreation
                             .tag(4)
 
@@ -66,7 +66,7 @@ struct OnboardingContainerView: View {
 
                         OnboardingSummaryView(
                             selectedApps: selectedApps,
-                            difficulty: selectedDifficulty,
+                            gridSize: selectedGridSize,
                             duration: selectedDuration,
                             onComplete: startActivation
                         )
@@ -143,7 +143,11 @@ struct OnboardingContainerView: View {
         // Apply settings immediately
         blockingManager.selectedApps = selectedApps
         blockingManager.applyBlocking()
-        settings.challengeDifficulty = selectedDifficulty
+
+        // Set Memory as the default challenge type
+        settings.challengeType = .memory
+        settings.memoryGridSize = selectedGridSize
+        settings.memoryTilesToMatch = min(selectedGridSize + 1, selectedGridSize * selectedGridSize)
         settings.unlockDuration = selectedDuration
 
         // Show activation animation

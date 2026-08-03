@@ -69,6 +69,7 @@ struct OnboardingScreenTimeView: View {
             }
 
             // Permission prompt - positioned like iOS system alert
+            // Updated to match iOS 26.4+ "App & Website Usage" dialog
             ScreenTimePermissionPrompt(onTap: {
                 // Check if already authorized before requesting
                 blockingManager.checkAuthorizationStatus()
@@ -98,6 +99,7 @@ struct OnboardingScreenTimeView: View {
         }
         .onAppear {
             isVisible = true
+            blockingManager.checkAuthorizationStatus()
         }
         .onDisappear {
             isVisible = false

@@ -11,7 +11,7 @@ import ManagedSettings
 
 struct OnboardingSummaryView: View {
     let selectedApps: FamilyActivitySelection
-    let difficulty: ChallengeDifficulty
+    let gridSize: Int
     let duration: TimeInterval
     let onComplete: () -> Void
 
@@ -37,19 +37,8 @@ struct OnboardingSummaryView: View {
         }
     }
 
-    private var difficultyLabel: String {
-        switch difficulty {
-        case .veryEasy: return "Very easy"
-        case .easy: return "Easy"
-        case .medium: return "Medium"
-        case .hard: return "Hard"
-        case .veryHard: return "Very hard"
-        }
-    }
-
-    private var sampleProblem: String {
-        let challenge = MathChallenge(difficulty: difficulty)
-        return challenge.questionText
+    private var gridSizeLabel: String {
+        return "\(gridSize)×\(gridSize)"
     }
 
     var body: some View {
@@ -133,12 +122,9 @@ struct OnboardingSummaryView: View {
                             )
 
                             SummaryIconRow(
-                                icon: SUM_ICONS.math,
-                                label: "Math · \(difficultyLabel)",
-                                sub: {
-                                    let challenge = MathChallenge(difficulty: difficulty)
-                                    return "Sample: \(challenge.questionText)"
-                                }()
+                                icon: SUM_ICONS.memory,
+                                label: "Memory · \(gridSizeLabel)",
+                                sub: "Memorize and recall tiles"
                             )
 
                             SummaryIconRow(
@@ -272,9 +258,9 @@ struct SUM_ICONS {
             .foregroundColor(.focusInk)
     )
 
-    // Math icon - uses same SF Symbol as TodayView challenge type
-    static let math = AnyView(
-        Image(systemName: "plus.forwardslash.minus")
+    // Memory icon - uses brain SF Symbol
+    static let memory = AnyView(
+        Image(systemName: "brain")
             .font(.system(size: 18))
             .foregroundColor(.focusInk)
     )
@@ -316,7 +302,7 @@ struct HowItWorksStep: View {
 #Preview {
     OnboardingSummaryView(
         selectedApps: FamilyActivitySelection(),
-        difficulty: .medium,
+        gridSize: 4,
         duration: 300,
         onComplete: {}
     )

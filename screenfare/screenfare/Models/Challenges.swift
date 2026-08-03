@@ -10,18 +10,18 @@ import Foundation
 // MARK: - Challenge Type System
 
 enum ChallengeType: String, CaseIterable {
+    case memory = "Memory"
     case math = "Math"
     case typing = "Typing"
-    case memory = "Memory"
     case breathing = "Breathing"
     case trivia = "Trivia"
     case walking = "Walking"
 
     var isPro: Bool {
         switch self {
-        case .memory, .breathing, .trivia, .walking, .typing:
+        case .breathing, .trivia, .walking, .typing:
             return true
-        case .math:
+        case .math, .memory:
             return false
         }
     }

@@ -161,11 +161,19 @@ class AppBlockingManager: ObservableObject {
     }
 
     func checkAuthorizationStatus() {
-        switch center.authorizationStatus {
+        let status = center.authorizationStatus
+
+        switch status {
         case .approved:
             isAuthorized = true
-        default:
+        case .denied:
             isAuthorized = false
+        case .notDetermined:
+            isAuthorized = false
+        @unknown default:
+            // Handle new authorization statuses (like "Approved with Data Access")
+            // Treat any unknown status as authorized if it's not explicitly denied or notDetermined
+            isAuthorized = true
         }
     }
 

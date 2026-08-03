@@ -209,9 +209,9 @@ struct PaywallView: View {
 
 struct ChallengeProofPanel: View {
     let challenges = [
+        ("Memory", "brain.head.profile"),
         ("Math", "plus.forwardslash.minus"),
         ("Typing", "keyboard"),
-        ("Memory", "brain.head.profile"),
         ("Breathing", "wind"),
         ("Trivia", "lightbulb"),
         ("Walking", "figure.walk")

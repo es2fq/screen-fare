@@ -202,6 +202,7 @@ struct PermissionPrompt: View {
     let rightButtonIsBlue: Bool
     let arrowLabel: String
     let arrowOffset: CGFloat
+    var icon: AnyView? // Optional icon view
     var onTap: (() -> Void)?
     @State private var isPressed = false
 
@@ -210,6 +211,12 @@ struct PermissionPrompt: View {
             // iOS permission alert with highlight ring
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
+                    // Icon (if provided) - left-aligned above text
+                    if let icon = icon {
+                        icon
+                            .padding(.bottom, 14)
+                    }
+
                     // Title
                     Text(title)
                         .font(.system(size: 17, weight: .semibold, design: .default))
@@ -311,13 +318,65 @@ struct ScreenTimePermissionPrompt: View {
 
     var body: some View {
         PermissionPrompt(
-            title: "\u{201C}Screen Fare\u{201D} Would Like to Access Screen Time",
-            description: "Providing \u{201C}Screen Fare\u{201D} access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.",
-            leftButtonText: "Continue",
-            rightButtonText: "Don't Allow",
-            rightButtonIsBlue: true,
+            title: "\u{201C}Screen Fare\u{201D} Would Like to Access App & Website Usage",
+            description: "This allows Screen Fare to track app and website usage and set time limits.",
+            leftButtonText: "Don't Allow",
+            rightButtonText: "Continue",
+            rightButtonIsBlue: false,
             arrowLabel: "Tap \"Continue\" to allow",
-            arrowOffset: -70,
+            arrowOffset: 70,
+            icon: AnyView(
+                ZStack {
+                    // Background rounded square for bar chart icon (matching iOS system)
+                    RoundedRectangle(cornerRadius: 13)
+                        .fill(Color(hex: "00C7BE"))
+                        .frame(width: 57, height: 57)
+
+                    // Custom bar chart icon (4 bars with baseline)
+                    VStack(spacing: 2) {
+                        HStack(alignment: .bottom, spacing: 3.5) {
+                            // Bar 1 (shortest - 40%)
+                            RoundedRectangle(cornerRadius: 1.5)
+                                .fill(.white)
+                                .frame(width: 9, height: 12)
+
+                            // Bar 2 (tallest - 100%)
+                            RoundedRectangle(cornerRadius: 1.5)
+                                .fill(.white)
+                                .frame(width: 9, height: 28)
+
+                            // Bar 3 (medium-tall - 75%)
+                            RoundedRectangle(cornerRadius: 1.5)
+                                .fill(.white)
+                                .frame(width: 9, height: 21)
+
+                            // Bar 4 (short-medium - 55%)
+                            RoundedRectangle(cornerRadius: 1.5)
+                                .fill(.white)
+                                .frame(width: 9, height: 15)
+                        }
+
+                        // Baseline (with spacing above)
+                        Rectangle()
+                            .fill(.white)
+                            .frame(width: 46, height: 3.5)
+                            .cornerRadius(0.5)
+                    }
+
+                    // Hand icon badge (overlaid on bottom right)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(hex: "007AFF"))
+                            .frame(width: 28, height: 28)
+
+                        Image(systemName: "hand.raised.fill")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+                    .offset(x: 19, y: 19)
+                }
+                .frame(width: 57, height: 57)
+            ),
             onTap: onTap
         )
     }
