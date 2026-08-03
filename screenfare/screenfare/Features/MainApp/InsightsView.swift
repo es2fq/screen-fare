@@ -13,6 +13,7 @@ import FamilyControls
 struct InsightsView: View {
     let onClose: () -> Void
     @State private var range: TimeRange = .today
+    @State private var isLoading = true
     @StateObject private var blockingManager = AppBlockingManager.shared
 
     enum TimeRange: String {
@@ -79,6 +80,42 @@ struct InsightsView: View {
                         .padding(EdgeInsets(top: 0, leading: 22, bottom: 0, trailing: 22))
                         .frame(height: 1100)
                         .allowsHitTesting(false)
+                        .onAppear {
+                            // Show loading initially, then hide after a brief delay
+                            // (DeviceActivityReport doesn't provide a loading callback)
+                            isLoading = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    isLoading = false
+                                }
+                            }
+                        }
+                        .onChange(of: range) { _, _ in
+                            // Show loading when switching tabs
+                            isLoading = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    isLoading = false
+                                }
+                            }
+                        }
+
+                        // Loading indicator overlay
+                        if isLoading {
+                            VStack {
+                                Spacer()
+                                    .frame(height: 100)
+
+                                ProgressView()
+                                    .scaleEffect(1.2)
+                                    .tint(.focusAccent)
+
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity)
+                            .background(Color.focusBg.opacity(0.9))
+                            .transition(.opacity)
+                        }
 
                         // Transparent overlay to make scrolling work
                         // Note: Using white.opacity(0.001) instead of .clear because Color.clear doesn't register touches
