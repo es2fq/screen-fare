@@ -12,6 +12,15 @@ import ManagedSettings
 import CoreMotion
 import ScreenFareShared
 
+/// A dry-run fare for onboarding: the real ticket, but nothing unlocks
+struct PracticeFare {
+    var memoryGridSize: Int
+    var memoryTilesToMatch: Int
+    var unlockDuration: TimeInterval
+    var appToken: ApplicationToken?
+    var categoryToken: ActivityCategoryToken?
+}
+
 struct ChallengeView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.selectedTab) private var selectedTab
@@ -30,6 +39,10 @@ struct ChallengeView: View {
     @State private var challengeType: ChallengeType
     @State private var requestedApp: ApplicationToken?
     @State private var requestedCategory: ActivityCategoryToken?
+
+    // Price of this fare, fixed when the ticket is issued so surge can't change mid-challenge
+    @State private var fare: FarePrice
+    @State private var fareNumberToday: Int
 
     // Math challenge state
     @State private var mathChallenge: MathChallenge?
@@ -96,7 +109,16 @@ struct ChallengeView: View {
     var onStrictModePass: (() -> Void)?
     var onNavigateToSettings: (() -> Void)?
 
-    init(challengeType: ChallengeType? = nil, isStrictMode: Bool = false, strictModeTitle: String? = nil, onStrictModePass: (() -> Void)? = nil, onNavigateToSettings: (() -> Void)? = nil) {
+    // Practice mode support (onboarding)
+    private let practice: PracticeFare?
+    var onPracticeComplete: (() -> Void)?
+    @State private var practiceExpiry: Date?
+
+    private var isPractice: Bool {
+        practice != nil
+    }
+
+    init(challengeType: ChallengeType? = nil, isStrictMode: Bool = false, strictModeTitle: String? = nil, onStrictModePass: (() -> Void)? = nil, onNavigateToSettings: (() -> Void)? = nil, practice: PracticeFare? = nil, onPracticeComplete: (() -> Void)? = nil) {
         let settings = SettingsManager.shared
         let selectedType = challengeType ?? settings.challengeType
         _challengeType = State(initialValue: selectedType)
@@ -104,9 +126,28 @@ struct ChallengeView: View {
         _strictModeTitle = State(initialValue: strictModeTitle ?? "")
         self.onStrictModePass = onStrictModePass
         self.onNavigateToSettings = onNavigateToSettings
+        self.practice = practice
+        self.onPracticeComplete = onPracticeComplete
 
-        // Load requested app token (skip if strict mode)
-        if !isStrictMode, let sharedDefaults = UserDefaults.appGroup {
+        // Surge only applies to real unlock fares, not strict mode overrides or practice runs
+        let faresPaidToday = SurgePricing.faresPaidToday()
+        let surgeLevel = (isStrictMode || practice != nil || !settings.surgePricingEnabled) ? 0 : SurgePricing.level(faresPaidToday: faresPaidToday)
+        var fare = FarePrice(settings: settings, surgeLevel: surgeLevel)
+        if let practice = practice {
+            fare.memoryGridSize = practice.memoryGridSize
+            fare.memoryTilesToMatch = practice.memoryTilesToMatch
+        }
+        _fare = State(initialValue: fare)
+        _fareNumberToday = State(initialValue: faresPaidToday + 1)
+
+        // Practice shows the app picked during onboarding instead of a shield request
+        if let practice = practice {
+            _requestedApp = State(initialValue: practice.appToken)
+            _requestedCategory = State(initialValue: practice.categoryToken)
+        }
+
+        // Load requested app token (skip if strict mode or practice)
+        if !isStrictMode, practice == nil, let sharedDefaults = UserDefaults.appGroup {
             if let data = sharedDefaults.data(forKey: "com.screenfare.requestedAppToken"),
                let token = try? JSONDecoder().decode(ApplicationToken.self, from: data) {
                 _requestedApp = State(initialValue: token)
@@ -119,21 +160,21 @@ struct ChallengeView: View {
             }
         }
 
-        // Initialize challenge
+        // Initialize challenge at the fare's price
         switch selectedType {
         case .math:
-            _mathChallenge = State(initialValue: MathChallenge(difficulty: settings.challengeDifficulty))
+            _mathChallenge = State(initialValue: MathChallenge(difficulty: fare.mathDifficulty))
         case .typing:
-            _typingChallenge = State(initialValue: TypingChallenge(difficulty: settings.typingDifficulty))
+            _typingChallenge = State(initialValue: TypingChallenge(difficulty: fare.typingDifficulty))
         case .memory:
-            _memoryChallenge = State(initialValue: MemoryChallenge(gridSize: settings.memoryGridSize, litCount: settings.memoryTilesToMatch))
+            _memoryChallenge = State(initialValue: MemoryChallenge(gridSize: fare.memoryGridSize, litCount: fare.memoryTilesToMatch))
         case .breathing:
-            _breathingChallenge = State(initialValue: BreathingChallenge(totalBreaths: settings.breathingCycles))
+            _breathingChallenge = State(initialValue: BreathingChallenge(totalBreaths: fare.breathingCycles))
         case .trivia:
             _isTriviaLoading = State(initialValue: true)
             // Trivia will be loaded asynchronously in onAppear
         case .walking:
-            _walkingChallenge = State(initialValue: WalkingChallenge(targetSteps: settings.walkingStepsRequired))
+            _walkingChallenge = State(initialValue: WalkingChallenge(targetSteps: fare.walkingSteps))
         }
     }
 
@@ -143,21 +184,23 @@ struct ChallengeView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header (fixed)
-                HStack(alignment: .center) {
-                    Wordmark()
+                // Header (fixed) - practice runs inside onboarding, which has its own header
+                if !isPractice {
+                    HStack(alignment: .center) {
+                        Wordmark()
 
-                    Spacer()
+                        Spacer()
 
-                    if phase == .challenge {
-                        CloseX {
-                            dismiss()
+                        if phase == .challenge {
+                            CloseX {
+                                dismiss()
+                            }
                         }
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.top, 20)
+                    .padding(.bottom, 4)
                 }
-                .padding(.horizontal, 22)
-                .padding(.top, 20)
-                .padding(.bottom, 4)
 
                 // Scrollable content area
                 ScrollView {
@@ -197,6 +240,13 @@ struct ChallengeView: View {
                         }
                         .frame(height: 18)
                         .padding(.top, 16)
+
+                        // After a practice ride, explain that real fares can surge
+                        if isPractice && phase == .unlocked && settings.surgePricingEnabled {
+                            practiceSurgeNote
+                                .padding(.horizontal, 22)
+                                .transition(.opacity)
+                        }
 
                         Spacer()
                             .frame(minHeight: 20)
@@ -244,8 +294,8 @@ struct ChallengeView: View {
                 succeed()
             }
 
-            // Record challenge started event when the challenge view actually appears (skip for strict mode)
-            if !isStrictMode, let appToken = requestedApp {
+            // Record challenge started event when the challenge view actually appears (skip for strict mode and practice)
+            if !isStrictMode, !isPractice, let appToken = requestedApp {
                 let appTokenData = try? JSONEncoder().encode(appToken)
                 let challengeTypeName: String = {
                     switch challengeType {
@@ -290,12 +340,21 @@ struct ChallengeView: View {
                                 .font(.inter(10, weight: .semibold))
                                 .tracking(1.8)
                                 .foregroundColor(.white.opacity(0.85))
+                        } else if fare.isSurged {
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+
+                            Text("SURGE FARE")
+                                .font(.inter(10, weight: .semibold))
+                                .tracking(1.8)
+                                .foregroundColor(.white.opacity(0.9))
                         } else {
                             Image(systemName: "star")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.white)
 
-                            Text("SINGLE FARE")
+                            Text(isPractice ? "PRACTICE FARE" : "SINGLE FARE")
                                 .font(.inter(10, weight: .semibold))
                                 .tracking(1.8)
                                 .foregroundColor(.white.opacity(0.85))
@@ -307,12 +366,12 @@ struct ChallengeView: View {
                     Text(ticketNumber)
                         .font(.system(size: 11, design: .monospaced))
                         .tracking(0.44)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(.white.opacity(fare.isSurged ? 0.85 : 0.7))
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 11)
                 .padding(.bottom, -1)
-                .background(Color.focusInk)
+                .background(fare.isSurged ? Color.focusAccent : Color.focusInk)
 
                 // App info row
                 HStack(alignment: .center, spacing: 11) {
@@ -344,9 +403,9 @@ struct ChallengeView: View {
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text(isStrictMode ? "Protected change" : "Boarding · blocked")
+                        Text(fareStubSubtitle)
                             .font(.inter(11.5))
-                            .foregroundColor(.focusMuted)
+                            .foregroundColor(fare.isSurged ? .focusAccent : .focusMuted)
                     }
 
                     Spacer()
@@ -357,7 +416,7 @@ struct ChallengeView: View {
                             .tracking(1.33)
                             .foregroundColor(.focusMuted)
 
-                        Text(isStrictMode ? "Once" : settings.unlockDurationText)
+                        Text(isStrictMode ? "Once" : unlockDuration.formatted())
                             .font(.system(size: 14, weight: .semibold, design: .monospaced))
                             .foregroundColor(.focusInk)
                     }
@@ -405,6 +464,34 @@ struct ChallengeView: View {
                 }
             )
         }
+    }
+
+    // MARK: - Practice Surge Note
+
+    private var practiceSurgeNote: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "arrow.up.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.focusAccent)
+                .padding(.top, 1)
+
+            Text("Surge pricing is on: after \(SurgePricing.baseFaresPerDay) fares a day, each fare gets a notch harder. You can turn it off in the Fare tab.")
+                .font(.inter(12.5))
+                .foregroundColor(.focusMuted)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.focusLine, lineWidth: 1)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.focusCard)
+                )
+        )
     }
 
     // MARK: - Pass Stub (Bottom)
@@ -466,7 +553,7 @@ struct ChallengeView: View {
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text(isStrictMode ? "Cleared to change" : "Access granted")
+                        Text(isStrictMode ? "Cleared to change" : (isPractice ? "Practice complete" : "Access granted"))
                             .font(.inter(11.5))
                             .foregroundColor(.focusMuted)
                     }
@@ -515,6 +602,14 @@ struct ChallengeView: View {
                             .font(.system(size: 46, weight: .semibold, design: .monospaced))
                             .tracking(-1.38)
                             .foregroundColor(.focusInk)
+
+                        if isPractice {
+                            Text("On a real fare, the app locks itself again at 0:00.")
+                                .font(.inter(12))
+                                .foregroundColor(.focusMuted)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 4)
@@ -768,7 +863,7 @@ struct ChallengeView: View {
             TriviaChallengeField(
                 triviaChallenge: challenge,
                 currentQuestion: triviaCurrentQuestion,
-                totalQuestions: settings.triviaQuestionsToAnswer,
+                totalQuestions: fare.triviaQuestions,
                 selectedAnswerIndex: $selectedTriviaAnswer,
                 hasSubmitted: $hasSubmittedTrivia,
                 onSubmit: checkTriviaAnswer
@@ -797,8 +892,10 @@ struct ChallengeView: View {
     @ViewBuilder
     private var footer: some View {
         if phase == .unlocked {
-            TicketBtn("Close") {
-                if isStrictMode {
+            TicketBtn(isPractice ? "Continue" : "Close") {
+                if isPractice {
+                    onPracticeComplete?()
+                } else if isStrictMode {
                     dismiss()
                 } else {
                     openUnlockedApp()
@@ -829,12 +926,30 @@ struct ChallengeView: View {
     private var ticketNumber: String {
         if isStrictMode {
             return "No. SM·0142"
+        } else if isPractice {
+            return "No. PR·0001"
         } else {
             let blockCount = StatsManager.shared.todayStats.blocksToday
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "MMdd"
             let dateString = dateFormatter.string(from: Date())
             return "No. \(blockCount)·\(dateString)"
+        }
+    }
+
+    private var unlockDuration: TimeInterval {
+        practice?.unlockDuration ?? settings.unlockDuration
+    }
+
+    private var fareStubSubtitle: String {
+        if isStrictMode {
+            return "Protected change"
+        } else if isPractice {
+            return "Practice run · nothing unlocks"
+        } else if fare.isSurged {
+            return "Surge · fare \(fareNumberToday) today"
+        } else {
+            return "Boarding · blocked"
         }
     }
 
@@ -885,13 +1000,13 @@ struct ChallengeView: View {
             case .recall: return "\(selectedTiles.count)/\(memoryChallenge?.litCount ?? 4)"
             }
         case .breathing:
-            let total = breathingChallenge?.totalBreaths ?? settings.breathingCycles
+            let total = breathingChallenge?.totalBreaths ?? fare.breathingCycles
             return "Breath \(currentBreath)/\(total)"
         case .trivia:
             if isTriviaLoading {
                 return "Please wait..."
             } else if triviaChallenge != nil {
-                return "Question \(triviaCurrentQuestion + 1)/\(settings.triviaQuestionsToAnswer)"
+                return "Question \(triviaCurrentQuestion + 1)/\(fare.triviaQuestions)"
             }
             return nil
         case .walking:
@@ -954,8 +1069,14 @@ struct ChallengeView: View {
     private func formatCountdown() -> String {
         var remainingSeconds = 0
 
+        // Practice unlocks nothing - count down the window picked in onboarding
+        if isPractice {
+            if let practiceExpiry = practiceExpiry {
+                remainingSeconds = max(0, Int(practiceExpiry.timeIntervalSince(currentTime)))
+            }
+        }
         // Check if this is a category unlock
-        if let categoryToken = requestedCategory,
+        else if let categoryToken = requestedCategory,
            let categoryTokenData = try? JSONEncoder().encode(categoryToken) {
             if let expiryTime = blockingManager.temporaryCategoryUnlocks[categoryTokenData] {
                 remainingSeconds = max(0, Int(expiryTime.timeIntervalSince(currentTime)))
@@ -974,7 +1095,7 @@ struct ChallengeView: View {
         }
 
         // Auto-dismiss when countdown expires
-        if remainingSeconds == 0 && phase == .unlocked && !hasAutoDismissed {
+        if remainingSeconds == 0 && phase == .unlocked && !hasAutoDismissed && !isPractice {
             hasAutoDismissed = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 dismiss()
@@ -1038,7 +1159,7 @@ struct ChallengeView: View {
         } else {
             handleError()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.15) {
-                memoryChallenge = MemoryChallenge(gridSize: settings.memoryGridSize, litCount: settings.memoryTilesToMatch)
+                memoryChallenge = MemoryChallenge(gridSize: challenge.columns, litCount: challenge.litCount)
                 selectedTiles = []
                 showError = false
                 memoryStage = .memorize
@@ -1063,7 +1184,7 @@ struct ChallengeView: View {
         }
 
         hasSubmittedTrivia = true
-        let isFinalQuestion = triviaCurrentQuestion == settings.triviaQuestionsToAnswer - 1
+        let isFinalQuestion = triviaCurrentQuestion == fare.triviaQuestions - 1
 
         if challenge.isCorrect(selectedIndex) {
             // Correct answer
@@ -1132,7 +1253,7 @@ struct ChallengeView: View {
 
         // Switch to math challenge
         challengeType = .math
-        mathChallenge = MathChallenge(difficulty: settings.challengeDifficulty)
+        mathChallenge = MathChallenge(difficulty: fare.mathDifficulty)
     }
 
     private func succeed() {
@@ -1201,6 +1322,13 @@ struct ChallengeView: View {
             return
         }
 
+        // Practice unlocks nothing - just run the countdown on the pass
+        if isPractice {
+            practiceExpiry = Date().addingTimeInterval(unlockDuration)
+            startCountdown()
+            return
+        }
+
         // Check if this is a category unlock or app unlock
         if let categoryToken = requestedCategory {
             // Unlock the entire category
@@ -1251,16 +1379,20 @@ struct ChallengeView: View {
             )
         }
 
-        // Start countdown - update current time immediately and then every second
-        currentTime = Date()
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            currentTime = Date()
-        }
+        startCountdown()
 
         // Clear tokens after unlock to prevent stale data on next challenge
         if let sharedDefaults = UserDefaults.appGroup {
             sharedDefaults.removeObject(forKey: "com.screenfare.requestedAppToken")
             sharedDefaults.removeObject(forKey: "com.screenfare.requestedCategoryToken")
+        }
+    }
+
+    private func startCountdown() {
+        // Update current time immediately and then every second
+        currentTime = Date()
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            currentTime = Date()
         }
     }
 

@@ -38,7 +38,12 @@ struct OnboardingContainerView: View {
                 VStack(spacing: 0) {
                     // Fixed header that doesn't animate with page transitions
                     if currentPage > 0 {
-                        ScreenHeader(currentStep: currentPage, onBack: previousPage, hideBackButton: currentPage < 4)
+                        ScreenHeader(
+                            currentStep: currentPage,
+                            onBack: previousPage,
+                            hideBackButton: currentPage < 4,
+                            onSkip: currentPage == 6 ? nextPage : nil // Practice fare is optional
+                        )
                             .padding(.horizontal, 28)
                             .transition(.opacity)
                     }
@@ -64,13 +69,29 @@ struct OnboardingContainerView: View {
                         OnboardingTimeWindowView(selectedDuration: $selectedDuration, onContinue: nextPage)
                             .tag(5)
 
+                        Group {
+                            // Only built while on screen, so the memory countdown starts when the page is
+                            // visible and any grid or duration changes from earlier pages are picked up
+                            if currentPage == 6 {
+                                OnboardingPracticeFareView(
+                                    selectedApps: selectedApps,
+                                    gridSize: selectedGridSize,
+                                    duration: selectedDuration,
+                                    onContinue: nextPage
+                                )
+                            } else {
+                                Color.clear
+                            }
+                        }
+                        .tag(6)
+
                         OnboardingSummaryView(
                             selectedApps: selectedApps,
                             gridSize: selectedGridSize,
                             duration: selectedDuration,
                             onComplete: startActivation
                         )
-                        .tag(6)
+                        .tag(7)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .interactiveDismissDisabled()

@@ -467,3 +467,61 @@ struct WalkingChallenge: Challenge {
         return min(Double(currentSteps) / Double(targetSteps), 1.0)
     }
 }
+
+// MARK: - Fare Price
+
+/// What a fare costs: the challenge settings with any surge pricing applied.
+/// Each surge level makes every fare type one notch harder.
+struct FarePrice {
+    var surgeLevel: Int
+    var mathDifficulty: ChallengeDifficulty
+    var typingDifficulty: TypingDifficulty
+    var memoryGridSize: Int
+    var memoryTilesToMatch: Int
+    var breathingCycles: Int
+    var triviaQuestions: Int
+    var walkingSteps: Int
+
+    var isSurged: Bool {
+        surgeLevel > 0
+    }
+
+    init(settings: SettingsManager, surgeLevel: Int = 0) {
+        let level = max(surgeLevel, 0)
+        self.surgeLevel = level
+
+        // Math and typing step up a difficulty per level, capped at the hardest
+        mathDifficulty = settings.challengeDifficulty.raised(by: level)
+        typingDifficulty = settings.typingDifficulty.raised(by: level)
+
+        // Memory keeps the grid and lights one more tile per level, leaving at least one tile dark
+        memoryGridSize = settings.memoryGridSize
+        let maxTiles = settings.memoryGridSize * settings.memoryGridSize - 1
+        memoryTilesToMatch = max(settings.memoryTilesToMatch, min(settings.memoryTilesToMatch + level, maxTiles))
+
+        // Breathing and trivia add one more per level
+        breathingCycles = settings.breathingCycles + level
+        triviaQuestions = settings.triviaQuestionsToAnswer + level
+
+        // Walking adds half the base steps per level (20 → 30 → 40 → 50)
+        walkingSteps = settings.walkingStepsRequired + (settings.walkingStepsRequired * level) / 2
+    }
+}
+
+extension ChallengeDifficulty {
+    /// This difficulty raised by `steps` levels, capped at the hardest
+    func raised(by steps: Int) -> ChallengeDifficulty {
+        let all = Self.allCases
+        let index = all.firstIndex(of: self) ?? 0
+        return all[min(index + max(steps, 0), all.count - 1)]
+    }
+}
+
+extension TypingDifficulty {
+    /// This length raised by `steps` levels, capped at the longest
+    func raised(by steps: Int) -> TypingDifficulty {
+        let all = Self.allCases
+        let index = all.firstIndex(of: self) ?? 0
+        return all[min(index + max(steps, 0), all.count - 1)]
+    }
+}

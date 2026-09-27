@@ -25,7 +25,7 @@ struct BrandMark: View {
 /// Progress dots showing current step
 struct ProgressDots: View {
     let currentStep: Int
-    let totalSteps: Int = 7
+    let totalSteps: Int = 8
 
     var body: some View {
         HStack(spacing: 6) {
@@ -89,11 +89,12 @@ struct BackButton: View {
     }
 }
 
-/// Header with back button and progress dots
+/// Header with back button, progress dots, and an optional skip
 struct ScreenHeader: View {
     let currentStep: Int
     let onBack: () -> Void
     var hideBackButton: Bool = false
+    var onSkip: (() -> Void)? = nil
 
     var body: some View {
         HStack {
@@ -101,8 +102,21 @@ struct ScreenHeader: View {
             Spacer()
             ProgressDots(currentStep: currentStep)
             Spacer()
-            Color.clear
-                .frame(width: 36, height: 36)
+            if let onSkip = onSkip {
+                Button(action: {
+                    HapticManager.shared.impact()
+                    onSkip()
+                }) {
+                    Text("Skip")
+                        .font(.inter(14, weight: .medium))
+                        .foregroundColor(.focusMuted)
+                        .fixedSize()
+                        .frame(minWidth: 36, minHeight: 36)
+                }
+            } else {
+                Color.clear
+                    .frame(width: 36, height: 36)
+            }
         }
     }
 }

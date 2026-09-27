@@ -65,7 +65,13 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
 
         // Get the app name
         let appName = application.localizedDisplayName ?? "this app"
-        let subtitle = "\(appName) is on your blocklist — pay the fare for \(durationText) of access."
+        var subtitle = "\(appName) is on your blocklist — pay the fare for \(durationText) of access."
+
+        // Warn before the challenge opens when surge pricing has raised the fare
+        let isSurged = SurgePricing.currentLevel() > 0
+        if isSurged {
+            subtitle += " Surge pricing is on, so this fare is harder than usual."
+        }
 
         // ScreenFare brand colors
         // #F5F2ED - Cream/warm off-white background (fully opaque)
@@ -115,7 +121,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             backgroundColor: backgroundColor,
             icon: appIcon,
             title: ShieldConfiguration.Label(
-                text: "Fare due",
+                text: isSurged ? "Surge fare due" : "Fare due",
                 color: titleColor
             ),
             subtitle: ShieldConfiguration.Label(

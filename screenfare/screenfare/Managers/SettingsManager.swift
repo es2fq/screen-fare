@@ -98,6 +98,14 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var surgePricingEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(surgePricingEnabled, forKey: SurgePricing.enabledKey)
+            // Also save to App Group so the shield can show surge fares
+            UserDefaults.appGroup?.set(surgePricingEnabled, forKey: SurgePricing.enabledKey)
+        }
+    }
+
     // MARK: - Account Settings
     @Published var userName: String {
         didSet {
@@ -184,6 +192,7 @@ class SettingsManager: ObservableObject {
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
         self.strictModeEnabled = false
+        self.surgePricingEnabled = true
         self.userName = "Screen Fare User"
         self.userEmail = "user@example.com"
         self.iCloudSyncEnabled = false
@@ -226,6 +235,7 @@ class SettingsManager: ObservableObject {
             let savedWalkingStepsRequired = UserDefaults.standard.integer(forKey: "walkingStepsRequired")
             let savedTypeStr = UserDefaults.standard.string(forKey: "challengeType")
             let savedStrictMode = UserDefaults.standard.bool(forKey: "strictModeEnabled")
+            let savedSurgePricing = UserDefaults.standard.object(forKey: SurgePricing.enabledKey) as? Bool
             let savedUserName = UserDefaults.standard.string(forKey: "userName")
             let savedUserEmail = UserDefaults.standard.string(forKey: "userEmail")
             let savedICloudSync = UserDefaults.standard.bool(forKey: "iCloudSyncEnabled")
@@ -293,6 +303,10 @@ class SettingsManager: ObservableObject {
                 // hasCompletedOnboarding already loaded synchronously in init()
                 self.strictModeEnabled = savedStrictMode
 
+                if let surgePricing = savedSurgePricing {
+                    self.surgePricingEnabled = surgePricing
+                }
+
                 if let userName = savedUserName {
                     self.userName = userName
                 }
@@ -334,6 +348,7 @@ class SettingsManager: ObservableObject {
                 // Initial sync to App Group
                 UserDefaults.appGroup?.set(self.unlockDuration, forKey: "unlockDuration")
                 UserDefaults.appGroup?.set(self.challengeType.rawValue, forKey: "challengeType")
+                UserDefaults.appGroup?.set(self.surgePricingEnabled, forKey: SurgePricing.enabledKey)
 
                 self.hasLoadedSettings = true
 

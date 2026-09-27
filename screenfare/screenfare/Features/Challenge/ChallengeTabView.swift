@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import ScreenFareShared
 
 struct ChallengeTabView: View {
     @StateObject private var settings = SettingsManager.shared
@@ -252,6 +253,39 @@ struct ChallengeTabView: View {
                     .padding(.top, 4)
 
                 AccessWindowCard(duration: $settings.unlockDuration)
+
+                // Surge pricing section
+                SectionTitle(text: "Surge pricing")
+
+                AppCard(padding: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)) {
+                    VStack(spacing: 0) {
+                        ToggleRow(
+                            icon: SettIcon(systemName: "arrow.up.right"),
+                            label: "Surge pricing",
+                            sub: "Fares get harder the more you unlock",
+                            value: Binding(
+                                get: { settings.surgePricingEnabled },
+                                set: { newValue in
+                                    // Turning surge off makes fares cheaper, so Strict Mode asks for one first
+                                    if !newValue && settings.strictModeEnabled && settings.strictProtectChallenge {
+                                        showGate = ChallengeGateData(
+                                            title: "Turn off surge pricing",
+                                            onPass: {
+                                                settings.surgePricingEnabled = false
+                                            }
+                                        )
+                                    } else {
+                                        settings.surgePricingEnabled = newValue
+                                    }
+                                }
+                            ),
+                            last: true
+                        )
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                }
+
+                FootNote(text: "Your first \(SurgePricing.baseFaresPerDay) fares each day are standard. After that, each fare steps up a notch — harder math, longer lines, more tiles, breaths, questions, or steps — up to \(SurgePricing.maxLevel) notches. Resets at midnight.")
 
                 Spacer()
             }
