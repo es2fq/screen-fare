@@ -140,7 +140,7 @@ class ShieldActionExtension: ShieldActionDelegate {
             return
         }
 
-        let storageKey = "com.screenfare.dailyStats"
+        let storageKey = DailyStats.storageKey
         let today = Date.todayDateString()
         var stats: DailyStats
 
@@ -238,20 +238,5 @@ private struct HistoryEvent: Codable, Identifiable {
         case farePaid = "Fare paid"
         case walkedAway = "Walked away"
         case challengeStarted = "Challenge started"
-    }
-}
-
-// Local copy of DailyStats for the extension
-private struct DailyStats: Codable {
-    var date: String
-    var blocksToday: Int
-    var faresPaid: Int
-    var timeSpentSeconds: Int
-
-    init(date: String) {
-        self.date = date
-        self.blocksToday = 0
-        self.faresPaid = 0
-        self.timeSpentSeconds = 0
     }
 }

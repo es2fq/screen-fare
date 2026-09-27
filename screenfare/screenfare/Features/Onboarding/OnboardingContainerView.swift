@@ -70,9 +70,9 @@ struct OnboardingContainerView: View {
                             .tag(5)
 
                         Group {
-                            // Only built while on screen, so the memory countdown starts when the page is
-                            // visible and any grid or duration changes from earlier pages are picked up
-                            if currentPage == 6 {
+                            // Built on arrival (so the memory countdown starts when visible and earlier grid or
+                            // duration changes are picked up) and kept while the summary slides in
+                            if currentPage == 6 || currentPage == 7 {
                                 OnboardingPracticeFareView(
                                     selectedApps: selectedApps,
                                     gridSize: selectedGridSize,

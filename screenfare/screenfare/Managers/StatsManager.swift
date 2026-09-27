@@ -10,25 +10,13 @@ import SwiftUI
 import Combine
 import ScreenFareShared
 
-struct DailyStats: Codable {
-    var date: String // "YYYY-MM-DD"
-    var blocksToday: Int
-    var faresPaid: Int // Challenges solved
-
-    init(date: String) {
-        self.date = date
-        self.blocksToday = 0
-        self.faresPaid = 0
-    }
-}
-
 @MainActor
 class StatsManager: ObservableObject {
     static let shared = StatsManager()
 
     @Published private(set) var todayStats: DailyStats
 
-    private let storageKey = "com.screenfare.dailyStats"
+    private let storageKey = DailyStats.storageKey
     private let historicalKey = "com.screenfare.historicalStats"  // Last 7 days
     private let sharedDefaults = UserDefaults.appGroup
 

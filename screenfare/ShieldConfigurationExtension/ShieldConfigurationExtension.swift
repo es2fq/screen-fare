@@ -70,7 +70,7 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
         // Warn before the challenge opens when surge pricing has raised the fare
         let isSurged = SurgePricing.currentLevel() > 0
         if isSurged {
-            subtitle += " Surge pricing is on, so this fare is harder than usual."
+            subtitle += " Surge pricing makes this one harder."
         }
 
         // ScreenFare brand colors

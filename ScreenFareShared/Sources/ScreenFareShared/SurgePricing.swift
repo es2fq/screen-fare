@@ -18,9 +18,6 @@ public enum SurgePricing {
     /// Highest surge level; fares stop getting harder past this
     public static let maxLevel = 3
 
-    /// Written by StatsManager in the main app
-    private static let dailyStatsKey = "com.screenfare.dailyStats"
-
     /// Surge level for the next fare: 0 is the normal price, 1...maxLevel is surged
     public static func level(faresPaidToday: Int) -> Int {
         min(max(faresPaidToday - baseFaresPerDay + 1, 0), maxLevel)
@@ -33,8 +30,8 @@ public enum SurgePricing {
 
     /// Fares paid since midnight, read from the App Group
     public static func faresPaidToday() -> Int {
-        guard let data = UserDefaults.appGroup?.data(forKey: dailyStatsKey),
-              let stats = try? JSONDecoder().decode(StoredDailyStats.self, from: data),
+        guard let data = UserDefaults.appGroup?.data(forKey: DailyStats.storageKey),
+              let stats = try? JSONDecoder().decode(DailyStats.self, from: data),
               stats.date == Date.todayDateString() else {
             return 0
         }
@@ -44,11 +41,5 @@ public enum SurgePricing {
     /// Surge level the next fare will be charged at, or 0 if surge pricing is off
     public static func currentLevel() -> Int {
         isEnabled ? level(faresPaidToday: faresPaidToday()) : 0
-    }
-
-    /// The subset of DailyStats needed here
-    private struct StoredDailyStats: Decodable {
-        let date: String
-        let faresPaid: Int
     }
 }

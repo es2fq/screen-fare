@@ -129,9 +129,11 @@ struct ChallengeView: View {
         self.practice = practice
         self.onPracticeComplete = onPracticeComplete
 
-        // Surge only applies to real unlock fares, not strict mode overrides or practice runs
-        let faresPaidToday = SurgePricing.faresPaidToday()
-        let surgeLevel = (isStrictMode || practice != nil || !settings.surgePricingEnabled) ? 0 : SurgePricing.level(faresPaidToday: faresPaidToday)
+        // Surge only applies to real unlock fares, not strict mode overrides or practice runs.
+        // Reads the App Group copy of the setting so it matches the shield even on a cold launch.
+        let isUnlockFare = !isStrictMode && practice == nil
+        let faresPaidToday = isUnlockFare ? SurgePricing.faresPaidToday() : 0
+        let surgeLevel = (isUnlockFare && SurgePricing.isEnabled) ? SurgePricing.level(faresPaidToday: faresPaidToday) : 0
         var fare = FarePrice(settings: settings, surgeLevel: surgeLevel)
         if let practice = practice {
             fare.memoryGridSize = practice.memoryGridSize
