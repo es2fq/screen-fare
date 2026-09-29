@@ -20,6 +20,90 @@ struct OnboardingContainerView: View {
 
     let onComplete: () -> Void
 
+    // Computed property to help type inference
+    @ViewBuilder
+    private var practiceFareView: some View {
+        // Built on arrival (so the memory countdown starts when visible and earlier grid or
+        // duration changes are picked up) and kept while the summary slides in
+        if currentPage == 6 || currentPage == 7 {
+            OnboardingPracticeFareView(
+                selectedApps: selectedApps,
+                gridSize: selectedGridSize,
+                duration: selectedDuration,
+                onContinue: nextPage
+            )
+        } else {
+            Color.clear
+        }
+    }
+
+    @ViewBuilder
+    private var onboardingTabView: some View {
+        TabView(selection: $currentPage) {
+            OnboardingWelcomeView(onContinue: nextPageFromWelcome)
+                .tag(0)
+
+            OnboardingScreenTimeView(onContinue: nextPage)
+                .tag(1)
+
+            OnboardingNotificationView(onContinue: nextPage)
+                .tag(2)
+
+            OnboardingAppSelectionView(selectedApps: $selectedApps, onContinue: nextPage)
+                .tag(3)
+
+            OnboardingDifficultyView(selectedGridSize: $selectedGridSize, onContinue: nextPage)
+                .id("difficulty-view") // Maintain view identity to prevent recreation
+                .tag(4)
+
+            OnboardingTimeWindowView(selectedDuration: $selectedDuration, onContinue: nextPage)
+                .tag(5)
+
+            practiceFareView
+                .tag(6)
+
+            OnboardingSummaryView(
+                selectedApps: selectedApps,
+                gridSize: selectedGridSize,
+                duration: selectedDuration,
+                onComplete: startActivation
+            )
+            .tag(7)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .interactiveDismissDisabled()
+    }
+
+    private var shouldShowHeader: Bool {
+        currentPage > 0
+    }
+
+    private var shouldHideBackButton: Bool {
+        currentPage < 4
+    }
+
+    private var skipAction: (() -> Void)? {
+        if currentPage == 6 {
+            return nextPage
+        } else {
+            return nil
+        }
+    }
+
+    @ViewBuilder
+    private var screenHeader: some View {
+        if shouldShowHeader {
+            ScreenHeader(
+                currentStep: currentPage,
+                onBack: previousPage,
+                hideBackButton: shouldHideBackButton,
+                onSkip: skipAction
+            )
+            .padding(.horizontal, 28)
+            .transition(.opacity)
+        }
+    }
+
     var body: some View {
         ZStack {
             Color.focusBg
@@ -36,65 +120,8 @@ struct OnboardingContainerView: View {
             } else {
                 // Show onboarding flow
                 VStack(spacing: 0) {
-                    // Fixed header that doesn't animate with page transitions
-                    if currentPage > 0 {
-                        ScreenHeader(
-                            currentStep: currentPage,
-                            onBack: previousPage,
-                            hideBackButton: currentPage < 4,
-                            onSkip: currentPage == 6 ? nextPage : nil // Practice fare is optional
-                        )
-                            .padding(.horizontal, 28)
-                            .transition(.opacity)
-                    }
-
-                    // Content area with page transitions
-                    TabView(selection: $currentPage) {
-                        OnboardingWelcomeView(onContinue: nextPageFromWelcome)
-                            .tag(0)
-
-                        OnboardingScreenTimeView(onContinue: nextPage)
-                            .tag(1)
-
-                        OnboardingNotificationView(onContinue: nextPage)
-                            .tag(2)
-
-                        OnboardingAppSelectionView(selectedApps: $selectedApps, onContinue: nextPage)
-                            .tag(3)
-
-                        OnboardingDifficultyView(selectedGridSize: $selectedGridSize, onContinue: nextPage)
-                            .id("difficulty-view") // Maintain view identity to prevent recreation
-                            .tag(4)
-
-                        OnboardingTimeWindowView(selectedDuration: $selectedDuration, onContinue: nextPage)
-                            .tag(5)
-
-                        Group {
-                            // Built on arrival (so the memory countdown starts when visible and earlier grid or
-                            // duration changes are picked up) and kept while the summary slides in
-                            if currentPage == 6 || currentPage == 7 {
-                                OnboardingPracticeFareView(
-                                    selectedApps: selectedApps,
-                                    gridSize: selectedGridSize,
-                                    duration: selectedDuration,
-                                    onContinue: nextPage
-                                )
-                            } else {
-                                Color.clear
-                            }
-                        }
-                        .tag(6)
-
-                        OnboardingSummaryView(
-                            selectedApps: selectedApps,
-                            gridSize: selectedGridSize,
-                            duration: selectedDuration,
-                            onComplete: startActivation
-                        )
-                        .tag(7)
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .interactiveDismissDisabled()
+                    screenHeader
+                    onboardingTabView
                 }
             }
         }

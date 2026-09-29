@@ -166,12 +166,15 @@ class AppBlockingManager: ObservableObject {
         switch status {
         case .approved:
             isAuthorized = true
+        case .approvedWithDataAccess:
+            // New authorization status that includes data access permissions
+            isAuthorized = true
         case .denied:
             isAuthorized = false
         case .notDetermined:
             isAuthorized = false
         @unknown default:
-            // Handle new authorization statuses (like "Approved with Data Access")
+            // Handle future authorization statuses
             // Treat any unknown status as authorized if it's not explicitly denied or notDetermined
             isAuthorized = true
         }
